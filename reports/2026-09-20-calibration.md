@@ -44,6 +44,22 @@ Weitgehend flach (69–74 %) bis 30 % Drop, springt danach auf 80,3 % (n=142, kl
 
 `HT over 0.5`: nur 57,5 % (n=40), deutlich unter dem Rest. Kandidat zum Entfernen oder Nachschärfen der Regel, Stichprobe aber klein.
 
+## Validierungsfall (Live-Signal, 20.09.2026)
+
+Live-Signal zur Kontrolle gegen die neue Kalibrierung geprüft:
+
+> 💰 MoneyBag 2-0/0-2 → Over 2.5 · Japan League Cup Women ·
+> Urawa Red Diamonds (W) 1–1 Omiya Ardija (W) · Signal-Minute 57' ·
+> Radar X 318 · Regeln: `dakika <= 73`, `dakika >= 55`, Monetary Change aktiv, `toplamGol = 2`
+
+Einordnung:
+
+- **Signal-Minute 57'** liegt im starken frühen Fenster (55–67), historisch 83,1 % Trefferquote genau bei Minute 57 (n=71). Die empfohlene neue Obergrenze `dakika <= 67` hätte dieses Signal weiterhin durchgelassen – kein Grenzfall.
+- **Radar X 318** liegt im mittleren 300–350-Bucket (historisch 73,8 % WR), keine Auffälligkeit.
+- Regel-Match nach alter und neuer Kalibrierung identisch (55 ≤ 57 ≤ 67/73, `toplamGol = 2`, Monetary Change aktiv).
+
+Fazit: Signal bestätigt die Zeitverfall-These, statt sie zu widerlegen – ein Signal im "guten" Fenster bleibt unter der verschärften Regel erhalten.
+
 ## Nächste Schritte
 
 1. Neue `dakika`-Grenzwerte aus `calibration/rules.json` in die Live-Regeln übernehmen.
