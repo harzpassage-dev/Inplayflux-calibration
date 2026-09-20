@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Analyze an InPlayFlux signal export and report win-rate breakdowns
 used to calibrate the strategy rules (signal-minute cutoffs, radar score,
-market drop %).
+market drop %), plus the break-even odds (Mindestquote) each win rate
+requires so that wins cover losses.
 
 Usage:
     python3 scripts/analyze_signals.py data/inplayflux_sinyaller_2026-09-20.csv
@@ -31,6 +32,13 @@ def win_rate(results):
     return sum(results) / len(results) if results else None
 
 
+def breakeven_odds(rate):
+    """Minimum decimal odds needed so that, at this win rate, wins cover
+    losses on average (expected value = 0). Below this quote the strategy
+    runs at a loss even if the win rate holds."""
+    return 1 / rate if rate else None
+
+
 def bucket(value, edges, labels):
     if value is None:
         return None
@@ -58,10 +66,26 @@ def main(path):
     print(f"Signals: {len(rows)}, decided: {len(decided)}")
     print(f"Overall win rate: {win_rate(decided):.1%}\n")
 
-    print("--- Win rate by strategy (n>=20) ---")
+    print("--- Win rate by strategy (n>=20), with break-even odds ---")
     by_strategy = report_by_key(rows, lambda r: r["Strateji (Strategy)"], min_n=20)
+    avg_over_odds = {}
+    for strat in by_strategy:
+        odds = [
+            to_float(r["O/U Üst Oranı (Over Odds)"])
+            for r in rows
+            if r["Strateji (Strategy)"] == strat
+        ]
+        odds = [o for o in odds if o]
+        avg_over_odds[strat] = sum(odds) / len(odds) if odds else None
     for strat, res in sorted(by_strategy.items(), key=lambda x: -len(x[1])):
-        print(f"{strat[:45]:45s} n={len(res):4d} winrate={win_rate(res):.1%}")
+        wr = win_rate(res)
+        be = breakeven_odds(wr)
+        avg_odds = avg_over_odds.get(strat)
+        avg_odds_s = f"{avg_odds:.2f}" if avg_odds else "n/a"
+        print(
+            f"{strat[:45]:45s} n={len(res):4d} winrate={wr:.1%} "
+            f"mindestquote={be:.2f}x avg_over_odds={avg_odds_s}"
+        )
 
     print("\n--- Win rate by signal minute, per strategy ---")
     for strat in sorted(by_strategy, key=lambda s: -len(by_strategy[s])):
@@ -73,6 +97,21 @@ def main(path):
         for minute in sorted(by_min):
             res = by_min[minute]
             print(f"    min={minute:3d} n={len(res):4d} winrate={win_rate(res):.1%}")
+
+    print("\n--- Win rate by signal minute bucket (overall), with break-even odds ---")
+    edges = [57, 60, 65, 70, float("inf")]
+    labels = ["<57", "57-59", "60-64", "65-69", ">=70"]
+    by_min_bucket = report_by_key(
+        rows, lambda r: bucket(to_float(r["Sinyal Dk (Signal Min)"]), edges, labels)
+    )
+    for label in labels:
+        res = by_min_bucket.get(label, [])
+        if res:
+            wr = win_rate(res)
+            print(
+                f"{label:10s} n={len(res):4d} winrate={wr:.1%} "
+                f"mindestquote={breakeven_odds(wr):.2f}x"
+            )
 
     print("\n--- Win rate by Radar X Score bucket ---")
     edges = [200, 300, 350, 400, 450, float("inf")]

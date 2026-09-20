@@ -1,27 +1,47 @@
 {
   "source_file": "data/inplayflux_sinyaller_2026-09-20.csv",
   "generated_from_signals": 5000,
+  "breakeven_odds_formula": "mindestquote = 1 / win_rate  (decimal odds needed so that, at this win rate, wins on average cover losses; anything below this quote runs at a loss even if the win rate holds)",
   "strategies": {
     "MoneyBag 2-0/0-2 -> Over 2.5": {
       "current_rule": "dakika <= 73 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
       "sample_size": 2455,
       "win_rate": 0.760,
+      "breakeven_odds": 1.31,
+      "avg_over_odds_observed": 1.91,
+      "odds_margin": 0.60,
       "recommended_rule": "dakika <= 67 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
-      "note": "Win rate holds at 72-83% for minutes 55-67, then drops to 46-67% for minutes 68-73. Tightening the upper cutoff trades volume for precision."
+      "note": "Win rate holds at 72-83% for minutes 55-67, then drops to 46-67% for minutes 68-73. Tightening the upper cutoff trades volume for precision. Observed avg. Over odds (1.91) clear the 1.31x breakeven with comfortable margin."
     },
     "MoneyBag + 3 Goals -> Over 3.5": {
       "current_rule": "dakika <= 71 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
       "sample_size": 1955,
       "win_rate": 0.699,
+      "breakeven_odds": 1.43,
+      "avg_over_odds_observed": 1.90,
+      "odds_margin": 0.47,
       "recommended_rule": "dakika <= 63 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
-      "note": "Win rate is 66-78% for minutes 60-63, then mostly 55-68% for minutes 64-71."
+      "note": "Win rate is 66-78% for minutes 60-63, then mostly 55-68% for minutes 64-71. Observed avg. Over odds (1.90) clear the 1.43x breakeven."
     },
     "HT over 0.5": {
       "current_rule": null,
       "sample_size": 40,
       "win_rate": 0.575,
+      "breakeven_odds": 1.74,
+      "avg_over_odds_observed": 1.94,
+      "odds_margin": 0.20,
       "recommended_rule": "review or retire",
-      "note": "Clearly underperforms the other strategies (57.5% vs 70-80%). Sample is small (n=40); needs more data or a rule change before keeping it live."
+      "note": "Clearly underperforms the other strategies (57.5% vs 70-80%). Sample is small (n=40); needs more data or a rule change before keeping it live. Smallest odds margin of all strategies (+0.20) - least buffer against odds slippage or a small win-rate drop."
+    }
+  },
+  "breakeven_odds_by_signal_minute": {
+    "note": "Mindestquote per signal-minute bucket, overall across strategies. Shows that late signals need noticeably higher odds to stay break-even.",
+    "buckets": {
+      "<57": {"win_rate": 0.775, "breakeven_odds": 1.29},
+      "57-59": {"win_rate": 0.751, "breakeven_odds": 1.33},
+      "60-64": {"win_rate": 0.726, "breakeven_odds": 1.38},
+      "65-69": {"win_rate": 0.647, "breakeven_odds": 1.55},
+      ">=70": {"win_rate": 0.626, "breakeven_odds": 1.60}
     }
   },
   "radar_x_score": {

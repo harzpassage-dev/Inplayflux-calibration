@@ -9,6 +9,43 @@ Datenbasis: `data/inplayflux_sinyaller_2026-09-20.csv`, 5.000 Signale, erzeugt m
   - `MoneyBag 2-0/0-2 → Over 2.5`: n=2455, **76,0 %**
   - `MoneyBag + 3 Goals → Over 3.5`: n=1955, **69,9 %**
 
+## Mindestquote (Break-even-Odds)
+
+Formel: `Mindestquote = 1 / Win Rate`. Das ist die Dezimalquote, die eine
+Strategie im Schnitt mindestens braucht, damit die Gewinne die Verluste
+ausgleichen. Liegt die real erzielte Quote darunter, rutscht die Strategie
+auf Dauer ins Minus, auch wenn die Win Rate hält.
+
+| Strategie | n | Win Rate | Mindestquote | Ø erzielte Over-Quote | Puffer |
+|---|---:|---:|---:|---:|---:|
+| `MoneyBag 2-0/0-2 → Over 2.5` | 2455 | 76,0 % | **1,31x** | 1,91 | +0,60 |
+| `MoneyBag + 3 Goals → Over 3.5` | 1955 | 69,9 % | **1,43x** | 1,90 | +0,47 |
+| `Over 0.5 Value` | 222 | 73,4 % | **1,36x** | 1,92 | +0,56 |
+| `💰 Over 1.5` | 99 | 74,7 % | **1,34x** | 1,91 | +0,57 |
+| `HT over 0.5` | 40 | 57,5 % | **1,74x** | 1,94 | +0,20 |
+
+Alle Strategien erzielen im Schnitt deutlich höhere Quoten (1,85–1,94) als
+ihre Mindestquote erfordert – aktuell gibt es also überall Luft. Am
+knappsten ist der Puffer bei `HT over 0.5` (+0,20), die ohnehin schwächste
+Strategie im Report.
+
+**Zeitverfall in Mindestquote-Sicht:** Da die Win Rate mit der Signal-Minute
+fällt, steigt die Mindestquote entsprechend an:
+
+| Signal-Minute | Win Rate | Mindestquote |
+|---|---:|---:|
+| < 57 | 77,5 % | 1,29x |
+| 57–59 | 75,1 % | 1,33x |
+| 60–64 | 72,6 % | 1,38x |
+| 65–69 | 64,7 % | 1,55x |
+| ≥ 70 | 62,6 % | 1,60x |
+
+Späte Signale (≥ 65') brauchen also spürbar höhere Quoten (1,55x–1,60x
+statt 1,29x–1,38x früh), um nicht ins Minus zu laufen. Das ist ein
+zusätzliches Argument für die unten empfohlene engere `dakika`-Obergrenze:
+je später das Signal, desto weniger Puffer bleibt zur real verfügbaren
+Quote.
+
 ## Zeitverfall (wichtigster Befund)
 
 Die Trefferquote fällt mit steigender Signal-Minute:
@@ -63,5 +100,11 @@ Fazit: Signal bestätigt die Zeitverfall-These, statt sie zu widerlegen – ein 
 ## Nächste Schritte
 
 1. Neue `dakika`-Grenzwerte aus `calibration/rules.json` in die Live-Regeln übernehmen.
-2. `HT over 0.5` beobachten oder deaktivieren.
-3. Weitere Signal-Exporte mit `scripts/analyze_signals.py` auswerten, um die Zeitverfall-These zu bestätigen und die Cutoffs weiter zu verfeinern.
+2. `HT over 0.5` beobachten oder deaktivieren (kleinster Quoten-Puffer, +0,20).
+3. Real erzielte Quoten laufend gegen die Mindestquote pro Strategie/Zeitfenster prüfen, nicht nur einmalig – der Puffer ist aktuell komfortabel, aber quotenabhängig.
+4. Weitere Signal-Exporte mit `scripts/analyze_signals.py` auswerten, um die Zeitverfall-These zu bestätigen und die Cutoffs weiter zu verfeinern.
+
+## Annahmen zur Mindestquote
+
+- Mindestquote geht von gleicher Einsatzhöhe je Signal aus (Flat Stake), ohne Berücksichtigung von Gebühren/Steuern auf Gewinne.
+- Basis ist die historische Win Rate der 5.000 Signale vom 20.09.2026 – kein Garant für künftige Quoten oder Trefferquoten. Bei Rückfragen zur Methodik oder abweichenden Annahmen (z. B. gestaffelte Einsätze) bitte melden.

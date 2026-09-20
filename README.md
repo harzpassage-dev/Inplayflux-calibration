@@ -7,7 +7,8 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
 
 - `data/` – raw signal exports (CSV) from InPlayFlux.
 - `scripts/analyze_signals.py` – computes win-rate breakdowns by strategy,
-  signal minute, radar score, and market drop %.
+  signal minute, radar score, and market drop %, plus the break-even odds
+  (Mindestquote = 1 / win rate) each one requires to stay profitable.
 - `calibration/rules.json` – current vs. recommended rule thresholds per
   strategy, derived from the analysis.
 - `reports/` – dated write-ups of calibration findings.
