@@ -1,0 +1,33 @@
+{
+  "source_file": "data/inplayflux_sinyaller_2026-09-20.csv",
+  "generated_from_signals": 5000,
+  "strategies": {
+    "MoneyBag 2-0/0-2 -> Over 2.5": {
+      "current_rule": "dakika <= 73 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
+      "sample_size": 2455,
+      "win_rate": 0.760,
+      "recommended_rule": "dakika <= 67 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
+      "note": "Win rate holds at 72-83% for minutes 55-67, then drops to 46-67% for minutes 68-73. Tightening the upper cutoff trades volume for precision."
+    },
+    "MoneyBag + 3 Goals -> Over 3.5": {
+      "current_rule": "dakika <= 71 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
+      "sample_size": 1955,
+      "win_rate": 0.699,
+      "recommended_rule": "dakika <= 63 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
+      "note": "Win rate is 66-78% for minutes 60-63, then mostly 55-68% for minutes 64-71."
+    },
+    "HT over 0.5": {
+      "current_rule": null,
+      "sample_size": 40,
+      "win_rate": 0.575,
+      "recommended_rule": "review or retire",
+      "note": "Clearly underperforms the other strategies (57.5% vs 70-80%). Sample is small (n=40); needs more data or a rule change before keeping it live."
+    }
+  },
+  "radar_x_score": {
+    "note": "No strong monotonic relationship with win rate (71-75% across all buckets from <200 to >=450). Not currently a reliable standalone filter."
+  },
+  "market_drop_pct": {
+    "note": "Win rate is fairly flat (69-74%) up to 30% drop, then jumps to 80.3% at >=30% (n=142, small sample - worth monitoring, not yet actionable)."
+  }
+}
