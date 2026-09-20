@@ -46,6 +46,29 @@ zusätzliches Argument für die unten empfohlene engere `dakika`-Obergrenze:
 je später das Signal, desto weniger Puffer bleibt zur real verfügbaren
 Quote.
 
+**Mindestquote pro Strategie × Zeitfenster (n ≥ 15):**
+
+| Strategie | Zeitfenster | n | Win Rate | Mindestquote | Ø Over-Quote | Puffer |
+|---|---|---:|---:|---:|---:|---:|
+| `Over 2.5` | < 57' | 1826 | 78,0 % | 1,28x | 1,91 | +0,63 |
+| `Over 2.5` | 57–59' | 177 | 75,1 % | 1,33x | 1,92 | +0,59 |
+| `Over 2.5` | 60–64' | 220 | 72,7 % | 1,38x | 1,93 | +0,55 |
+| `Over 2.5` | 65–69' | 143 | 65,0 % | 1,54x | 1,89 | +0,35 |
+| `Over 2.5` | ≥ 70' | 89 | 64,0 % | 1,56x | 1,90 | +0,34 |
+| `Over 3.5` | 60–64' | 1559 | 71,6 % | 1,40x | 1,91 | +0,51 |
+| `Over 3.5` | 65–69' | 291 | 62,9 % | 1,59x | 1,89 | +0,30 |
+| `Over 3.5` | ≥ 70' | 105 | 62,9 % | 1,59x | 1,90 | +0,31 |
+| `HT over 0.5` | < 57' | 40 | 57,5 % | 1,74x | 1,94 | +0,20 |
+
+(vollständige Tabelle inkl. kleinerer Nebenstrategien: `scripts/analyze_signals.py` Abschnitt "strategy x signal-minute bucket"; `calibration/rules.json` → `breakeven_odds_by_strategy_and_signal_minute`)
+
+Der Puffer schrumpft in beiden Hauptstrategien mit steigender Signal-Minute
+deutlich (`Over 2.5`: +0,63 → +0,34; `Over 3.5`: +0,51 → +0,30). Bei den
+real beobachteten Durchschnittsquoten (~1,89–1,93) rutscht noch keine
+Kombination ins Minus, aber die späten Fenster haben spürbar weniger
+Sicherheitsabstand – schon eine kleine Quotenverschlechterung oder ein
+leichter Rückgang der Win Rate würde dort zuerst kippen.
+
 ## Zeitverfall (wichtigster Befund)
 
 Die Trefferquote fällt mit steigender Signal-Minute:

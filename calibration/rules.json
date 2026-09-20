@@ -44,6 +44,24 @@
       ">=70": {"win_rate": 0.626, "breakeven_odds": 1.60}
     }
   },
+  "breakeven_odds_by_strategy_and_signal_minute": {
+    "note": "Mindestquote per strategy x signal-minute bucket (n>=15). avg_over_odds is the observed average Over-odds for that combination. margin = avg_over_odds - breakeven_odds; negative would mean the strategy already runs at a loss in that time window at typically available odds.",
+    "MoneyBag 2-0/0-2 -> Over 2.5": {
+      "<57":   {"n": 1826, "win_rate": 0.780, "breakeven_odds": 1.28, "avg_over_odds": 1.91, "margin": 0.63},
+      "57-59": {"n": 177,  "win_rate": 0.751, "breakeven_odds": 1.33, "avg_over_odds": 1.92, "margin": 0.59},
+      "60-64": {"n": 220,  "win_rate": 0.727, "breakeven_odds": 1.38, "avg_over_odds": 1.93, "margin": 0.55},
+      "65-69": {"n": 143,  "win_rate": 0.650, "breakeven_odds": 1.54, "avg_over_odds": 1.89, "margin": 0.35},
+      ">=70":  {"n": 89,   "win_rate": 0.640, "breakeven_odds": 1.56, "avg_over_odds": 1.90, "margin": 0.34}
+    },
+    "MoneyBag + 3 Goals -> Over 3.5": {
+      "60-64": {"n": 1559, "win_rate": 0.716, "breakeven_odds": 1.40, "avg_over_odds": 1.91, "margin": 0.51},
+      "65-69": {"n": 291,  "win_rate": 0.629, "breakeven_odds": 1.59, "avg_over_odds": 1.89, "margin": 0.30},
+      ">=70":  {"n": 105,  "win_rate": 0.629, "breakeven_odds": 1.59, "avg_over_odds": 1.90, "margin": 0.31}
+    },
+    "HT over 0.5": {
+      "<57": {"n": 40, "win_rate": 0.575, "breakeven_odds": 1.74, "avg_over_odds": 1.94, "margin": 0.20}
+    }
+  },
   "radar_x_score": {
     "note": "No strong monotonic relationship with win rate (71-75% across all buckets from <200 to >=450). Not currently a reliable standalone filter."
   },

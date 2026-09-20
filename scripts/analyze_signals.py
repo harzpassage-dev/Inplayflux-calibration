@@ -113,6 +113,38 @@ def main(path):
                 f"mindestquote={breakeven_odds(wr):.2f}x"
             )
 
+    print(
+        "\n--- Win rate by strategy x signal-minute bucket, with break-even odds (n>=15) ---"
+    )
+    for strat in sorted(by_strategy, key=lambda s: -len(by_strategy[s])):
+        sub = [r for r in rows if r["Strateji (Strategy)"] == strat]
+        by_bucket = report_by_key(
+            sub,
+            lambda r: bucket(to_float(r["Sinyal Dk (Signal Min)"]), edges, labels),
+            min_n=15,
+        )
+        odds_by_bucket = defaultdict(list)
+        for r in sub:
+            b = bucket(to_float(r["Sinyal Dk (Signal Min)"]), edges, labels)
+            oo = to_float(r["O/U Üst Oranı (Over Odds)"])
+            if b and oo:
+                odds_by_bucket[b].append(oo)
+        if not by_bucket:
+            continue
+        print(f"\n  {strat}")
+        for label in labels:
+            res = by_bucket.get(label)
+            if not res:
+                continue
+            wr = win_rate(res)
+            odds = odds_by_bucket.get(label, [])
+            avg_odds = sum(odds) / len(odds) if odds else None
+            avg_odds_s = f"{avg_odds:.2f}" if avg_odds else "n/a"
+            print(
+                f"    {label:10s} n={len(res):4d} winrate={wr:.1%} "
+                f"mindestquote={breakeven_odds(wr):.2f}x avg_over_odds={avg_odds_s}"
+            )
+
     print("\n--- Win rate by Radar X Score bucket ---")
     edges = [200, 300, 350, 400, 450, float("inf")]
     labels = ["<200", "200-300", "300-350", "350-400", "400-450", ">=450"]
