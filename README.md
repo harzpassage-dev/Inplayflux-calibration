@@ -17,9 +17,17 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
   and edge vs. a live quote). No build step; open the file directly or
   serve it via GitHub Pages. Calibration values inside it should be kept
   in sync with `calibration/rules.json` after each analysis run.
+- `scripts/fetch_odds.py` – CLI to pull live/pre-match odds (1X2, Over/Under)
+  from [The Odds API](https://the-odds-api.com/) for a given league, used to
+  cross-check the Mindestquote against real market odds. Requires
+  `ODDS_API_KEY` as an environment variable (never hardcode it).
 
 ## Usage
 
 ```bash
 python3 scripts/analyze_signals.py data/inplayflux_sinyaller_2026-09-20.csv
+
+export ODDS_API_KEY="dein_key"
+python3 scripts/fetch_odds.py --sports                       # Ligen auflisten (0 Credits)
+python3 scripts/fetch_odds.py soccer_chile_campeonato "Colo"  # Quoten für ein Spiel
 ```
