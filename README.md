@@ -12,6 +12,11 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
 - `calibration/rules.json` – current vs. recommended rule thresholds per
   strategy, derived from the analysis.
 - `reports/` – dated write-ups of calibration findings.
+- `tools/moneybag-analyst.html` – standalone offline calculator (paste a
+  signal card, get Poisson/bucket-model/market-implied win probabilities
+  and edge vs. a live quote). No build step; open the file directly or
+  serve it via GitHub Pages. Calibration values inside it should be kept
+  in sync with `calibration/rules.json` after each analysis run.
 
 ## Usage
 
