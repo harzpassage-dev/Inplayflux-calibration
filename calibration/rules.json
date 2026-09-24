@@ -62,6 +62,28 @@
       "<57": {"n": 40, "win_rate": 0.575, "breakeven_odds": 1.74, "avg_over_odds": 1.94, "margin": 0.20}
     }
   },
+  "tool_calibration": {
+    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed from data/inplayflux_sinyaller_2026-09-20.csv (5000 signals) to replace the tool's previous 30.08.-14.09.2026 window.",
+    "o25Buckets": [
+      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.7, "n": 1512 },
+      { "min": 56, "max": 60, "label": "56-60'", "wr": 76.5, "n": 544 },
+      { "min": 61, "max": 65, "label": "61-65'", "wr": 76.0, "n": 204 },
+      { "min": 66, "max": 70, "label": "66-70'", "wr": 58.8, "n": 131 },
+      { "min": 71, "max": 73, "label": "71-73'", "wr": 68.8, "n": 64 }
+    ],
+    "o35Matrix": [
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.8, "n": 848 },
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 75.6, "n": 262 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 65.2, "n": 299 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 80.2, "n": 91 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 58.1, "n": 129 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 71.2, "n": 52 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 60.2, "n": 128 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 68.3, "n": 41 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 58.1, "n": 74 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 74.2, "n": 31 }
+    ]
+  },
   "radar_x_score": {
     "note": "No strong monotonic relationship with win rate (71-75% across all buckets from <200 to >=450). Not currently a reliable standalone filter."
   },
