@@ -303,6 +303,7 @@
       </div>
       <div>
         <label class="inline">Liga</label>
+        <input type="text" id="odds-sport-filter" placeholder="Liga filtern…" style="margin-bottom:4px;" disabled>
         <select id="odds-sport"><option value="">erst Ligen laden</option></select>
       </div>
     </div>
@@ -788,18 +789,45 @@
     return { data: await r.json(), left: r.headers.get("x-requests-remaining") };
   }
 
+  const oddsSportFilterEl = document.getElementById("odds-sport-filter");
+  let loadedSoccerLeagues = [];
+
+  function renderSportOptions(leagues, selectValue) {
+    oddsSportEl.innerHTML = leagues.map(s => `<option value="${esc(s.key)}">${esc(s.title)}</option>`).join("");
+    if (selectValue && leagues.some(s => s.key === selectValue)) oddsSportEl.value = selectValue;
+  }
+
   document.getElementById("odds-sports-btn").addEventListener("click", async function () {
     try {
       oddsMsg("Lade Ligen …");
       const { data } = await oddsGet("/sports", { all: "true" });
-      const soccer = data.filter(s => s.key.startsWith("soccer") && s.active);
+      loadedSoccerLeagues = data
+        .filter(s => s.key.startsWith("soccer") && s.active)
+        .sort((a, b) => a.title.localeCompare(b.title));
       const cur = oddsSportEl.value;
-      oddsSportEl.innerHTML = soccer.map(s => `<option value="${esc(s.key)}">${esc(s.title)}</option>`).join("");
-      if (cur && soccer.some(s => s.key === cur)) oddsSportEl.value = cur;
-      oddsMsg(soccer.length + " aktive Fußball-Ligen geladen.");
+
+      // Liga automatisch vorauswählen, wenn sie zum geparsten Signal passt
+      let auto = cur;
+      if (PARSED && PARSED.league) {
+        const hit = loadedSoccerLeagues.find(s => nameMatch(PARSED.league, s.title) || nameMatch(s.title, PARSED.league));
+        if (hit) auto = hit.key;
+      }
+
+      renderSportOptions(loadedSoccerLeagues, auto);
+      oddsSportFilterEl.disabled = false;
+      oddsSportFilterEl.value = "";
+      const autoNote = (auto && auto !== cur) ? " — Liga automatisch vorausgewählt." : "";
+      oddsMsg(loadedSoccerLeagues.length + " aktive Fußball-Ligen geladen." + autoNote);
     } catch (e) {
       oddsMsg(esc(e.message) + " (Bei Netzwerkfehler: Seite muss über GitHub Pages/https laufen, nicht im claude.ai-Artifact.)");
     }
+  });
+
+  oddsSportFilterEl.addEventListener("input", function () {
+    const q = normName(oddsSportFilterEl.value);
+    const filtered = q ? loadedSoccerLeagues.filter(s => normName(s.title).includes(q)) : loadedSoccerLeagues;
+    const cur = oddsSportEl.value;
+    renderSportOptions(filtered, cur);
   });
 
   function showGameQuotes(game, fetchedLeft) {
