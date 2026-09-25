@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MoneyBag Analyst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12151c;
+    --panel: #1a1f2b;
+    --panel-2: #202634;
+    --line: #2c3444;
+    --text: #e6e9f0;
+    --text-dim: #8891a3;
+    --gold: #c9a227;
+    --green: #4caf7a;
+    --red: #d9614f;
+    --blue: #5b8dd6;
+    --radius: 3px;
+    color-scheme: dark;
+  }
+  :root:not([data-theme="dark"]) {
+    /* explicit light override kept identical to dark on purpose: this tool
+       is read in low-light live-match settings, so we don't offer a light
+       variant, but we still honor a forced light override if set */
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef0f3;
+      --panel: #ffffff;
+      --panel-2: #f4f5f7;
+      --line: #d6dae1;
+      --text: #1a1f2b;
+      --text-dim: #5b6472;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.45;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 14px 60px;
+  }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin: 0 0 2px;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin: 0 0 18px;
+  }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  section h2 {
+    font-size: 0.72rem;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 220px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+    resize: vertical;
+  }
+  textarea::placeholder { color: var(--text-dim); }
+
+  button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    cursor: pointer;
+    background: var(--gold);
+    color: #1a1200;
+  }
+  button.secondary {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-weight: 500;
+  }
+  button.small {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.win { background: var(--green); color: #06170e; }
+  button.lose { background: var(--red); color: #250a06; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row.between { justify-content: space-between; }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .field-grid .k { color: var(--text-dim); }
+  .field-grid .v {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  .field-grid .v.missing { color: var(--red); }
+  .field-grid input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 4px 6px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.78rem;
+  }
+
+  .band {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  .band-label { color: var(--text-dim); font-size: 0.72rem; margin-bottom: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  table.mono td, table.mono th { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--text-dim); font-weight: 500; font-size: 0.72rem; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .pill.hoch { background: rgba(76,175,122,0.18); color: var(--green); }
+  .pill.mittel { background: rgba(201,162,39,0.18); color: var(--gold); }
+  .pill.niedrig { background: rgba(217,97,79,0.18); color: var(--red); }
+
+  .flag {
+    font-size: 0.78rem;
+    padding: 6px 8px;
+    border-left: 3px solid var(--gold);
+    background: var(--panel-2);
+    margin-bottom: 6px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .logline {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    background: var(--panel-2);
+    padding: 8px;
+    border-radius: var(--radius);
+    word-break: break-all;
+    color: var(--text-dim);
+  }
+
+  select {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 0.8rem;
+  }
+
+  details summary {
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    padding: 4px 0;
+  }
+
+  .hist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.75rem;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-meta { color: var(--text-dim); }
+  .hist-outcome-open { color: var(--gold); }
+  .hist-outcome-win { color: var(--green); }
+  .hist-outcome-lose { color: var(--red); }
+
+  .stat-row { display: flex; gap: 18px; margin-bottom: 10px; }
+  .stat { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .stat .num { font-size: 1.1rem; font-weight: 700; display: block; }
+  .stat .lbl { font-size: 0.68rem; color: var(--text-dim); }
+
+  .warn-box {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+  }
+
+  input[type="number"], input[type="text"] {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+  }
+
+  label.inline { font-size: 0.78rem; color: var(--text-dim); display: block; margin-bottom: 3px; }
+</style>
+</head>
+<body>
+
+<h1>MoneyBag Analyst</h1>
+<p class="subtitle">Offline-Rechner für inplayflux-Signale — Poisson, Bucket-/Matrix-Modell, Marktrückrechnung. Keine Websuche, keine KI-Bewertung.</p>
+
+<div class="warn-box">
+  Diese Version rechnet nur die deterministischen Schritte (1, 2, 3b, Edge). H2H, Next-Goal-Recherche und qualitative Einschätzungen macht weiterhin der Chat.
+</div>
+
+<section id="input-section">
+  <h2>Signal einfügen</h2>
+  <textarea id="raw-input" placeholder="Signal-Karte hier reinpasten..."></textarea>
+  <div class="row" style="margin-top:10px;">
+    <button id="parse-btn">Parsen</button>
+    <button class="secondary" id="clear-btn">Leeren</button>
+  </div>
+</section>
+
+<section id="parsed-section" style="display:none;">
+  <h2>Erkannte Werte — vor dem Rechnen prüfen</h2>
+  <div class="field-grid" id="field-grid"></div>
+  <div class="row" style="margin-top:12px;">
+    <button id="compute-btn">Berechnen</button>
+  </div>
+</section>
+
+<section id="results-section" style="display:none;">
+  <h2>Ergebnis</h2>
+  <div id="results-body"></div>
+</section>
+
+<section id="edge-section" style="display:none;">
+  <h2>Edge (optional — manuelle Quote eintragen)</h2>
+  <div class="row">
+    <div>
+      <label class="inline">Wahrscheinlichkeits-Quelle</label>
+      <select id="prob-source"></select>
+    </div>
+    <div>
+      <label class="inline">Live-Quote (Ziel erreicht)</label>
+      <input type="number" step="0.01" id="live-quote-input" placeholder="z.B. 1.85">
+    </div>
+    <div style="align-self:flex-end;">
+      <button class="secondary small" id="edge-calc-btn">Edge berechnen</button>
+    </div>
+  </div>
+  <details id="odds-box" style="margin-top:12px;">
+    <summary>Quote automatisch holen (The Odds API)</summary>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label class="inline">API-Key (bleibt nur in diesem Browser)</label>
+        <input type="password" id="odds-key" placeholder="Key einfügen" autocomplete="off">
+      </div>
+      <div>
+        <label class="inline">Liga</label>
+        <input type="text" id="odds-sport-filter" placeholder="Liga filtern…" style="margin-bottom:4px;" disabled>
+        <select id="odds-sport"><option value="">erst Ligen laden</option></select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <button class="secondary small" id="odds-sports-btn">Ligen laden (0 Credits)</button>
+      <button class="secondary small" id="odds-fetch-btn">Quote holen (1 Credit)</button>
+    </div>
+    <div id="odds-result" style="margin-top:10px;"></div>
+  </details>
+  <div id="edge-result" style="margin-top:10px;"></div>
+</section>
+
+<section id="log-section" style="display:none;">
+  <h2>LOG-Zeile</h2>
+  <div class="row" style="margin-bottom:8px;">
+    <label class="inline" style="margin:0;">Konfidenz</label>
+    <select id="confidence-select">
+      <option value="Hoch">Hoch</option>
+      <option value="Mittel" selected>Mittel</option>
+      <option value="Niedrig">Niedrig</option>
+    </select>
+    <label class="inline" style="margin:0;">Empfehlung</label>
+    <select id="empfehlung-select">
+      <option>Ja</option>
+      <option>Nein</option>
+      <option>Coinflip</option>
+      <option selected>Kein Edge</option>
+    </select>
+  </div>
+  <div class="logline" id="log-line-text"></div>
+  <div class="row" style="margin-top:10px;">
+    <button class="secondary small" id="copy-log-btn">LOG kopieren</button>
+    <button class="secondary small" id="save-log-btn">Zur Historie hinzufügen</button>
+  </div>
+</section>
+
+<section id="history-section">
+  <h2>Historie</h2>
+  <div class="stat-row" id="stats-row"></div>
+  <div id="history-list"></div>
+  <div class="row" style="margin-top:10px;">
+    <button class="secondary small" id="clear-history-btn">Historie löschen</button>
+  </div>
+</section>
+
+<details id="settings">
+  <summary>Einstellungen — Kalibrierung anpassen</summary>
+  <section style="margin-top:8px;">
+    <h2>O2.5 Minute-Buckets</h2>
+    <table class="mono" id="o25-table"></table>
+    <h2 style="margin-top:14px;">O3.5 Minute × SoT-Matrix</h2>
+    <table class="mono" id="o35-table"></table>
+    <div class="row" style="margin-top:12px;">
+      <button class="secondary small" id="save-calib-btn">Speichern</button>
+      <button class="secondary small" id="reset-calib-btn">Zurücksetzen auf Standard</button>
+    </div>
+    <div class="warn-box" style="margin-top:10px;">
+      Diese Werte nach jedem CSV-Rekalibrierungs-Lauf manuell nachtragen (siehe calibration_check.py-Output).
+    </div>
+  </section>
+</details>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Default calibration (Stand: CSV-Export 20.09.2026, 5000 Signale,
+  // siehe calibration/rules.json -> tool_calibration)
+  // ---------------------------------------------------------------------
+  const DEFAULT_CALIB = {
+    o25Buckets: [
+      { min: 0,  max: 55, label: "<=55'",  wr: 77.7 },
+      { min: 56, max: 60, label: "56-60'", wr: 76.5 },
+      { min: 61, max: 65, label: "61-65'", wr: 76.0 },
+      { min: 66, max: 70, label: "66-70'", wr: 58.8 },
+      { min: 71, max: 73, label: "71-73'", wr: 68.8 }
+    ],
+    o35Matrix: [
+      { minMin: 60, maxMin: 60, label: "=60'",   sot: "<=8", wr: 72.8 },
+      { minMin: 60, maxMin: 60, label: "=60'",   sot: "9+",  wr: 75.6 },
+      { minMin: 61, maxMin: 63, label: "61-63'", sot: "<=8", wr: 65.2 },
+      { minMin: 61, maxMin: 63, label: "61-63'", sot: "9+",  wr: 80.2 },
+      { minMin: 64, maxMin: 66, label: "64-66'", sot: "<=8", wr: 58.1 },
+      { minMin: 64, maxMin: 66, label: "64-66'", sot: "9+",  wr: 71.2 },
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "<=8", wr: 60.2 },
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "9+",  wr: 68.3 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "<=8", wr: 58.1 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "9+",  wr: 74.2 }
+    ]
+  };
+
+  function loadCalib() {
+    try {
+      const raw = localStorage.getItem("mb_calibration");
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* fall through to default */ }
+    return JSON.parse(JSON.stringify(DEFAULT_CALIB));
+  }
+  function saveCalib(calib) {
+    try { localStorage.setItem("mb_calibration", JSON.stringify(calib)); } catch (e) {}
+  }
+
+  let CALIB = loadCalib();
+  let PARSED = null;
+  let ANALYSIS = null;
+
+  // ---------------------------------------------------------------------
+  // Parser
+  // ---------------------------------------------------------------------
+  function parseSignal(text) {
+    const r = {};
+
+    let m = text.match(/Target:\s*Over\s*([\d.]+)\s*Goals[^\d]*(\d+)\s*\/\s*(\d+)\s*goals/i);
+    if (m) { r.targetLine = parseFloat(m[1]); r.goalsAtSignal = parseInt(m[2], 10); r.goalsNeededTotal = parseInt(m[3], 10); }
+
+    m = text.match(/(?:📊|📕)\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/m);
+    if (m) { r.homeTeam = m[1].trim(); r.homeScore = parseInt(m[2], 10); r.awayScore = parseInt(m[3], 10); r.awayTeam = m[4].trim(); }
+
+    m = text.match(/🏆\s*(.+)/);
+    if (m) { r.league = m[1].replace(/^[^\w]+/u, "").trim(); }
+
+    m = text.match(/⏱\s*(\d+)'[\s·•]+~?(\d+)\s*min left[\s·•]+HT\s*(\d+)-(\d+)/i);
+    if (m) { r.minute = parseInt(m[1], 10); r.minutesLeft = parseInt(m[2], 10); r.htHome = parseInt(m[3], 10); r.htAway = parseInt(m[4], 10); }
+
+    m = text.match(/Strike Rate:\s*(\d+)%\s*\((\d+)\/(\d+)\)/i);
+    if (m) { r.feedWR = parseInt(m[1], 10); r.feedWins = parseInt(m[2], 10); r.feedTotal = parseInt(m[3], 10); }
+
+    m = text.match(/Shots\s*(\d+)\s*[·•]\s*(\d+)\s*\/\s*(\d+)\s*[·•]\s*(\d+)\s*total/i);
+    if (m) { r.sotHome = parseInt(m[1], 10); r.sotAway = parseInt(m[2], 10); r.shotsHome = parseInt(m[3], 10); r.shotsAway = parseInt(m[4], 10); }
+
+    m = text.match(/Danger\.?\s*Att\.?\s*(\d+)\s*[·•]\s*(\d+)/i);
+    if (m) { r.dangerHome = parseInt(m[1], 10); r.dangerAway = parseInt(m[2], 10); }
+
+    m = text.match(/Attacks\s*(\d+)\s*[·•]\s*(\d+)/i);
+    if (m) { r.attacksHome = parseInt(m[1], 10); r.attacksAway = parseInt(m[2], 10); }
+
+    m = text.match(/Possession\s*(\d+)%\s*[·•]\s*(\d+)%/i);
+    if (m) { r.possHome = parseInt(m[1], 10); r.possAway = parseInt(m[2], 10); }
+
+    m = text.match(/Opening\s*([\d.]+)\s*[·•]\s*([\d.]+)\s*[·•]\s*([\d.]+)/i);
+    if (m) r.openOdds = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])];
+
+    m = text.match(/Kickoff\s*([\d.]+)\s*[·•]\s*([\d.]+)\s*[·•]\s*([\d.]+)/i);
+    if (m) r.koOdds = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])];
+
+    m = text.match(/Live\s*([\d.]+)\s*[·•]\s*([\d.]+)\s*[·•]\s*([\d.]+)/i);
+    if (m) r.liveOdds = [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])];
+
+    m = text.match(/O\/U\s*([\d.]+)\s*→\s*([\d.]+)[^\d]*Over\s*([\d.]+)\s*Under\s*([\d.]+)/i);
+    if (m) { r.ouLine1 = parseFloat(m[1]); r.ouLine2 = parseFloat(m[2]); r.overOdds = parseFloat(m[3]); r.underOdds = parseFloat(m[4]); }
+
+    m = text.match(/Odds Drop\s*.*?\b(Home|Away|Draw)\b/i);
+    if (m) r.oddsDropLabel = m[1];
+
+    const profileMatches = [...text.matchAll(/(?:🏠|✈️)\s*(?:#\d+\s*)?Avg\s*([\d.]+)⚽\s*\/\s*([\d.]+)/gi)];
+    if (profileMatches.length >= 2) {
+      r.homeAvgScored = parseFloat(profileMatches[0][1]);
+      r.homeAvgConceded = parseFloat(profileMatches[0][2]);
+      r.awayAvgScored = parseFloat(profileMatches[1][1]);
+      r.awayAvgConceded = parseFloat(profileMatches[1][2]);
+    }
+
+    m = text.match(/MONEYBAG[^\n]*→\s*OVER\s*([\d.]+)/i);
+    if (m && r.targetLine == null) r.targetLine = parseFloat(m[1]);
+
+    return r;
+  }
+
+  const FIELD_LABELS = [
+    ["targetLine", "Ziellinie"], ["goalsAtSignal", "Tore bei Signal"],
+    ["homeTeam", "Heim"], ["awayTeam", "Auswärts"],
+    ["homeScore", "Tore Heim"], ["awayScore", "Tore Auswärts"],
+    ["league", "Liga"], ["minute", "Minute"], ["minutesLeft", "Restminuten"],
+    ["htHome", "HT Heim"], ["htAway", "HT Auswärts"],
+    ["feedWR", "Feed Strike Rate %"],
+    ["sotHome", "SoT Heim"], ["sotAway", "SoT Auswärts"],
+    ["dangerHome", "Danger Att. Heim"], ["dangerAway", "Danger Att. Auswärts"],
+    ["attacksHome", "Attacks Heim"], ["attacksAway", "Attacks Auswärts"],
+    ["openOdds", "Opening 1X2"], ["liveOdds", "Live 1X2"],
+    ["ouLine1", "O/U Linie 1"], ["ouLine2", "O/U Linie 2"],
+    ["overOdds", "Over-Quote"], ["underOdds", "Under-Quote"],
+    ["oddsDropLabel", "Odds-Drop-Label"],
+    ["homeAvgScored", "Ø Tore Heim"], ["homeAvgConceded", "Ø Gegent. Heim"],
+    ["awayAvgScored", "Ø Tore Ausw."], ["awayAvgConceded", "Ø Gegent. Ausw."]
+  ];
+
+  // ---------------------------------------------------------------------
+  // Poisson helpers
+  // ---------------------------------------------------------------------
+  function factorial(n) { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; }
+  function poissonPMF(k, lambda) { return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k); }
+  function poissonCDF(kMax, lambda) { let s = 0; for (let i = 0; i <= kMax; i++) s += poissonPMF(i, lambda); return s; }
+  function poissonTailGE(k, lambda) { if (k <= 0) return 1; return Math.max(0, 1 - poissonCDF(k - 1, lambda)); }
+  function solveLambdaForTail(k, targetP) {
+    let lo = 0, hi = 20;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2;
+      if (poissonTailGE(k, mid) < targetP) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---------------------------------------------------------------------
+  // Analysis
+  // ---------------------------------------------------------------------
+  function computeAnalysis(f, calib) {
+    const goals = (f.homeScore || 0) + (f.awayScore || 0);
+    const targetLine = f.targetLine;
+    const minute = f.minute;
+    const minutesLeft = f.minutesLeft;
+
+    const alreadyOver = targetLine != null && goals > targetLine;
+
+    let lambdaWhole = null, pAtLeast1 = null, pAtLeast2 = null, rate = null;
+    if (minute > 0 && minutesLeft != null) {
+      rate = goals / minute;
+      lambdaWhole = rate * minutesLeft;
+      pAtLeast1 = 1 - Math.exp(-lambdaWhole);
+      pAtLeast2 = 1 - Math.exp(-lambdaWhole) - lambdaWhole * Math.exp(-lambdaWhole);
+    }
+
+    let modelBand = null, modelPoint = null, modelCell = null, thinSample = false;
+    if (targetLine === 2.5 && minute != null) {
+      const b = calib.o25Buckets.find(b => minute >= b.min && minute <= b.max);
+      if (b) { modelPoint = b.wr; modelBand = [Math.round((b.wr - 3) * 10) / 10, Math.round((b.wr + 3) * 10) / 10]; modelCell = b.label; }
+    } else if (targetLine === 3.5 && minute != null) {
+      const sot = (f.sotHome || 0) + (f.sotAway || 0);
+      const sotBucket = sot >= 9 ? "9+" : "<=8";
+      const cell = calib.o35Matrix.find(c => minute >= c.minMin && minute <= c.maxMin && c.sot === sotBucket);
+      if (cell) { modelPoint = cell.wr; modelBand = [Math.round((cell.wr - 3) * 10) / 10, Math.round((cell.wr + 3) * 10) / 10]; modelCell = cell.label + "/" + cell.sot; }
+    }
+
+    let market = null;
+    if (f.ouLine1 != null && f.ouLine2 != null && f.overOdds && f.underOdds && targetLine != null) {
+      const pOverRaw = 1 / f.overOdds, pUnderRaw = 1 / f.underOdds;
+      const pFair = pOverRaw / (pOverRaw + pUnderRaw);
+      const effectiveLine = (f.ouLine1 + f.ouLine2) / 2;
+      const restThreshold = effectiveLine - goals;
+      const kMarket = Math.floor(restThreshold) + 1;
+      if (kMarket >= 1) {
+        const lambdaMarket = solveLambdaForTail(kMarket, pFair);
+        const restTarget1 = targetLine - goals; // Ziel: Ziellinie selbst (z.B. 2.5 oder 3.5)
+        const kTarget1 = Math.floor(restTarget1) + 1;
+        const pTarget1 = poissonTailGE(kTarget1, lambdaMarket);
+        const restTarget2 = targetLine + 1 - goals; // fuer O3.5: zusaetzlich Ziellinie+1 (3.5 -> auch 4.5)
+        const kTarget2 = Math.floor(restTarget2) + 1;
+        const pTarget2 = poissonTailGE(kTarget2, lambdaMarket);
+        market = { pFair, effectiveLine, restThreshold, kMarket, lambdaMarket, pTarget1, pTarget2 };
+      }
+    }
+
+    // Whole-game Poisson fuer beide Ziellinien (targetLine und targetLine+1, v.a. relevant fuer O3.5-Tabelle)
+    let pWholeTarget1 = null, pWholeTarget2 = null;
+    if (lambdaWhole != null && targetLine != null) {
+      const restTarget1 = targetLine - goals;
+      const kTarget1 = Math.floor(restTarget1) + 1;
+      pWholeTarget1 = poissonTailGE(kTarget1, lambdaWhole);
+      const restTarget2 = targetLine + 1 - goals;
+      const kTarget2 = Math.floor(restTarget2) + 1;
+      pWholeTarget2 = poissonTailGE(kTarget2, lambdaWhole);
+    }
+
+    const flags = computeFlags(f);
+
+    // Divergenz-Check: Feed-WR vs. Modell/Markt
+    let divergenceFlag = null;
+    if (f.feedWR != null && modelPoint != null) {
+      const diff = Math.abs(f.feedWR - modelPoint);
+      if (diff > 10) divergenceFlag = `Feed-WR (${f.feedWR}%) und Modell-WR (${modelPoint}%) weichen um ${diff.toFixed(1)}pp ab (>10pp) — Konfidenz auf Niedrig prüfen.`;
+    }
+
+    return {
+      goals, alreadyOver, rate, lambdaWhole, pAtLeast1, pAtLeast2,
+      modelBand, modelPoint, modelCell, market, pWholeTarget1, pWholeTarget2,
+      flags, divergenceFlag
+    };
+  }
+
+  function computeFlags(f) {
+    const flags = [];
+    if (f.dangerHome != null && f.attacksHome != null && f.dangerHome > f.attacksHome) {
+      flags.push("Heim: Danger Attacks > Attacks — bekanntes Feed-Artefakt, nicht werten.");
+    }
+    if (f.dangerAway != null && f.attacksAway != null && f.dangerAway > f.attacksAway) {
+      flags.push("Auswärts: Danger Attacks > Attacks — bekanntes Feed-Artefakt, nicht werten.");
+    }
+    if (f.openOdds && f.liveOdds && f.oddsDropLabel) {
+      const names = ["Home", "Draw", "Away"];
+      const idx = names.indexOf(f.oddsDropLabel);
+      const moves = f.openOdds.map((o, i) => f.liveOdds[i] - o);
+      let biggestDropIdx = 0;
+      moves.forEach((mv, i) => { if (mv < moves[biggestDropIdx]) biggestDropIdx = i; });
+      if (idx !== biggestDropIdx || moves[idx] >= 0) {
+        flags.push(`Odds-Drop-Label vermutlich falsch: Feed zeigt "${f.oddsDropLabel}", tatsächlich größte Bewegung bei ${names[biggestDropIdx]} (${f.openOdds[biggestDropIdx]} → ${f.liveOdds[biggestDropIdx]}). Immer Rohwerte gegenrechnen.`);
+      }
+    }
+    if (f.liveOdds) {
+      const minOdd = Math.min(...f.liveOdds);
+      if (minOdd < 1.10) flags.push("Extremer Live-Favorit (<1.10) — Tempo-Drosselungsrisiko bei komfortabler Führung, bei Amateur/Reserve/U-Ligen schwächer gewichten.");
+    }
+    return flags;
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------
+  function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  function renderFieldGrid(f) {
+    const grid = document.getElementById("field-grid");
+    grid.innerHTML = "";
+    FIELD_LABELS.forEach(([key, label]) => {
+      const val = f[key];
+      const k = document.createElement("div");
+      k.className = "k"; k.textContent = label;
+      const v = document.createElement("div");
+      v.className = "v" + (val == null ? " missing" : "");
+      if (Array.isArray(val)) v.textContent = val.join(" · ");
+      else v.textContent = val == null ? "— nicht erkannt" : String(val);
+      grid.appendChild(k); grid.appendChild(v);
+    });
+  }
+
+  function fmtPct(p) { return p == null ? "—" : (p * 100).toFixed(1) + "%"; }
+
+  function renderResults(f, a) {
+    const body = document.getElementById("results-body");
+    let html = "";
+
+    if (a.alreadyOver) {
+      html += `<div class="flag" style="border-color:var(--green);"><strong>Ziel bereits erreicht (${a.goals} Tore &gt; ${f.targetLine}) — 100%.</strong></div>`;
+    }
+
+    html += `<h2 style="border:none;padding:0;margin-bottom:6px;">1. Poisson (Ganzes-Spiel-Tempo)</h2>`;
+    html += `<div class="field-grid" style="margin-bottom:10px;">
+      <div class="k">Torrate</div><div class="v">${a.rate != null ? a.rate.toFixed(4) + "/min" : "—"}</div>
+      <div class="k">λ (Restminuten)</div><div class="v">${a.lambdaWhole != null ? a.lambdaWhole.toFixed(2) : "—"}</div>
+      <div class="k">P(≥1 weiteres Tor)</div><div class="v">${fmtPct(a.pAtLeast1)}</div>
+      <div class="k">P(≥2 weitere Tore)</div><div class="v">${fmtPct(a.pAtLeast2)}</div>
+    </div>`;
+
+    html += `<h2 style="border:none;padding:0;margin-bottom:6px;">2. Bucket-/Matrix-Modell</h2>`;
+    if (a.modelBand) {
+      html += `<div class="band-label">Zelle: ${esc(a.modelCell)}</div>
+        <div class="band">${a.modelBand[0]}–${a.modelBand[1]}%</div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">Punktwert: ${a.modelPoint}%</div>`;
+    } else {
+      html += `<div class="flag">Keine passende Zelle gefunden — Minute oder Ziellinie prüfen.</div>`;
+    }
+
+    if (f.targetLine === 3.5) {
+      html += `<h2 style="border:none;padding:0;margin:14px 0 6px;">Über 3.5 / Über 4.5 (Pflicht-Tabelle)</h2>
+      <table class="mono">
+        <tr><th></th><th>Über ${f.targetLine}</th><th>Über ${f.targetLine + 1}</th></tr>
+        <tr><td>Poisson (Tempo)</td><td>${fmtPct(a.pWholeTarget1)}</td><td>${fmtPct(a.pWholeTarget2)}</td></tr>
+        ${a.market ? `<tr><td>Markt (3b)</td><td>${fmtPct(a.market.pTarget1)}</td><td>${fmtPct(a.market.pTarget2)}</td></tr>` : ""}
+      </table>`;
+    }
+
+    if (a.market) {
+      html += `<h2 style="border:none;padding:0;margin:14px 0 6px;">3b. Marktlinien-Umrechnung</h2>
+      <div class="field-grid">
+        <div class="k">Faire Markt-Wahrsch. (angezeigte Linie)</div><div class="v">${fmtPct(a.market.pFair)}</div>
+        <div class="k">Effektive Linie</div><div class="v">${a.market.effectiveLine}</div>
+        <div class="k">Implizites λ</div><div class="v">${a.market.lambdaMarket.toFixed(2)}</div>
+        <div class="k">Markt-Wahrsch. für Ziellinie ${f.targetLine}</div><div class="v">${fmtPct(a.market.pTarget1)}</div>
+      </div>`;
+    } else {
+      html += `<div class="flag" style="margin-top:10px;">Keine O/U-Quote im Feed erkannt — Schritt 3b nicht möglich.</div>`;
+    }
+
+    if (a.divergenceFlag) {
+      html += `<div class="flag" style="border-color:var(--red);margin-top:12px;">${esc(a.divergenceFlag)}</div>`;
+    }
+
+    if (a.flags.length) {
+      html += `<h2 style="border:none;padding:0;margin:14px 0 6px;">Daten-Flags</h2>`;
+      a.flags.forEach(fl => { html += `<div class="flag">${esc(fl)}</div>`; });
+    }
+
+    body.innerHTML = html;
+    document.getElementById("results-section").style.display = "block";
+    document.getElementById("edge-section").style.display = "block";
+    document.getElementById("log-section").style.display = "block";
+
+    populateProbSources(f, a);
+    updateLogLine(f, a);
+  }
+
+  function populateProbSources(f, a) {
+    const sel = document.getElementById("prob-source");
+    sel.innerHTML = "";
+    const opts = [];
+    if (a.modelBand) opts.push(["model", `Bucket/Matrix-Modell (${(a.modelBand[0] + a.modelBand[1]) / 2}%)`, (a.modelBand[0] + a.modelBand[1]) / 200]);
+    if (a.market) opts.push(["market", `Markt-Rückrechnung (${fmtPct(a.market.pTarget1)})`, a.market.pTarget1]);
+    if (a.pAtLeast1 != null) opts.push(["poisson", `Poisson Ganzes-Spiel (${fmtPct(a.pAtLeast1)})`, a.pAtLeast1]);
+    opts.forEach(([val, label]) => {
+      const o = document.createElement("option");
+      o.value = val; o.textContent = label;
+      sel.appendChild(o);
+    });
+    sel.dataset.values = JSON.stringify(Object.fromEntries(opts.map(o => [o[0], o[2]])));
+  }
+
+  function updateLogLine(f, a) {
+    const conf = document.getElementById("confidence-select").value;
+    const emp = document.getElementById("empfehlung-select").value;
+    const now = new Date().toISOString().slice(0, 10);
+    const strat = f.targetLine === 3.5 ? "MoneyBag O3.5" : "MoneyBag O2.5";
+    const teams = (f.homeTeam || "?") + " - " + (f.awayTeam || "?");
+    const cell = a.modelCell || "—";
+    const band = a.modelBand ? `${a.modelBand[0]}-${a.modelBand[1]}%` : "—";
+    const line = `LOG | ${now} | ${strat} | ${teams} | ${f.minute}' | Zelle:${cell} | Modell-WR:${band} | Konfidenz:${conf} | Empfehlung:${emp} | Ausgang:offen`;
+    document.getElementById("log-line-text").textContent = line;
+  }
+
+  // ---------------------------------------------------------------------
+  // Edge
+  // ---------------------------------------------------------------------
+  document.getElementById("edge-calc-btn").addEventListener("click", function () {
+    const sel = document.getElementById("prob-source");
+    const values = JSON.parse(sel.dataset.values || "{}");
+    const p = values[sel.value];
+    const quote = parseFloat(document.getElementById("live-quote-input").value);
+    const out = document.getElementById("edge-result");
+    if (!p || !quote || quote <= 1) {
+      out.innerHTML = `<div class="flag">Wahrscheinlichkeit oder Quote fehlt/ungültig.</div>`;
+      return;
+    }
+    const impliedOdds = 1 / p;
+    const edge = (p * quote - 1) * 100;
+    const edgeColor = edge > 0 ? "var(--green)" : "var(--red)";
+    out.innerHTML = `<div class="field-grid">
+      <div class="k">Modell-Wahrsch.</div><div class="v">${(p * 100).toFixed(1)}%</div>
+      <div class="k">Faire Quote (1/p)</div><div class="v">${impliedOdds.toFixed(2)}</div>
+      <div class="k">Live-Quote</div><div class="v">${quote.toFixed(2)}</div>
+      <div class="k">Edge</div><div class="v" style="color:${edgeColor};font-weight:700;">${edge > 0 ? "+" : ""}${edge.toFixed(1)}%</div>
+    </div>`;
+    document.getElementById("empfehlung-select").value = edge > 3 ? "Ja" : (edge < -3 ? "Nein" : "Coinflip");
+    if (ANALYSIS) updateLogLine(PARSED, ANALYSIS);
+  });
+
+  // ---------------------------------------------------------------------
+  // History (localStorage)
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+  // The Odds API: Quote automatisch holen (läuft nur bei eigenem Hosting,
+  // z.B. GitHub Pages; im claude.ai-Artifact sind externe Requests gesperrt)
+  // ---------------------------------------------------------------------
+  const ODDS_BASE = "https://api.the-odds-api.com/v4";
+  const oddsKeyEl = document.getElementById("odds-key");
+  const oddsSportEl = document.getElementById("odds-sport");
+  const oddsOut = document.getElementById("odds-result");
+  try {
+    oddsKeyEl.value = localStorage.getItem("mb_odds_key") || "";
+    const savedSport = localStorage.getItem("mb_odds_sport");
+    if (savedSport) oddsSportEl.innerHTML = `<option value="${esc(savedSport)}">${esc(savedSport)}</option>`;
+  } catch (e) {}
+  oddsKeyEl.addEventListener("change", function () {
+    try { localStorage.setItem("mb_odds_key", oddsKeyEl.value.trim()); } catch (e) {}
+  });
+  oddsSportEl.addEventListener("change", function () {
+    try { localStorage.setItem("mb_odds_sport", oddsSportEl.value); } catch (e) {}
+  });
+
+  function oddsMsg(t) { oddsOut.innerHTML = `<div class="flag">${t}</div>`; }
+  function normName(s) {
+    return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ");
+  }
+  function nameMatch(a, b) {
+    const nb = normName(b);
+    return normName(a).split(/\s+/).filter(t => t.length >= 4).some(t => nb.includes(t));
+  }
+  async function oddsGet(path, params) {
+    const key = oddsKeyEl.value.trim();
+    if (!key) throw new Error("API-Key fehlt.");
+    const url = ODDS_BASE + path + "?" + new URLSearchParams(Object.assign({ apiKey: key }, params));
+    const r = await fetch(url);
+    if (r.status === 401) throw new Error("API-Key ungültig.");
+    if (r.status === 429) throw new Error("Credit-Limit erreicht.");
+    if (!r.ok) throw new Error("Fehler " + r.status);
+    return { data: await r.json(), left: r.headers.get("x-requests-remaining") };
+  }
+
+  const oddsSportFilterEl = document.getElementById("odds-sport-filter");
+  let loadedSoccerLeagues = [];
+
+  function renderSportOptions(leagues, selectValue) {
+    oddsSportEl.innerHTML = leagues.map(s => `<option value="${esc(s.key)}">${esc(s.title)}</option>`).join("");
+    if (selectValue && leagues.some(s => s.key === selectValue)) oddsSportEl.value = selectValue;
+  }
+
+  document.getElementById("odds-sports-btn").addEventListener("click", async function () {
+    try {
+      oddsMsg("Lade Ligen …");
+      const { data } = await oddsGet("/sports", { all: "true" });
+      loadedSoccerLeagues = data
+        .filter(s => s.key.startsWith("soccer") && s.active)
+        .sort((a, b) => a.title.localeCompare(b.title));
+      const cur = oddsSportEl.value;
+
+      // Liga automatisch vorauswählen, wenn sie zum geparsten Signal passt
+      let auto = cur;
+      if (PARSED && PARSED.league) {
+        const hit = loadedSoccerLeagues.find(s => nameMatch(PARSED.league, s.title) || nameMatch(s.title, PARSED.league));
+        if (hit) auto = hit.key;
+      }
+
+      renderSportOptions(loadedSoccerLeagues, auto);
+      oddsSportFilterEl.disabled = false;
+      oddsSportFilterEl.value = "";
+      const autoNote = (auto && auto !== cur) ? " — Liga automatisch vorausgewählt." : "";
+      oddsMsg(loadedSoccerLeagues.length + " aktive Fußball-Ligen geladen." + autoNote);
+    } catch (e) {
+      oddsMsg(esc(e.message) + " (Bei Netzwerkfehler: Seite muss über GitHub Pages/https laufen, nicht im claude.ai-Artifact.)");
+    }
+  });
+
+  oddsSportFilterEl.addEventListener("input", function () {
+    const q = normName(oddsSportFilterEl.value);
+    const filtered = q ? loadedSoccerLeagues.filter(s => normName(s.title).includes(q)) : loadedSoccerLeagues;
+    const cur = oddsSportEl.value;
+    renderSportOptions(filtered, cur);
+  });
+
+  function showGameQuotes(game, fetchedLeft) {
+    const line = PARSED && PARSED.targetLine;
+    const rows = [];
+    const lines = new Set();
+    game.bookmakers.forEach(bm => bm.markets.forEach(m => {
+      if (m.key !== "totals") return;
+      m.outcomes.forEach(o => {
+        if (o.name !== "Over") return;
+        lines.add(o.point);
+        if (line != null && Math.abs(o.point - line) < 0.01) rows.push({ bm: bm.title, price: o.price });
+      });
+    }));
+    rows.sort((a, b) => b.price - a.price);
+    const live = new Date(game.commence_time) <= new Date() ? "läuft (live)" : "noch nicht gestartet";
+    let html = `<div class="mono" style="font-size:0.75rem;">${esc(game.home_team)} vs ${esc(game.away_team)} · ${live}</div>`;
+    if (!rows.length) {
+      html += `<div class="flag">Keine Over-${line}-Quote gefunden. Verfügbare Linien: ${[...lines].sort((a, b) => a - b).join(", ") || "keine"}</div>`;
+    } else {
+      html += `<table class="mono"><tr><th>Buchmacher</th><th>Over ${line}</th></tr>` +
+        rows.slice(0, 6).map(r => `<tr><td>${esc(r.bm)}</td><td>${r.price.toFixed(2)}</td></tr>`).join("") + `</table>`;
+      html += `<div class="warn-box" style="margin-top:8px;">Höchste Quote (${rows[0].price.toFixed(2)}) wurde eingetragen. Vor dem Tipp beim lizenzierten Anbieter gegenprüfen.</div>`;
+      document.getElementById("live-quote-input").value = rows[0].price.toFixed(2);
+      document.getElementById("edge-calc-btn").click();
+    }
+    if (fetchedLeft != null) html += `<div style="font-size:0.7rem;color:var(--text-dim);">Credits übrig: ${esc(fetchedLeft)}</div>`;
+    oddsOut.innerHTML = html;
+  }
+
+  document.getElementById("odds-fetch-btn").addEventListener("click", async function () {
+    if (!PARSED) { oddsMsg("Erst ein Signal parsen."); return; }
+    const sport = oddsSportEl.value;
+    if (!sport) { oddsMsg("Liga wählen (erst „Ligen laden“)."); return; }
+    try {
+      oddsMsg("Hole Quoten …");
+      const { data, left } = await oddsGet("/sports/" + encodeURIComponent(sport) + "/odds", {
+        regions: "eu", markets: "totals", oddsFormat: "decimal"
+      });
+      const hits = data.filter(g => nameMatch(PARSED.homeTeam, g.home_team) && nameMatch(PARSED.awayTeam, g.away_team));
+      if (hits.length === 1) { showGameQuotes(hits[0], left); return; }
+      if (!data.length) { oddsMsg("Keine Spiele in dieser Liga gelistet."); return; }
+      oddsOut.innerHTML = `<div class="flag">${hits.length ? "Mehrere Treffer" : "Kein sicherer Treffer"} — Spiel wählen:</div>`;
+      (hits.length ? hits : data).slice(0, 30).forEach(g => {
+        const b = document.createElement("button");
+        b.className = "secondary small";
+        b.style.margin = "0 6px 6px 0";
+        b.textContent = g.home_team + " – " + g.away_team;
+        b.addEventListener("click", function () { showGameQuotes(g, left); });
+        oddsOut.appendChild(b);
+      });
+    } catch (e) {
+      oddsMsg(esc(e.message) + " (Bei Netzwerkfehler: Seite muss über GitHub Pages/https laufen, nicht im claude.ai-Artifact.)");
+    }
+  });
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem("mb_history") || "[]"); }
+    catch (e) { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem("mb_history", JSON.stringify(h)); } catch (e) {}
+  }
+  function renderHistory() {
+    const hist = loadHistory();
+    const list = document.getElementById("history-list");
+    const statsRow = document.getElementById("stats-row");
+
+    const wins = hist.filter(h => h.outcome === "win").length;
+    const losses = hist.filter(h => h.outcome === "lose").length;
+    const open = hist.filter(h => h.outcome === "offen").length;
+    const rated = wins + losses;
+    const rate = rated > 0 ? ((wins / rated) * 100).toFixed(1) : "—";
+
+    statsRow.innerHTML = `
+      <div class="stat"><span class="num">${wins}</span><span class="lbl">Treffer</span></div>
+      <div class="stat"><span class="num">${losses}</span><span class="lbl">Miss</span></div>
+      <div class="stat"><span class="num">${open}</span><span class="lbl">Offen</span></div>
+      <div class="stat"><span class="num">${rate}${rated > 0 ? "%" : ""}</span><span class="lbl">Trefferquote</span></div>
+    `;
+
+    if (!hist.length) { list.innerHTML = `<div style="color:var(--text-dim);font-size:0.8rem;">Noch keine Einträge.</div>`; return; }
+
+    list.innerHTML = "";
+    hist.slice().reverse().forEach((h, revIdx) => {
+      const idx = hist.length - 1 - revIdx;
+      const div = document.createElement("div");
+      div.className = "hist-item";
+      const outcomeClass = h.outcome === "win" ? "hist-outcome-win" : h.outcome === "lose" ? "hist-outcome-lose" : "hist-outcome-open";
+      const outcomeLabel = h.outcome === "win" ? "Win" : h.outcome === "lose" ? "Lose" : "Offen";
+      div.innerHTML = `
+        <div>
+          <div class="mono" style="font-size:0.72rem;">${esc(h.teams)}</div>
+          <div class="hist-meta">${esc(h.date)} · ${esc(h.strategy)} · <span class="${outcomeClass}">${outcomeLabel}</span></div>
+        </div>
+        <div class="row">
+          ${h.outcome === "offen" ? `<button class="win small" data-idx="${idx}" data-action="win">Win</button>
+          <button class="lose small" data-idx="${idx}" data-action="lose">Lose</button>` : `<button class="secondary small" data-idx="${idx}" data-action="reset">↺</button>`}
+        </div>
+      `;
+      list.appendChild(div);
+    });
+
+    list.querySelectorAll("button[data-idx]").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const i = parseInt(this.dataset.idx, 10);
+        const action = this.dataset.action;
+        const h = loadHistory();
+        h[i].outcome = action === "reset" ? "offen" : action;
+        saveHistory(h);
+        renderHistory();
+      });
+    });
+  }
+
+  document.getElementById("save-log-btn").addEventListener("click", function () {
+    if (!PARSED || !ANALYSIS) return;
+    const hist = loadHistory();
+    hist.push({
+      date: new Date().toISOString().slice(0, 10),
+      strategy: PARSED.targetLine === 3.5 ? "O3.5" : "O2.5",
+      teams: (PARSED.homeTeam || "?") + " - " + (PARSED.awayTeam || "?"),
+      minute: PARSED.minute,
+      logLine: document.getElementById("log-line-text").textContent,
+      outcome: "offen"
+    });
+    saveHistory(hist);
+    renderHistory();
+  });
+
+  document.getElementById("clear-history-btn").addEventListener("click", function () {
+    if (confirm("Gesamte Historie löschen?")) { saveHistory([]); renderHistory(); }
+  });
+
+  document.getElementById("copy-log-btn").addEventListener("click", function () {
+    const text = document.getElementById("log-line-text").textContent;
+    const btn = document.getElementById("copy-log-btn");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        const old = btn.textContent;
+        btn.textContent = "Kopiert!";
+        setTimeout(function () { btn.textContent = old; }, 1200);
+      }).catch(function () { alert("Kopieren fehlgeschlagen — Text manuell markieren."); });
+    } else {
+      alert("Clipboard-Zugriff nicht verfügbar — Text manuell markieren.");
+    }
+  });
+
+  ["confidence-select", "empfehlung-select"].forEach(id => {
+    document.getElementById(id).addEventListener("change", function () {
+      if (PARSED && ANALYSIS) updateLogLine(PARSED, ANALYSIS);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Settings panel
+  // ---------------------------------------------------------------------
+  function renderCalibTables() {
+    const o25 = document.getElementById("o25-table");
+    o25.innerHTML = `<tr><th>Bucket</th><th>Min</th><th>Max</th><th>WR %</th></tr>` +
+      CALIB.o25Buckets.map((b, i) => `<tr>
+        <td>${esc(b.label)}</td>
+        <td><input type="number" data-kind="o25" data-idx="${i}" data-field="min" value="${b.min}" style="width:50px;"></td>
+        <td><input type="number" data-kind="o25" data-idx="${i}" data-field="max" value="${b.max}" style="width:50px;"></td>
+        <td><input type="number" step="0.1" data-kind="o25" data-idx="${i}" data-field="wr" value="${b.wr}" style="width:60px;"></td>
+      </tr>`).join("");
+
+    const o35 = document.getElementById("o35-table");
+    o35.innerHTML = `<tr><th>Bucket</th><th>SoT</th><th>WR %</th></tr>` +
+      CALIB.o35Matrix.map((c, i) => `<tr>
+        <td>${esc(c.label)}</td>
+        <td>${esc(c.sot)}</td>
+        <td><input type="number" step="0.1" data-kind="o35" data-idx="${i}" data-field="wr" value="${c.wr}" style="width:60px;"></td>
+      </tr>`).join("");
+  }
+
+  document.getElementById("save-calib-btn").addEventListener("click", function () {
+    document.querySelectorAll('input[data-kind="o25"]').forEach(inp => {
+      const idx = parseInt(inp.dataset.idx, 10), field = inp.dataset.field;
+      CALIB.o25Buckets[idx][field] = field === "wr" ? parseFloat(inp.value) : parseInt(inp.value, 10);
+    });
+    document.querySelectorAll('input[data-kind="o35"]').forEach(inp => {
+      const idx = parseInt(inp.dataset.idx, 10), field = inp.dataset.field;
+      CALIB.o35Matrix[idx][field] = parseFloat(inp.value);
+    });
+    saveCalib(CALIB);
+    alert("Kalibrierung gespeichert.");
+  });
+
+  document.getElementById("reset-calib-btn").addEventListener("click", function () {
+    if (!confirm("Auf Standardwerte zurücksetzen?")) return;
+    CALIB = JSON.parse(JSON.stringify(DEFAULT_CALIB));
+    saveCalib(CALIB);
+    renderCalibTables();
+  });
+
+  // ---------------------------------------------------------------------
+  // Wire-up
+  // ---------------------------------------------------------------------
+  document.getElementById("parse-btn").addEventListener("click", function () {
+    const text = document.getElementById("raw-input").value;
+    if (!text.trim()) return;
+    PARSED = parseSignal(text);
+    renderFieldGrid(PARSED);
+    document.getElementById("parsed-section").style.display = "block";
+    document.getElementById("results-section").style.display = "none";
+    document.getElementById("edge-section").style.display = "none";
+    document.getElementById("log-section").style.display = "none";
+    document.getElementById("parsed-section").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  document.getElementById("clear-btn").addEventListener("click", function () {
+    document.getElementById("raw-input").value = "";
+    document.getElementById("parsed-section").style.display = "none";
+    document.getElementById("results-section").style.display = "none";
+    document.getElementById("edge-section").style.display = "none";
+    document.getElementById("log-section").style.display = "none";
+  });
+
+  document.getElementById("compute-btn").addEventListener("click", function () {
+    if (!PARSED) return;
+    ANALYSIS = computeAnalysis(PARSED, CALIB);
+    renderResults(PARSED, ANALYSIS);
+    document.getElementById("results-section").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  renderCalibTables();
+  renderHistory();
+})();
+</script>
+</body>
+</html>

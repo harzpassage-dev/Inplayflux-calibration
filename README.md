@@ -21,6 +21,9 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
   from [The Odds API](https://the-odds-api.com/) for a given league, used to
   cross-check the Mindestquote against real market odds. Requires
   `ODDS_API_KEY` as an environment variable (never hardcode it).
+- `worker/` – Cloudflare Worker that gates `tools/moneybag-analyst.html`
+  behind time-limited access tokens (24h trial links, manually extended
+  after payment). See `worker/README.md` for deploy and admin usage.
 
 ## Usage
 
