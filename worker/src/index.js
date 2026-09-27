@@ -1,5 +1,6 @@
 const COOKIE_NAME = "mb_access";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const LATEST_SIGNAL_KEY = "telegram:latest_signal";
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -53,6 +54,29 @@ async function putAccess(env, token, record) {
   // still be looked up and extended after manual payment.
   const ttlSeconds = Math.max(60, Math.floor((record.expiresAt - Date.now()) / 1000) + 30 * 24 * 60 * 60);
   await env.ACCESS_KV.put(token, JSON.stringify(record), { expirationTtl: ttlSeconds });
+}
+
+function looksLikeSignalCard(text) {
+  if (!text) return false;
+  // Loose heuristic: signal cards always name a league (trophy emoji) and a
+  // target market, and use the "min' ... min left ... HT x-y" time line.
+  // This filters out ordinary chat messages in the same group/channel.
+  const hasLeague = /🏆/.test(text);
+  const hasTarget = /Target:/i.test(text);
+  const hasTime = /\d+'\s*[\s·•]+~?\d+\s*min left/i.test(text);
+  return hasLeague && hasTarget && hasTime;
+}
+
+async function resolveAccess(request, env) {
+  const cookies = parseCookies(request);
+  const url = new URL(request.url);
+  const queryToken = url.searchParams.get("t");
+  const token = queryToken || cookies[COOKIE_NAME];
+  if (!token) return { ok: false, reason: "missing" };
+  const access = await getAccess(env, token);
+  if (!access) return { ok: false, reason: "invalid" };
+  if (access.expiresAt < Date.now()) return { ok: false, reason: "expired" };
+  return { ok: true, token, queryToken, access };
 }
 
 function deniedPage({ reason }) {
@@ -242,31 +266,51 @@ export default {
       return jsonResponse(rows);
     }
 
+    // --- Telegram webhook: receives every new message from the bot's chat.
+    // No access-token check here - authenticity is verified via the secret
+    // Telegram sends back, set once when registering the webhook.
+    if (url.pathname === "/telegram-webhook" && request.method === "POST") {
+      const secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+      if (!env.TELEGRAM_WEBHOOK_SECRET || secret !== env.TELEGRAM_WEBHOOK_SECRET) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      const update = await request.json().catch(() => null);
+      const msg = update && (update.channel_post || update.message || update.edited_channel_post);
+      const text = msg && msg.text;
+      if (looksLikeSignalCard(text)) {
+        await env.ACCESS_KV.put(
+          LATEST_SIGNAL_KEY,
+          JSON.stringify({ text, receivedAt: Date.now() })
+        );
+      }
+      // Telegram just needs a fast 200 OK; the content doesn't matter.
+      return new Response("ok", { status: 200 });
+    }
+
+    // --- Latest-signal lookup used by the tool's "Aus Telegram importieren"
+    // button. Same access gate as the main page.
+    if (url.pathname === "/api/latest-signal" && request.method === "GET") {
+      const resolved = await resolveAccess(request, env);
+      if (!resolved.ok) return jsonResponse({ error: resolved.reason }, 403);
+      const raw = await env.ACCESS_KV.get(LATEST_SIGNAL_KEY);
+      if (!raw) return jsonResponse({ error: "none" }, 404);
+      return jsonResponse(JSON.parse(raw));
+    }
+
     // --- Public access-gated page ---
-    const cookies = parseCookies(request);
-    const queryToken = url.searchParams.get("t");
-    const token = queryToken || cookies[COOKIE_NAME];
-
-    if (!token) {
-      return deniedPage({ reason: "missing" });
-    }
-
-    const access = await getAccess(env, token);
-    if (!access) {
-      return deniedPage({ reason: "invalid" });
-    }
-    if (access.expiresAt < Date.now()) {
-      return deniedPage({ reason: "expired" });
+    const resolved = await resolveAccess(request, env);
+    if (!resolved.ok) {
+      return deniedPage({ reason: resolved.reason });
     }
 
     // Valid access. If the token came from the URL, set a cookie and
     // redirect to a clean URL so the token doesn't linger in the address bar.
-    if (queryToken) {
-      const maxAge = Math.floor((access.expiresAt - Date.now()) / 1000);
+    if (resolved.queryToken) {
+      const maxAge = Math.floor((resolved.access.expiresAt - Date.now()) / 1000);
       const headers = new Headers({ Location: url.origin + "/" });
       headers.append(
         "Set-Cookie",
-        `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure; HttpOnly`
+        `${COOKIE_NAME}=${encodeURIComponent(resolved.token)}; Path=/; Max-Age=${maxAge}; SameSite=Lax; Secure; HttpOnly`
       );
       return new Response(null, { status: 302, headers });
     }
