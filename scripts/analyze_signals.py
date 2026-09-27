@@ -6,6 +6,7 @@ requires so that wins cover losses.
 
 Usage:
     python3 scripts/analyze_signals.py data/inplayflux_sinyaller_2026-09-20.csv
+    python3 scripts/analyze_signals.py data/*.csv   # combine multiple exports
 """
 import csv
 import sys
@@ -58,11 +59,14 @@ def report_by_key(rows, key_fn, min_n=1):
     return {k: v for k, v in grouped.items() if len(v) >= min_n}
 
 
-def main(path):
-    with open(path, encoding="utf-8-sig") as f:
-        rows = list(csv.DictReader(f))
+def main(paths):
+    rows = []
+    for path in paths:
+        with open(path, encoding="utf-8-sig") as f:
+            rows.extend(csv.DictReader(f))
 
     decided = [is_won(r) for r in rows if is_won(r) is not None]
+    print(f"Files: {', '.join(paths)}")
     print(f"Signals: {len(rows)}, decided: {len(decided)}")
     print(f"Overall win rate: {win_rate(decided):.1%}\n")
 
@@ -172,4 +176,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "data/inplayflux_sinyaller_2026-09-20.csv")
+    main(sys.argv[1:] or ["data/inplayflux_sinyaller_2026-09-20.csv"])

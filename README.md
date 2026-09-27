@@ -29,6 +29,7 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
 
 ```bash
 python3 scripts/analyze_signals.py data/inplayflux_sinyaller_2026-09-20.csv
+python3 scripts/analyze_signals.py data/*.csv  # mehrere Exporte kombiniert auswerten
 
 export ODDS_API_KEY="dein_key"
 python3 scripts/fetch_odds.py --sports                       # Ligen auflisten (0 Credits)
