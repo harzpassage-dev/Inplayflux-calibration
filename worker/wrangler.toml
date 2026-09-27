@@ -5,10 +5,15 @@ compatibility_date = "2026-09-01"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# Without this, Cloudflare serves matching static assets straight from the
+# edge (even /index.html) without ever invoking fetch() below - which would
+# skip the access-token check entirely. This forces the Worker to run first
+# for every request.
+run_worker_first = true
 
 [[kv_namespaces]]
 binding = "ACCESS_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "4adee62e97ef429cac51cc3019d48a18"
 
 # Set with: npx wrangler secret put ADMIN_PASSWORD
 # Never commit the actual password.

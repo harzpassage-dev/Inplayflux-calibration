@@ -271,6 +271,9 @@ export default {
       return new Response(null, { status: 302, headers });
     }
 
-    return env.ASSETS.fetch(new Request(url.origin + "/index.html", request));
+    // Fetch "/" rather than "/index.html" directly - the asset server
+    // 307-redirects the latter to the former (canonical URL), which would
+    // just bounce the client instead of serving the page.
+    return env.ASSETS.fetch(request);
   },
 };
