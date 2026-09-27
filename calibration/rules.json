@@ -3,28 +3,29 @@
     "data/inplayflux_sinyaller_2026-09-20.csv",
     "data/inplayflux_sinyaller_2026-09-27.csv"
   ],
-  "generated_from_signals": 10000,
+  "generated_from_signals": 7928,
+  "dedup_note": "The two exports are rolling windows and overlap heavily by date range (2072 of 5000 rows in the 09-27 file are the exact same signals already in the 09-20 file). scripts/analyze_signals.py now dedupes on (date, match, strategy, signal minute) before combining files. An earlier version of this file used the raw 10000-row sum, which double-counted ~2072 signals - all numbers below are the corrected, deduped ones.",
   "breakeven_odds_formula": "mindestquote = 1 / win_rate  (decimal odds needed so that, at this win rate, wins on average cover losses; anything below this quote runs at a loss even if the win rate holds)",
   "strategies": {
     "MoneyBag 2-0/0-2 -> Over 2.5": {
       "current_rule": "dakika <= 73 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
-      "sample_size": 4501,
-      "win_rate": 0.757,
+      "sample_size": 3493,
+      "win_rate": 0.756,
       "breakeven_odds": 1.32,
       "avg_over_odds_observed": 1.91,
       "odds_margin": 0.59,
       "recommended_rule": "dakika <= 67 | dakika >= 55 | paraCuvali = 1 | toplamGol = 2",
-      "note": "Confirmed across two independent weekly exports (n=4501 combined): win rate holds ~65-81% for minutes 55-67, then drops sharply at 68-70 (65%, 41%, 51%) before a noisy late bounce. Tightening the upper cutoff trades volume for precision."
+      "note": "Confirmed across two overlapping-but-deduped exports (n=3493 unique signals): win rate holds well through minute 67 (mostly 65-80%), then drops at 68-70 (69%, 44%, 53%) before a noisy late bounce. Tightening the upper cutoff trades volume for precision."
     },
     "MoneyBag + 3 Goals -> Over 3.5": {
       "current_rule": "dakika <= 71 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
-      "sample_size": 3591,
-      "win_rate": 0.695,
-      "breakeven_odds": 1.44,
+      "sample_size": 2811,
+      "win_rate": 0.700,
+      "breakeven_odds": 1.43,
       "avg_over_odds_observed": 1.90,
-      "odds_margin": 0.46,
+      "odds_margin": 0.47,
       "recommended_rule": "dakika <= 63 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
-      "note": "Confirmed across two exports (n=3591 combined): minutes 60-63 solid (67-75%), then a clear dip at 64-65 (~60%), a partial recovery at 66-67, then decay again through 71. <=63 is the conservative cutoff; the 66-67 recovery is noisier and not worth complicating the rule for."
+      "note": "Minutes 60-63 solid (67-77%), then a dip at 64-65 (~63%), partial recovery at 66-67, decay again through 71. <=63 is the conservative cutoff; the 66-67 recovery is noisier and not worth complicating the rule for."
     },
     "Over 2.5 Odd Filter": {
       "current_rule": "dakika <= 73 | dakika >= 55 | ouOverOdds >= 1.7 | paraCuvali = 1 | toplamGol = 2",
@@ -34,92 +35,92 @@
       "avg_over_odds_observed": 1.91,
       "odds_margin": 0.57,
       "recommended_rule": "dakika <= 67 | dakika >= 55 | ouOverOdds >= 1.7 | paraCuvali = 1 | toplamGol = 2",
-      "note": "New variant introduced 2026-09-27 (adds a minimum Over-odds filter on top of the base Over 2.5 rule). Performance and time-decay pattern are statistically indistinguishable from the base 'MoneyBag 2-0/0-2 -> Over 2.5' strategy, so the same dakika<=67 cutoff applies. Only one week of data so far (n=696); re-check once a second export confirms the pattern."
+      "note": "New variant, first seen in the 2026-09-27 export only (no overlap with 09-20, so n is unaffected by the dedup fix). Performance and time-decay pattern are statistically indistinguishable from the base 'MoneyBag 2-0/0-2 -> Over 2.5' strategy, so the same dakika<=67 cutoff applies. Only one week of data so far; re-check once a second export confirms the pattern."
     },
     "Over 0.5 Value": {
       "current_rule": "dakika < 80 | dakika > 60 | toplamGol = 0 | value = 1",
-      "sample_size": 416,
+      "sample_size": 327,
       "win_rate": 0.719,
       "breakeven_odds": 1.39,
       "avg_over_odds_observed": 1.91,
       "odds_margin": 0.52,
       "recommended_rule": "no change recommended yet",
-      "note": "Signals fire almost exclusively at minute 61-62 despite the rule allowing up to 79'; minute 61 (72.5%, n=345) slightly outperforms 62 (67.2%, n=64). Too little data past minute 62 to judge whether the wide 61-79 window is actually a risk - most of it appears unused in practice. Revisit once more late-minute signals accumulate."
+      "note": "Signals fire almost exclusively at minute 61-62 despite the rule allowing up to 79'; minute 61 (72.0%) slightly outperforms 62 (69.2%). Too little data past minute 62 to judge whether the wide 61-79 window is actually a risk - most of it appears unused in practice."
     },
     "MoneyBag 0-0 -> Goal": {
       "current_rule": "dakika <= 71 | dakika >= 61 | paraCuvali = 1 | toplamGol = 0",
-      "sample_size": 199,
-      "win_rate": 0.734,
+      "sample_size": 150,
+      "win_rate": 0.733,
       "breakeven_odds": 1.36,
       "avg_over_odds_observed": 1.91,
       "odds_margin": 0.55,
       "recommended_rule": "no change recommended yet",
-      "note": "Same pattern as 'Over 0.5 Value': signals cluster at minute 61-62 even though the rule allows up to 71'. Minute 61 (77.2%, n=123) outperforms minute 62 (66.7%, n=69). No signals observed yet in the 63-71 range to evaluate - can't confirm or rule out a late-minute drop with current data."
+      "note": "Same pattern as 'Over 0.5 Value': signals cluster at minute 61-62. Minute 61 (75.5%, n=94) outperforms minute 62 (68.6%, n=51). No signals observed yet in the 63-71 range to evaluate."
     },
     "Over 1.5": {
       "current_rule": "dakika <= 75 | dakika >= 60 | paraCuvali = 1 | son5iki >= 60 | toplamGol = 1 | toplamSutTotal >= 15 | ustAdayi = 1",
-      "sample_size": 179,
-      "win_rate": 0.726,
-      "breakeven_odds": 1.38,
+      "sample_size": 138,
+      "win_rate": 0.739,
+      "breakeven_odds": 1.35,
       "avg_over_odds_observed": 1.91,
-      "odds_margin": 0.53,
+      "odds_margin": 0.56,
       "recommended_rule": "no change recommended yet",
-      "note": "Solid win rate (78-85%) at minutes 60-61 (n=96, n=20), a single low outlier at 63 (60%, n=10, too small to act on). Almost no signals fire past minute 63 despite the rule's 75' ceiling - the other filters (toplamSutTotal>=15, son5iki>=60) apparently already gate out late signals in practice."
+      "note": "Strong at minute 60-64 (76.7%, n=103), thinner and weaker at 65-69 (63.2%, n=19) and >=70 (68.8%, n=16) - directionally consistent with the main strategies' time decay but too small to act on here."
     },
     "Over 1.5 cloude": {
       "current_rule": "dakika <= 75 | dakika >= 60 | paraCuvali = 1 | rx >= 300 | son5iki >= 60 | toplamGol = 1 | toplamSutTotal >= 15 | ustAdayi = 1",
-      "sample_size": 171,
-      "win_rate": 0.725,
-      "breakeven_odds": 1.38,
-      "avg_over_odds_observed": 1.85,
-      "odds_margin": 0.47,
+      "sample_size": 131,
+      "win_rate": 0.740,
+      "breakeven_odds": 1.35,
+      "avg_over_odds_observed": 1.84,
+      "odds_margin": 0.49,
       "recommended_rule": "no change recommended yet",
-      "note": "Same shape as 'Over 1.5': strong at 60-62 (74-80%), thin data beyond that. The added rx>=300 filter doesn't show a clear effect yet given the small sample."
+      "note": "Same shape as 'Over 1.5': 78.0% at minute 60-64 (n=91), dropping to 68.2%/61.1% for 65-69/>=70 (n=22/18). Consistent with time decay but sample too small to change the rule confidently."
     },
     "Over 1.5 claude 1.änderung": {
       "current_rule": "dakika <= 75 | dakika >= 60 | paraCuvali = 1 | rx >= 300 | son5iki >= 60 | toplamGol = 1 | toplamSutTotal >= 10 | ustAdayi = 1",
-      "sample_size": 193,
-      "win_rate": 0.746,
-      "breakeven_odds": 1.34,
+      "sample_size": 132,
+      "win_rate": 0.765,
+      "breakeven_odds": 1.31,
       "avg_over_odds_observed": 1.83,
-      "odds_margin": 0.49,
+      "odds_margin": 0.52,
       "recommended_rule": "no change recommended yet",
-      "note": "Best-performing of the three Over 1.5 variants so far (74.6% vs 72.5-72.6%), likely just the lower toplamSutTotal>=10 threshold letting in a few more good signals. Sample still small (n=193, split across 8 minute values with <35 each) - not yet enough to confidently prefer this variant over the other two."
+      "note": "Best-performing of the three Over 1.5 variants (76.5% vs 73.9-74.0%), and unlike the other two it holds up at 65-69' too (78.3%, n=23). Still a small sample - worth watching as the strongest of the three, not yet enough to retire the others."
     },
     "HT over 0.5": {
       "current_rule": "dakika <= 20 | dakika >= 10 | maviBomba = 1 | rx <= 178 | s5 >= 2 | toplamGol <= 1 | toplamSut >= 3 | vanPersie = 1",
-      "sample_size": 44,
-      "win_rate": 0.568,
-      "breakeven_odds": 1.76,
+      "sample_size": 40,
+      "win_rate": 0.575,
+      "breakeven_odds": 1.74,
       "avg_over_odds_observed": 1.94,
-      "odds_margin": 0.18,
-      "recommended_rule": "review or retire",
-      "note": "Confirmed weak across both weekly exports (57.5% then 56.8%, combined 56.8% n=44) - clearly underperforms every other strategy (70-81%) and has the thinnest odds margin (+0.18). Two independent samples agreeing is a stronger signal than either alone: this rule likely needs a real redesign (different rx/toplamSut thresholds), not just more data."
+      "odds_margin": 0.20,
+      "recommended_rule": "dakika <= 20 | dakika >= 10 | maviBomba = 1 | rx <= 178 | s5 >= 3 | toplamGol <= 1 | toplamSut >= 3 | vanPersie = 1",
+      "note": "IMPORTANT CORRECTION: an earlier version of this report claimed 'confirmed weak in two independent weekly samples' - that was wrong, caused by a dedup bug (see dedup_note). The 09-27 export added zero new HT over 0.5 signals; there is only ever been this one set of 40. Re-analyzed the 40 signals' own feature values (rx, shots, last-5min-shots) for a better sub-rule: raising the 's5' (last-5min-shots) threshold from >=2 to >=3 lifts win rate from 57.5% (n=40) to 66.7% (n=18) - the largest subset that shows a real improvement (rx-only thresholds only look good at n<15, likely noise). This is a hypothesis from a single 40-signal batch, NOT a validated fix - treat it as 'try this, re-check after the next 1-2 exports', not as solved. If s5>=3 doesn't hold up, the strategy still needs a harder look (different features, or retire it)."
     }
   },
   "breakeven_odds_by_signal_minute": {
-    "note": "Mindestquote per signal-minute bucket, overall across strategies, combined across both 2026-09-20 and 2026-09-27 exports (n=10000).",
+    "note": "Mindestquote per signal-minute bucket, overall across strategies, both exports combined and deduped (n=7928).",
     "buckets": {
-      "<57": {"win_rate": 0.771, "breakeven_odds": 1.30},
-      "57-59": {"win_rate": 0.750, "breakeven_odds": 1.33},
-      "60-64": {"win_rate": 0.712, "breakeven_odds": 1.41},
-      "65-69": {"win_rate": 0.656, "breakeven_odds": 1.52},
-      ">=70": {"win_rate": 0.606, "breakeven_odds": 1.65}
+      "<57": {"win_rate": 0.770, "breakeven_odds": 1.30},
+      "57-59": {"win_rate": 0.748, "breakeven_odds": 1.34},
+      "60-64": {"win_rate": 0.724, "breakeven_odds": 1.38},
+      "65-69": {"win_rate": 0.654, "breakeven_odds": 1.53},
+      ">=70": {"win_rate": 0.617, "breakeven_odds": 1.62}
     }
   },
   "breakeven_odds_by_strategy_and_signal_minute": {
-    "note": "Mindestquote per strategy x signal-minute bucket (n>=15), combined across both exports. avg_over_odds is the observed average Over-odds for that combination. margin = avg_over_odds - breakeven_odds; negative would mean the strategy already runs at a loss in that time window at typically available odds.",
+    "note": "Mindestquote per strategy x signal-minute bucket (n>=15), both exports combined and deduped. avg_over_odds is the observed average Over-odds for that combination. margin = avg_over_odds - breakeven_odds.",
     "MoneyBag 2-0/0-2 -> Over 2.5": {
-      "<57":   {"n": 3310, "win_rate": 0.778, "breakeven_odds": 1.29, "avg_over_odds": 1.91, "margin": 0.62},
-      "57-59": {"n": 320,  "win_rate": 0.750, "breakeven_odds": 1.33, "avg_over_odds": 1.91, "margin": 0.58},
-      "60-64": {"n": 403,  "win_rate": 0.712, "breakeven_odds": 1.40, "avg_over_odds": 1.93, "margin": 0.53},
-      "65-69": {"n": 292,  "win_rate": 0.668, "breakeven_odds": 1.50, "avg_over_odds": 1.89, "margin": 0.39},
-      ">=70":  {"n": 176,  "win_rate": 0.636, "breakeven_odds": 1.57, "avg_over_odds": 1.89, "margin": 0.32}
+      "<57":   {"n": 2571, "win_rate": 0.776, "breakeven_odds": 1.29, "avg_over_odds": 1.91, "margin": 0.62},
+      "57-59": {"n": 249,  "win_rate": 0.747, "breakeven_odds": 1.34, "avg_over_odds": 1.91, "margin": 0.57},
+      "60-64": {"n": 306,  "win_rate": 0.725, "breakeven_odds": 1.38, "avg_over_odds": 1.93, "margin": 0.55},
+      "65-69": {"n": 229,  "win_rate": 0.655, "breakeven_odds": 1.53, "avg_over_odds": 1.90, "margin": 0.37},
+      ">=70":  {"n": 138,  "win_rate": 0.638, "breakeven_odds": 1.57, "avg_over_odds": 1.89, "margin": 0.32}
     },
     "MoneyBag + 3 Goals -> Over 3.5": {
-      "60-64": {"n": 2844, "win_rate": 0.714, "breakeven_odds": 1.40, "avg_over_odds": 1.90, "margin": 0.50},
-      "65-69": {"n": 548,  "win_rate": 0.630, "breakeven_odds": 1.59, "avg_over_odds": 1.89, "margin": 0.30},
-      ">=70":  {"n": 199,  "win_rate": 0.598, "breakeven_odds": 1.67, "avg_over_odds": 1.89, "margin": 0.22}
+      "60-64": {"n": 2243, "win_rate": 0.719, "breakeven_odds": 1.39, "avg_over_odds": 1.90, "margin": 0.51},
+      "65-69": {"n": 418,  "win_rate": 0.634, "breakeven_odds": 1.58, "avg_over_odds": 1.89, "margin": 0.31},
+      ">=70":  {"n": 150,  "win_rate": 0.593, "breakeven_odds": 1.69, "avg_over_odds": 1.90, "margin": 0.21}
     },
     "Over 2.5 Odd Filter": {
       "<57":   {"n": 506, "win_rate": 0.759, "breakeven_odds": 1.32, "avg_over_odds": 1.91, "margin": 0.59},
@@ -129,11 +130,11 @@
       ">=70":  {"n": 34,  "win_rate": 0.618, "breakeven_odds": 1.62, "avg_over_odds": 1.89, "margin": 0.27}
     },
     "HT over 0.5": {
-      "<57": {"n": 44, "win_rate": 0.568, "breakeven_odds": 1.76, "avg_over_odds": 1.94, "margin": 0.18}
+      "<57": {"n": 40, "win_rate": 0.575, "breakeven_odds": 1.74, "avg_over_odds": 1.94, "margin": 0.20}
     }
   },
   "tool_calibration": {
-    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed from data/inplayflux_sinyaller_2026-09-20.csv (5000 signals) to replace the tool's previous 30.08.-14.09.2026 window. Not yet re-synced to the combined 2-week dataset - the tool's minute buckets differ from the ones used above, so re-syncing needs a dedicated pass rather than a copy-paste.",
+    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed from data/inplayflux_sinyaller_2026-09-20.csv (5000 signals) to replace the tool's previous 30.08.-14.09.2026 window. Not yet re-synced to the deduped 2-export dataset - the tool's minute buckets differ from the ones used above, so re-syncing needs a dedicated pass rather than a copy-paste.",
     "o25Buckets": [
       { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.7, "n": 1512 },
       { "min": 56, "max": 60, "label": "56-60'", "wr": 76.5, "n": 544 },
@@ -155,9 +156,9 @@
     ]
   },
   "radar_x_score": {
-    "note": "No strong monotonic relationship with win rate (71-75% across all buckets from <200 to >=450 in the 2026-09-27 export, consistent with 2026-09-20). Not currently a reliable standalone filter."
+    "note": "No strong monotonic relationship with win rate (72-75% across all buckets from <200 to >=450 in the deduped combined dataset). Not currently a reliable standalone filter for the main strategies."
   },
   "market_drop_pct": {
-    "note": "Fairly flat to slightly declining (57-74%) across 0-30% drop in the 2026-09-27 export, with a dip at 20-30% (56.6%, n=83). Direction is inconsistent with the 2026-09-20 export (which saw a jump at >=30%) - too noisy on small samples to draw a conclusion yet."
+    "note": "Mostly flat (71-74%) up to 20% drop, then a dip at 20-30% (66.1%, n=183), then back up at >=30% (72.8%, n=254). No clean monotonic pattern - likely too noisy on these sample sizes to act on yet."
   }
 }

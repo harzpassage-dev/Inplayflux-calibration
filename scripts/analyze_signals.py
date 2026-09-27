@@ -59,11 +59,38 @@ def report_by_key(rows, key_fn, min_n=1):
     return {k: v for k, v in grouped.items() if len(v) >= min_n}
 
 
-def main(paths):
+def row_identity(row):
+    # InPlayFlux exports are rolling windows, so consecutive exports usually
+    # overlap heavily in date range. Combining files without deduping would
+    # double-count every signal caught in both windows.
+    return (
+        row["Tarih (Date)"],
+        row["Maç (Match)"],
+        row["Strateji (Strategy)"],
+        row["Sinyal Dk (Signal Min)"],
+    )
+
+
+def load_deduped(paths):
     rows = []
+    seen = set()
+    duplicates = 0
     for path in paths:
         with open(path, encoding="utf-8-sig") as f:
-            rows.extend(csv.DictReader(f))
+            for row in csv.DictReader(f):
+                key = row_identity(row)
+                if key in seen:
+                    duplicates += 1
+                    continue
+                seen.add(key)
+                rows.append(row)
+    return rows, duplicates
+
+
+def main(paths):
+    rows, duplicates = load_deduped(paths)
+    if duplicates:
+        print(f"Skipped {duplicates} duplicate rows shared across the input files.")
 
     decided = [is_won(r) for r in rows if is_won(r) is not None]
     print(f"Files: {', '.join(paths)}")
