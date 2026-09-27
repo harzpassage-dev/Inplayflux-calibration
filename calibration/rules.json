@@ -134,25 +134,25 @@
     }
   },
   "tool_calibration": {
-    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed from data/inplayflux_sinyaller_2026-09-20.csv (5000 signals) to replace the tool's previous 30.08.-14.09.2026 window. Not yet re-synced to the deduped 2-export dataset - the tool's minute buckets differ from the ones used above, so re-syncing needs a dedicated pass rather than a copy-paste.",
+    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed 2026-09-27 from both exports combined and deduped (n=3498 for O2.5, n=2811 for O3.5). Replaces the previous 2026-09-20-only calibration.",
     "o25Buckets": [
-      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.7, "n": 1512 },
-      { "min": 56, "max": 60, "label": "56-60'", "wr": 76.5, "n": 544 },
-      { "min": 61, "max": 65, "label": "61-65'", "wr": 76.0, "n": 204 },
-      { "min": 66, "max": 70, "label": "66-70'", "wr": 58.8, "n": 131 },
-      { "min": 71, "max": 73, "label": "71-73'", "wr": 68.8, "n": 64 }
+      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.6, "n": 2038 },
+      { "min": 56, "max": 60, "label": "56-60'", "wr": 75.9, "n": 850 },
+      { "min": 61, "max": 65, "label": "61-65'", "wr": 74.1, "n": 294 },
+      { "min": 66, "max": 70, "label": "66-70'", "wr": 60.2, "n": 211 },
+      { "min": 71, "max": 73, "label": "71-73'", "wr": 68.0, "n": 100 }
     ],
     "o35Matrix": [
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.8, "n": 848 },
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 75.6, "n": 262 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 65.2, "n": 299 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 80.2, "n": 91 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 58.1, "n": 129 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 71.2, "n": 52 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 60.2, "n": 128 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 68.3, "n": 41 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 58.1, "n": 74 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 74.2, "n": 31 }
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.4, "n": 1131 },
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 74.8, "n": 365 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 68.7, "n": 495 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 76.0, "n": 171 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 64.3, "n": 196 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 66.2, "n": 68 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 59.5, "n": 173 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 67.7, "n": 62 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 54.3, "n": 105 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 71.1, "n": 45 }
     ]
   },
   "radar_x_score": {
