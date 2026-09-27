@@ -420,13 +420,35 @@
     let m = text.match(/Target:\s*Over\s*([\d.]+)\s*Goals[^\d]*(\d+)\s*\/\s*(\d+)\s*goals/i);
     if (m) { r.targetLine = parseFloat(m[1]); r.goalsAtSignal = parseInt(m[2], 10); r.goalsNeededTotal = parseInt(m[3], 10); }
 
-    m = text.match(/(?:📊|📕)\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/m);
-    if (m) { r.homeTeam = m[1].trim(); r.homeScore = parseInt(m[2], 10); r.awayScore = parseInt(m[3], 10); r.awayTeam = m[4].trim(); }
+    // Fallback for target formats that aren't "Over X Goals ... N/M goals",
+    // e.g. plain "Target: Goal" (MoneyBag 0-0 -> Goal) or other future labels.
+    // Always capture the raw text so the field isn't blank even when we
+    // can't extract a numeric line from it.
+    m = text.match(/Target:\s*([^\n\r]+)/i);
+    if (m) {
+      r.targetRaw = m[1].trim();
+      if (r.targetLine == null) {
+        const numMatch = r.targetRaw.match(/([\d.]+)/);
+        if (numMatch) r.targetLine = parseFloat(numMatch[1]);
+      }
+    }
+
+    // Team/score line: the leading emoji varies by strategy template
+    // (📊, 📕, ⚽, ... - add more here if a new one shows up). Made
+    // optional as a safety net since the pattern (team, score-score,
+    // team) is distinctive enough on its own not to false-match.
+    m = text.match(/^(?:📊|📕|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/mu);
+    if (m) {
+      r.homeTeam = m[1].replace(/^[^\p{L}\p{N}]+/u, "").trim();
+      r.homeScore = parseInt(m[2], 10);
+      r.awayScore = parseInt(m[3], 10);
+      r.awayTeam = m[4].replace(/^[^\p{L}\p{N}]+/u, "").trim();
+    }
 
     m = text.match(/🏆\s*(.+)/);
     if (m) { r.league = m[1].replace(/^[^\w]+/u, "").trim(); }
 
-    m = text.match(/⏱\s*(\d+)'[\s·•]+~?(\d+)\s*min left[\s·•]+HT\s*(\d+)-(\d+)/i);
+    m = text.match(/(?:⏱|🕐|⏰|🕒)?\s*(\d+)'[\s·•]+~?(\d+)\s*min left[\s·•]+HT\s*(\d+)-(\d+)/i);
     if (m) { r.minute = parseInt(m[1], 10); r.minutesLeft = parseInt(m[2], 10); r.htHome = parseInt(m[3], 10); r.htAway = parseInt(m[4], 10); }
 
     m = text.match(/Strike Rate:\s*(\d+)%\s*\((\d+)\/(\d+)\)/i);
@@ -474,7 +496,7 @@
   }
 
   const FIELD_LABELS = [
-    ["targetLine", "Ziellinie"], ["goalsAtSignal", "Tore bei Signal"],
+    ["targetLine", "Ziellinie"], ["targetRaw", "Ziel (Rohtext)"], ["goalsAtSignal", "Tore bei Signal"],
     ["homeTeam", "Heim"], ["awayTeam", "Auswärts"],
     ["homeScore", "Tore Heim"], ["awayScore", "Tore Auswärts"],
     ["league", "Liga"], ["minute", "Minute"], ["minutesLeft", "Restminuten"],
