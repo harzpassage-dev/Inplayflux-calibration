@@ -53,16 +53,48 @@
   }
   .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+  .hero {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 20px 16px 16px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    background-color: #0c2b1a;
+    background-image:
+      linear-gradient(180deg, rgba(12,16,22,0.35) 0%, rgba(12,16,22,0.72) 72%, rgba(12,16,22,0.93) 100%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 6.25%, rgba(0,0,0,0.07) 6.25% 12.5%),
+      radial-gradient(circle at 50% 38%, rgba(255,255,255,0) 0 15%, rgba(255,255,255,0.28) 15% 15.8%, rgba(255,255,255,0) 15.8% 100%),
+      radial-gradient(circle at 50% 38%, rgba(255,255,255,0.35) 0 1.2%, rgba(255,255,255,0) 1.2% 100%),
+      linear-gradient(90deg, rgba(255,255,255,0.28) 0 0.2%, rgba(255,255,255,0) 0.2%),
+      linear-gradient(90deg, rgba(255,255,255,0) 99.8%, rgba(255,255,255,0.28) 99.8% 100%),
+      radial-gradient(ellipse 130% 90% at 50% 100%, #227a49 0%, #0f4126 55%, #0c2b1a 85%);
+    background-size: 100% 100%;
+  }
+  .hero h1, .hero .subtitle { position: relative; }
+  .hero::after {
+    /* faint match ball, purely decorative */
+    content: "⚽";
+    position: absolute;
+    right: 10px;
+    bottom: -14px;
+    font-size: 3.6rem;
+    opacity: 0.16;
+    filter: grayscale(1) brightness(1.6);
+    pointer-events: none;
+  }
   h1 {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 700;
     letter-spacing: 0.01em;
     margin: 0 0 2px;
+    color: #fff;
   }
+  h1 .accent { color: var(--gold); }
   .subtitle {
-    color: var(--text-dim);
+    color: rgba(230,233,240,0.82);
     font-size: 0.8rem;
-    margin: 0 0 18px;
+    margin: 0;
   }
 
   section {
@@ -81,6 +113,17 @@
     font-weight: 600;
     border-bottom: 1px solid var(--line);
     padding-bottom: 8px;
+    position: relative;
+  }
+  section h2::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 2px;
+    background: var(--green);
+    vertical-align: middle;
   }
 
   textarea {
@@ -250,8 +293,10 @@
 </head>
 <body>
 
-<h1>MoneyBag Analyst</h1>
-<p class="subtitle">Dein Signal-Check in Sekunden: Signal reinpasten, Poisson-Modell und echte Kalibrierungsdaten aus tausenden ausgewerteten Spielen rechnen sofort dagegen — inklusive automatischem Quotenvergleich, bevor du überhaupt fertig gelesen hast.</p>
+<div class="hero">
+  <h1>Money<span class="accent">Bag</span> Analyst</h1>
+  <p class="subtitle">Dein Signal-Check in Sekunden: Signal reinpasten, Poisson-Modell und echte Kalibrierungsdaten aus tausenden ausgewerteten Spielen rechnen sofort dagegen — inklusive automatischem Quotenvergleich, bevor du überhaupt fertig gelesen hast.</p>
+</div>
 
 <div class="warn-box">
   <strong>Keine Blackbox:</strong> jede Zahl ist nachvollziehbar — Poisson-Tempo, Bucket-/Matrix-Modell aus echten Ergebnissen, Marktrückrechnung und Edge gegen die Live-Quote. Keine geheime KI-Bewertung, kein Rätselraten. Für H2H-Feinschliff und qualitative Einschätzungen bleibt der Chat deine zweite Meinung.
