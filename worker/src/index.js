@@ -95,14 +95,61 @@ function deniedPage({ reason }) {
   h1 { font-size:1.2rem; }
   .box { background:#1a1f2b; border:1px solid #2c3444; border-radius:6px; padding:18px; margin-top:16px; }
   a { color:#c9a227; }
+  input, textarea { width:100%; box-sizing:border-box; background:#202634; color:#e6e9f0; border:1px solid #2c3444; border-radius:4px; padding:9px; margin-bottom:10px; font-family:inherit; font-size:0.95rem; }
+  textarea { resize:vertical; min-height:70px; }
+  button { background:#c9a227; color:#1a1200; border:none; border-radius:4px; padding:10px 16px; font-weight:600; cursor:pointer; font-size:0.95rem; }
+  button:disabled { opacity:0.6; cursor:default; }
+  .status { margin-top:10px; font-size:0.85rem; }
+  .status.ok { color:#4caf7a; }
+  .status.err { color:#d9614f; }
+  label { display:block; font-size:0.8rem; color:#8891a3; margin-bottom:4px; }
 </style></head>
 <body>
   <h1>Zugang erforderlich</h1>
   <p>${message}</p>
   <div class="box">
     <p><strong>Weiter nutzen?</strong><br>
-    Kontaktiere uns über Telegram, um freigeschaltet zu werden.</p>
+    Kontaktiere uns über Telegram, um freigeschaltet zu werden — oder schick uns kurz deine Daten, wir melden uns bei dir:</p>
+    <form id="contact-form">
+      <label>Name</label>
+      <input type="text" id="c-name" required maxlength="100">
+      <label>E-Mail-Adresse</label>
+      <input type="email" id="c-email" required maxlength="150">
+      <label>Nachricht (optional)</label>
+      <textarea id="c-message" maxlength="500"></textarea>
+      <button type="submit" id="c-submit">Anfrage senden</button>
+      <div class="status" id="c-status"></div>
+    </form>
   </div>
+  <script>
+    document.getElementById('contact-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('c-submit');
+      const out = document.getElementById('c-status');
+      const name = document.getElementById('c-name').value.trim();
+      const email = document.getElementById('c-email').value.trim();
+      const message = document.getElementById('c-message').value.trim();
+      btn.disabled = true;
+      out.className = 'status';
+      out.textContent = 'Wird gesendet …';
+      try {
+        const r = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, message }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || ('Fehler ' + r.status));
+        out.className = 'status ok';
+        out.textContent = 'Danke! Wir melden uns zeitnah bei dir.';
+        e.target.reset();
+      } catch (err) {
+        out.className = 'status err';
+        out.textContent = 'Senden fehlgeschlagen: ' + err.message;
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body></html>`, 403);
 }
 
@@ -285,6 +332,48 @@ export default {
       }
       // Telegram just needs a fast 200 OK; the content doesn't matter.
       return new Response("ok", { status: 200 });
+    }
+
+    // --- Contact form on the access-denied page. Sends a Telegram message
+    // to the admin instead of email, so no address is ever exposed client-side.
+    if (url.pathname === "/api/contact" && request.method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      const name = String(body.name || "").trim().slice(0, 100);
+      const email = String(body.email || "").trim().slice(0, 150);
+      const message = String(body.message || "").trim().slice(0, 500);
+      if (!name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return jsonResponse({ error: "Bitte Name und eine gültige E-Mail-Adresse angeben." }, 400);
+      }
+      if (!env.TELEGRAM_BOT_TOKEN || !env.ADMIN_CHAT_ID) {
+        return jsonResponse({ error: "Kontaktformular ist gerade nicht verfügbar." }, 503);
+      }
+
+      // Basic per-IP rate limit: max 1 submission per 60 seconds.
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const rateKey = `contact_rl:${ip}`;
+      if (await env.ACCESS_KV.get(rateKey)) {
+        return jsonResponse({ error: "Bitte kurz warten, bevor du erneut sendest." }, 429);
+      }
+      await env.ACCESS_KV.put(rateKey, "1", { expirationTtl: 60 });
+
+      const lines = [
+        "📬 Neue Kontaktanfrage (MoneyBag Analyst)",
+        `Name: ${name}`,
+        `E-Mail: ${email}`,
+        message ? `Nachricht: ${message}` : null,
+      ].filter(Boolean);
+      const tgResp = await fetch(
+        `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ chat_id: env.ADMIN_CHAT_ID, text: lines.join("\n") }),
+        }
+      );
+      if (!tgResp.ok) {
+        return jsonResponse({ error: "Senden fehlgeschlagen. Bitte später erneut versuchen." }, 502);
+      }
+      return jsonResponse({ ok: true });
     }
 
     // --- Latest-signal lookup used by the tool's "Aus Telegram importieren"
