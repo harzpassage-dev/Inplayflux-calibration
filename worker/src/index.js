@@ -56,6 +56,18 @@ async function putAccess(env, token, record) {
   await env.ACCESS_KV.put(token, JSON.stringify(record), { expirationTtl: ttlSeconds });
 }
 
+async function sendTelegramMessage(env, chatId, text, replyToMessageId) {
+  const payload = { chat_id: chatId, text };
+  if (replyToMessageId) payload.reply_to_message_id = replyToMessageId;
+  const resp = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json().catch(() => null);
+  return data && data.ok ? data.result : null;
+}
+
 function looksLikeSignalCard(text) {
   if (!text) return false;
   // Loose heuristic: signal cards always name a league (trophy emoji) and a
@@ -109,7 +121,9 @@ function deniedPage({ reason }) {
   <p>${message}</p>
   <div class="box">
     <p><strong>Weiter nutzen?</strong><br>
-    Kontaktiere uns über Telegram, um freigeschaltet zu werden — oder schick uns kurz deine Daten, wir melden uns bei dir:</p>
+    Am schnellsten geht's direkt über Telegram — oder per Formular, wenn du kein Telegram nutzt.</p>
+    <a href="https://t.me/harzpassage_bot" target="_blank" rel="noopener" style="display:block; text-align:center; background:#4caf7a; color:#0d1310; text-decoration:none; font-weight:700; padding:12px 16px; border-radius:6px; margin-bottom:16px;">💬 Direkt über Telegram schreiben</a>
+    <p style="text-align:center; color:#8891a3; font-size:0.85rem; margin:-8px 0 16px;">— oder —</p>
     <form id="contact-form">
       <label>Name</label>
       <input type="text" id="c-name" required maxlength="100">
@@ -322,14 +336,51 @@ export default {
         return new Response("unauthorized", { status: 401 });
       }
       const update = await request.json().catch(() => null);
-      const msg = update && (update.channel_post || update.message || update.edited_channel_post);
-      const text = msg && msg.text;
-      if (looksLikeSignalCard(text)) {
+
+      // Signal import from the channel/group, unchanged.
+      const channelMsg = update && (update.channel_post || update.edited_channel_post);
+      if (channelMsg && looksLikeSignalCard(channelMsg.text)) {
         await env.ACCESS_KV.put(
           LATEST_SIGNAL_KEY,
-          JSON.stringify({ text, receivedAt: Date.now() })
+          JSON.stringify({ text: channelMsg.text, receivedAt: Date.now() })
         );
       }
+
+      // Two-way support chat: a visitor DMs the bot, the admin gets it
+      // forwarded, and replying (Telegram "reply") to that forwarded
+      // message sends the reply straight back to the visitor.
+      const msg = update && update.message;
+      if (msg && msg.chat && msg.chat.type === "private" && env.TELEGRAM_BOT_TOKEN && env.ADMIN_CHAT_ID) {
+        const isAdmin = String(msg.chat.id) === String(env.ADMIN_CHAT_ID);
+        if (isAdmin) {
+          const replyTo = msg.reply_to_message && msg.reply_to_message.message_id;
+          const visitorChatId = replyTo && (await env.ACCESS_KV.get(`relay:msgid:${replyTo}`));
+          if (visitorChatId && msg.text) {
+            await sendTelegramMessage(env, visitorChatId, msg.text);
+          }
+        } else if (msg.text && msg.text !== "/start") {
+          const from = msg.from || {};
+          const who = [from.first_name, from.last_name].filter(Boolean).join(" ") || "Unbekannt";
+          const handle = from.username ? `@${from.username}` : `chat_id ${msg.chat.id}`;
+          const forwarded = await sendTelegramMessage(
+            env,
+            env.ADMIN_CHAT_ID,
+            `💬 Telegram-Kontakt von ${who} (${handle}):\n${msg.text}`
+          );
+          if (forwarded) {
+            await env.ACCESS_KV.put(`relay:msgid:${forwarded.message_id}`, String(msg.chat.id), {
+              expirationTtl: 30 * 24 * 60 * 60,
+            });
+          }
+        } else if (msg.text === "/start") {
+          await sendTelegramMessage(
+            env,
+            msg.chat.id,
+            "Willkommen bei MoneyBag Analyst! Schreib einfach deine Frage oder dein Anliegen hier rein, wir melden uns zeitnah bei dir."
+          );
+        }
+      }
+
       // Telegram just needs a fast 200 OK; the content doesn't matter.
       return new Response("ok", { status: 200 });
     }
@@ -357,20 +408,13 @@ export default {
       await env.ACCESS_KV.put(rateKey, "1", { expirationTtl: 60 });
 
       const lines = [
-        "📬 Neue Kontaktanfrage (MoneyBag Analyst)",
+        "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
         `Name: ${name}`,
         `E-Mail: ${email}`,
         message ? `Nachricht: ${message}` : null,
       ].filter(Boolean);
-      const tgResp = await fetch(
-        `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ chat_id: env.ADMIN_CHAT_ID, text: lines.join("\n") }),
-        }
-      );
-      if (!tgResp.ok) {
+      const sent = await sendTelegramMessage(env, env.ADMIN_CHAT_ID, lines.join("\n"));
+      if (!sent) {
         return jsonResponse({ error: "Senden fehlgeschlagen. Bitte später erneut versuchen." }, 502);
       }
       return jsonResponse({ ok: true });
