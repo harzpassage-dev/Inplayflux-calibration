@@ -5,6 +5,12 @@ time-limited access tokens. No accounts — you generate a link per person via
 the admin panel, they open it, get 24h of access, and after that see a
 "please pay" page until you manually extend their token.
 
+**Live URL:** https://moneybag-signals.com (custom domain; the original
+`moneybag-access.harzpassage.workers.dev` still works too, but Telegram's
+webhook API failed to resolve `*.workers.dev` when registering the
+webhook, which is why the custom domain was added).
+**Admin panel:** https://moneybag-signals.com/admin
+
 ## How it works
 
 - Each access token is a random string stored in a KV namespace with
@@ -48,6 +54,25 @@ access — anyone who can open the page can view its source. It only limits
 - After they pay (manually, e.g. via PayPal), take the token from their link
   and use "Verlängern" to extend their access by N days and mark it `paid`.
 - "Alle Zugänge" lists every issued token with its status and expiry.
+
+## Telegram auto-import
+
+`POST /telegram-webhook` receives every new message from a Telegram bot
+added as admin to the signal channel/group, filters for messages that look
+like a signal card, and stores the latest one in KV. The tool's "Aus
+Telegram importieren" button fetches it via `GET /api/latest-signal`
+(gated by the same access-token check as the main page).
+
+Setup (one-time):
+```bash
+npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # any random string
+curl "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
+  --data-urlencode "url=https://moneybag-signals.com/telegram-webhook" \
+  --data-urlencode "secret_token=<same random string>"
+```
+The bot token itself is never stored anywhere - it's only needed for this
+one `setWebhook` call. Check current status with
+`.../bot<TOKEN>/getWebhookInfo`.
 
 ## Keeping the tool in sync
 
