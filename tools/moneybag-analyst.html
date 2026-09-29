@@ -786,7 +786,7 @@
     const teams = (f.homeTeam || "?") + " - " + (f.awayTeam || "?");
     const cell = a.modelCell || "—";
     const band = a.modelBand ? `${a.modelBand[0]}-${a.modelBand[1]}%` : "—";
-    const line = `LOG | ${now} | ${strat} | ${teams} | ${f.minute}' | Zelle:${cell} | Modell-WR:${band} | Konfidenz:${conf} | Empfehlung:${emp} | Ausgang:offen`;
+    const line = `LOG | ${now} | ${strat} | ${teams} | ${f.minute}' | Zelle:${cell} | Modell-WR:${band} | Konfidenz:${conf} | Empfehlung:${emp} | Ausgang:offen\nmoneybag-signals.com`;
     document.getElementById("log-line-text").textContent = line;
   }
 
