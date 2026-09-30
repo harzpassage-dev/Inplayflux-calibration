@@ -337,6 +337,22 @@ export default {
       }
       const update = await request.json().catch(() => null);
 
+      // TEMP DEBUG: capture chat id/title of any channel post, to discover a
+      // new channel's id without disrupting the live webhook. Remove once
+      // the premium-alerts channel id is known.
+      const anyChannelMsg = update && (update.channel_post || update.edited_channel_post);
+      if (anyChannelMsg && anyChannelMsg.chat) {
+        await env.ACCESS_KV.put(
+          "debug:last_channel_post",
+          JSON.stringify({
+            chatId: anyChannelMsg.chat.id,
+            title: anyChannelMsg.chat.title,
+            text: anyChannelMsg.text,
+            receivedAt: Date.now(),
+          })
+        );
+      }
+
       // Signal import from the channel/group, unchanged.
       const channelMsg = update && (update.channel_post || update.edited_channel_post);
       if (channelMsg && looksLikeSignalCard(channelMsg.text)) {
