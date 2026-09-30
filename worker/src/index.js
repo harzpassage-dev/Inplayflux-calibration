@@ -103,16 +103,50 @@ const CONFIDENCE_MODELS = {
     intercept: 0.8502,
     threshold: 0.75,
   },
+  1.5: {
+    // Merged across all three "Over 1.5" bot-template variants.
+    mean: [62.9716, 6.0993, 378.9803, 3.2139],
+    std: [3.9398, 2.3317, 71.7645, 0.4997],
+    coef: [-0.2601, -0.0188, 0.3248, 0.1751],
+    intercept: 1.0728,
+    threshold: 0.80,
+  },
+  0.5: {
+    mean: [61.2245, 3.9767, 332.3947, 3.0977],
+    std: [0.5908, 2.514, 76.2783, 0.579],
+    coef: [-0.0611, 0.1548, 0.0886, 0.3934],
+    intercept: 1.0059,
+    threshold: 0.80,
+  },
 };
 
 function parseForConfidenceScore(text) {
   const out = {};
   let m = text.match(/Target:\s*Over\s*([\d.]+)\s*Goals/i);
   if (m) out.targetLine = parseFloat(m[1]);
+
+  // Fallback for generic "Target: Goal" cards (Over 1.5 / Over 0.5 / MoneyBag
+  // 0-0 templates) - mirrors tools/moneybag-analyst.html's parser. Requires
+  // an actual decimal ("1.5", "0.5", ...) so a bare progress-counter digit
+  // (e.g. the "1" in "1/2 goals") next to "Target: Goal" isn't mistaken for
+  // the goal line.
+  if (out.targetLine == null) {
+    const targetLineMatch = text.match(/Target:\s*([^\n\r]+)/i);
+    if (targetLineMatch) {
+      const numMatch = targetLineMatch[1].match(/(\d+\.\d+)/);
+      if (numMatch) out.targetLine = parseFloat(numMatch[1]);
+    }
+  }
   if (out.targetLine == null) {
     m = text.match(/MONEYBAG[^\n]*→\s*OVER\s*([\d.]+)/i);
     if (m) out.targetLine = parseFloat(m[1]);
   }
+  if (out.targetLine == null) {
+    const headerText = text.split(/Target:/i)[0];
+    m = headerText.match(/Over\s*([\d.]+)/i);
+    if (m) out.targetLine = parseFloat(m[1]);
+  }
+
   m = text.match(/(\d+)'[\s·•]+~?\d+\s*min left/i);
   if (m) out.minute = parseInt(m[1], 10);
   m = text.match(/Shots\s*(\d+)\s*[·•]\s*(\d+)\s*\/\s*\d+\s*[·•]\s*\d+\s*total/i);
