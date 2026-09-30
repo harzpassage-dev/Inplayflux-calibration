@@ -403,6 +403,10 @@
     <table class="mono" id="o25-table"></table>
     <h2 style="margin-top:14px;">O3.5 Minute × SoT-Matrix</h2>
     <table class="mono" id="o35-table"></table>
+    <h2 style="margin-top:14px;">O1.5 Minute-Buckets</h2>
+    <table class="mono" id="o15-table"></table>
+    <h2 style="margin-top:14px;">O0.5 Minute-Buckets</h2>
+    <table class="mono" id="o05-table"></table>
     <div class="row" style="margin-top:12px;">
       <button class="secondary small" id="save-calib-btn">Speichern</button>
       <button class="secondary small" id="reset-calib-btn">Zurücksetzen auf Standard</button>
@@ -418,35 +422,51 @@
   "use strict";
 
   // ---------------------------------------------------------------------
-  // Default calibration (Stand: CSV-Exporte 20.09. + 27.09.2026, dedupliziert
-  // kombiniert, siehe calibration/rules.json -> tool_calibration)
+  // Default calibration (Stand: CSV-Exporte 20.09. + 27.09. + 30.09.2026,
+  // dedupliziert kombiniert, siehe calibration/rules.json -> tool_calibration)
   // ---------------------------------------------------------------------
   const DEFAULT_CALIB = {
     o25Buckets: [
-      { min: 0,  max: 55, label: "<=55'",  wr: 77.6 },
-      { min: 56, max: 60, label: "56-60'", wr: 75.9 },
-      { min: 61, max: 65, label: "61-65'", wr: 74.1 },
+      { min: 0,  max: 55, label: "<=55'",  wr: 77.3 },
+      { min: 56, max: 60, label: "56-60'", wr: 75.3 },
+      { min: 61, max: 65, label: "61-65'", wr: 73.7 },
       { min: 66, max: 70, label: "66-70'", wr: 60.2 },
-      { min: 71, max: 73, label: "71-73'", wr: 68.0 }
+      { min: 71, max: 73, label: "71-73'", wr: 66.7 }
     ],
     o35Matrix: [
-      { minMin: 60, maxMin: 60, label: "=60'",   sot: "<=8", wr: 72.4 },
-      { minMin: 60, maxMin: 60, label: "=60'",   sot: "9+",  wr: 74.8 },
-      { minMin: 61, maxMin: 63, label: "61-63'", sot: "<=8", wr: 68.7 },
+      { minMin: 60, maxMin: 60, label: "=60'",   sot: "<=8", wr: 72.2 },
+      { minMin: 60, maxMin: 60, label: "=60'",   sot: "9+",  wr: 74.5 },
+      { minMin: 61, maxMin: 63, label: "61-63'", sot: "<=8", wr: 68.8 },
       { minMin: 61, maxMin: 63, label: "61-63'", sot: "9+",  wr: 76.0 },
-      { minMin: 64, maxMin: 66, label: "64-66'", sot: "<=8", wr: 64.3 },
+      { minMin: 64, maxMin: 66, label: "64-66'", sot: "<=8", wr: 63.1 },
       { minMin: 64, maxMin: 66, label: "64-66'", sot: "9+",  wr: 66.2 },
-      { minMin: 67, maxMin: 69, label: "67-69'", sot: "<=8", wr: 59.5 },
-      { minMin: 67, maxMin: 69, label: "67-69'", sot: "9+",  wr: 67.7 },
-      { minMin: 70, maxMin: 71, label: "70-71'", sot: "<=8", wr: 54.3 },
-      { minMin: 70, maxMin: 71, label: "70-71'", sot: "9+",  wr: 71.1 }
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "<=8", wr: 59.3 },
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "9+",  wr: 67.6 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "<=8", wr: 53.7 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "9+",  wr: 69.6 }
+    ],
+    o15Buckets: [
+      { min: 0,  max: 61, label: "<=61'",  wr: 78.0 },
+      { min: 62, max: 64, label: "62-64'", wr: 70.1 },
+      { min: 65, max: 67, label: "65-67'", wr: 75.9 },
+      { min: 68, max: 71, label: "68-71'", wr: 37.1 },
+      { min: 72, max: 90, label: ">=72'",  wr: 92.0 }
+    ],
+    o05Buckets: [
+      { min: 0,  max: 61, label: "<=61'",  wr: 72.9 },
+      { min: 62, max: 90, label: ">=62'",  wr: 69.8 }
     ]
   };
 
   function loadCalib() {
     try {
       const raw = localStorage.getItem("mb_calibration");
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        // Merge onto the defaults so a calibration saved before o15/o05
+        // existed doesn't crash the lookup - missing keys fall back.
+        return Object.assign(JSON.parse(JSON.stringify(DEFAULT_CALIB)), saved);
+      }
     } catch (e) { /* fall through to default */ }
     return JSON.parse(JSON.stringify(DEFAULT_CALIB));
   }
@@ -475,7 +495,10 @@
     if (m) {
       r.targetRaw = m[1].trim();
       if (r.targetLine == null) {
-        const numMatch = r.targetRaw.match(/([\d.]+)/);
+        // Require an actual decimal ("2.5", "0.5", ...) so a bare integer
+        // from a "N/M goals" progress count (e.g. "1/2 goals") next to a
+        // generic "Target: Goal" label isn't mistaken for the goal line.
+        const numMatch = r.targetRaw.match(/(\d+\.\d+)/);
         if (numMatch) r.targetLine = parseFloat(numMatch[1]);
       }
     }
@@ -538,6 +561,16 @@
 
     m = text.match(/MONEYBAG[^\n]*→\s*OVER\s*([\d.]+)/i);
     if (m && r.targetLine == null) r.targetLine = parseFloat(m[1]);
+
+    // Last-resort fallback: some templates (e.g. "Over 1.5") name the goal
+    // line only in the header/title, not in a numeric "Target:" line. Look
+    // for "Over X.X" in the text before "Target:" (or the whole text if
+    // there's no such line).
+    if (r.targetLine == null) {
+      const headerText = text.split(/Target:/i)[0];
+      m = headerText.match(/Over\s*([\d.]+)/i);
+      if (m) r.targetLine = parseFloat(m[1]);
+    }
 
     return r;
   }
@@ -604,6 +637,12 @@
       const sotBucket = sot >= 9 ? "9+" : "<=8";
       const cell = calib.o35Matrix.find(c => minute >= c.minMin && minute <= c.maxMin && c.sot === sotBucket);
       if (cell) { modelPoint = cell.wr; modelBand = [Math.round((cell.wr - 3) * 10) / 10, Math.round((cell.wr + 3) * 10) / 10]; modelCell = cell.label + "/" + cell.sot; }
+    } else if (targetLine === 1.5 && minute != null) {
+      const b = calib.o15Buckets.find(b => minute >= b.min && minute <= b.max);
+      if (b) { modelPoint = b.wr; modelBand = [Math.round((b.wr - 3) * 10) / 10, Math.round((b.wr + 3) * 10) / 10]; modelCell = b.label; }
+    } else if (targetLine === 0.5 && minute != null) {
+      const b = calib.o05Buckets.find(b => minute >= b.min && minute <= b.max);
+      if (b) { modelPoint = b.wr; modelBand = [Math.round((b.wr - 3) * 10) / 10, Math.round((b.wr + 3) * 10) / 10]; modelCell = b.label; }
     }
 
     let market = null;
@@ -782,7 +821,8 @@
     const conf = document.getElementById("confidence-select").value;
     const emp = document.getElementById("empfehlung-select").value;
     const now = new Date().toISOString().slice(0, 10);
-    const strat = f.targetLine === 3.5 ? "MoneyBag O3.5" : "MoneyBag O2.5";
+    const stratNames = { 3.5: "MoneyBag O3.5", 2.5: "MoneyBag O2.5", 1.5: "MoneyBag O1.5", 0.5: "MoneyBag O0.5" };
+    const strat = stratNames[f.targetLine] || "MoneyBag (Ziellinie unbekannt)";
     const teams = (f.homeTeam || "?") + " - " + (f.awayTeam || "?");
     const cell = a.modelCell || "—";
     const band = a.modelBand ? `${a.modelBand[0]}-${a.modelBand[1]}%` : "—";
@@ -1017,7 +1057,7 @@
     const hist = loadHistory();
     hist.push({
       date: new Date().toISOString().slice(0, 10),
-      strategy: PARSED.targetLine === 3.5 ? "O3.5" : "O2.5",
+      strategy: ({ 3.5: "O3.5", 2.5: "O2.5", 1.5: "O1.5", 0.5: "O0.5" })[PARSED.targetLine] || "O?",
       teams: (PARSED.homeTeam || "?") + " - " + (PARSED.awayTeam || "?"),
       minute: PARSED.minute,
       logLine: document.getElementById("log-line-text").textContent,
@@ -1071,6 +1111,24 @@
         <td>${esc(c.sot)}</td>
         <td><input type="number" step="0.1" data-kind="o35" data-idx="${i}" data-field="wr" value="${c.wr}" style="width:60px;"></td>
       </tr>`).join("");
+
+    const o15 = document.getElementById("o15-table");
+    o15.innerHTML = `<tr><th>Bucket</th><th>Min</th><th>Max</th><th>WR %</th></tr>` +
+      CALIB.o15Buckets.map((b, i) => `<tr>
+        <td>${esc(b.label)}</td>
+        <td><input type="number" data-kind="o15" data-idx="${i}" data-field="min" value="${b.min}" style="width:50px;"></td>
+        <td><input type="number" data-kind="o15" data-idx="${i}" data-field="max" value="${b.max}" style="width:50px;"></td>
+        <td><input type="number" step="0.1" data-kind="o15" data-idx="${i}" data-field="wr" value="${b.wr}" style="width:60px;"></td>
+      </tr>`).join("");
+
+    const o05 = document.getElementById("o05-table");
+    o05.innerHTML = `<tr><th>Bucket</th><th>Min</th><th>Max</th><th>WR %</th></tr>` +
+      CALIB.o05Buckets.map((b, i) => `<tr>
+        <td>${esc(b.label)}</td>
+        <td><input type="number" data-kind="o05" data-idx="${i}" data-field="min" value="${b.min}" style="width:50px;"></td>
+        <td><input type="number" data-kind="o05" data-idx="${i}" data-field="max" value="${b.max}" style="width:50px;"></td>
+        <td><input type="number" step="0.1" data-kind="o05" data-idx="${i}" data-field="wr" value="${b.wr}" style="width:60px;"></td>
+      </tr>`).join("");
   }
 
   document.getElementById("save-calib-btn").addEventListener("click", function () {
@@ -1081,6 +1139,14 @@
     document.querySelectorAll('input[data-kind="o35"]').forEach(inp => {
       const idx = parseInt(inp.dataset.idx, 10), field = inp.dataset.field;
       CALIB.o35Matrix[idx][field] = parseFloat(inp.value);
+    });
+    document.querySelectorAll('input[data-kind="o15"]').forEach(inp => {
+      const idx = parseInt(inp.dataset.idx, 10), field = inp.dataset.field;
+      CALIB.o15Buckets[idx][field] = field === "wr" ? parseFloat(inp.value) : parseInt(inp.value, 10);
+    });
+    document.querySelectorAll('input[data-kind="o05"]').forEach(inp => {
+      const idx = parseInt(inp.dataset.idx, 10), field = inp.dataset.field;
+      CALIB.o05Buckets[idx][field] = field === "wr" ? parseFloat(inp.value) : parseInt(inp.value, 10);
     });
     saveCalib(CALIB);
     alert("Kalibrierung gespeichert.");
