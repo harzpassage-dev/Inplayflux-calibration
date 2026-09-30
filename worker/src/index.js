@@ -79,6 +79,66 @@ function looksLikeSignalCard(text) {
   return hasLeague && hasTarget && hasTime;
 }
 
+// ---------------------------------------------------------------------
+// High-confidence auto-forward: parse just enough of the signal card to
+// score it with a small logistic-regression model (fit offline on the
+// deduped Sept 2026 exports, see reports/2026-09-30-calibration.md) and,
+// if the model's win probability clears the strategy's threshold, forward
+// the original card to a "premium" Telegram channel. Only O2.5 and O3.5
+// have a validated model so far - other strategies are left alone.
+const CONFIDENCE_MODELS = {
+  // targetLine -> { mean, std, coef, intercept, threshold } for
+  // features [minute, total_sot, radar, goalline_pre] in that order.
+  2.5: {
+    mean: [57.394, 5.7405, 319.1647, 2.9703],
+    std: [4.3973, 2.4147, 80.1697, 0.5983],
+    coef: [-0.253, 0.0588, 0.0087, 0.268],
+    intercept: 1.1357,
+    threshold: 0.80,
+  },
+  3.5: {
+    mean: [62.0704, 7.0409, 334.1218, 2.9762],
+    std: [3.1945, 2.5805, 82.0656, 0.6364],
+    coef: [-0.2262, 0.0757, 0.0567, 0.1668],
+    intercept: 0.8502,
+    threshold: 0.75,
+  },
+};
+
+function parseForConfidenceScore(text) {
+  const out = {};
+  let m = text.match(/Target:\s*Over\s*([\d.]+)\s*Goals/i);
+  if (m) out.targetLine = parseFloat(m[1]);
+  if (out.targetLine == null) {
+    m = text.match(/MONEYBAG[^\n]*→\s*OVER\s*([\d.]+)/i);
+    if (m) out.targetLine = parseFloat(m[1]);
+  }
+  m = text.match(/(\d+)'[\s·•]+~?\d+\s*min left/i);
+  if (m) out.minute = parseInt(m[1], 10);
+  m = text.match(/Shots\s*(\d+)\s*[·•]\s*(\d+)\s*\/\s*\d+\s*[·•]\s*\d+\s*total/i);
+  if (m) out.totalSot = parseInt(m[1], 10) + parseInt(m[2], 10);
+  m = text.match(/Radar X:.*?\((\d+)\)/i);
+  if (m) out.radar = parseInt(m[1], 10);
+  m = text.match(/O\/U\s*([\d.]+)\s*→/i);
+  if (m) out.goallinePre = parseFloat(m[1]);
+  return out;
+}
+
+function computeConfidenceScore(parsed) {
+  const model = CONFIDENCE_MODELS[parsed.targetLine];
+  if (!model) return null;
+  if (parsed.minute == null || parsed.totalSot == null || parsed.radar == null || parsed.goallinePre == null) {
+    return null;
+  }
+  const x = [parsed.minute, parsed.totalSot, parsed.radar, parsed.goallinePre];
+  let z = model.intercept;
+  for (let i = 0; i < x.length; i++) {
+    z += ((x[i] - model.mean[i]) / model.std[i]) * model.coef[i];
+  }
+  const proba = 1 / (1 + Math.exp(-z));
+  return { proba, threshold: model.threshold, passes: proba >= model.threshold };
+}
+
 async function resolveAccess(request, env) {
   const cookies = parseCookies(request);
   const url = new URL(request.url);
@@ -337,23 +397,6 @@ export default {
       }
       const update = await request.json().catch(() => null);
 
-      // TEMP DEBUG: capture chat id/title/type of ANY incoming update, to
-      // discover a new channel/group's id without disrupting the live
-      // webhook. Remove once the premium-alerts destination id is known.
-      const anyMsg = update && (update.channel_post || update.edited_channel_post || update.message);
-      if (anyMsg && anyMsg.chat) {
-        await env.ACCESS_KV.put(
-          "debug:last_channel_post",
-          JSON.stringify({
-            chatId: anyMsg.chat.id,
-            chatType: anyMsg.chat.type,
-            title: anyMsg.chat.title,
-            text: anyMsg.text,
-            receivedAt: Date.now(),
-          })
-        );
-      }
-
       // Signal import from the channel/group, unchanged.
       const channelMsg = update && (update.channel_post || update.edited_channel_post);
       if (channelMsg && looksLikeSignalCard(channelMsg.text)) {
@@ -361,6 +404,19 @@ export default {
           LATEST_SIGNAL_KEY,
           JSON.stringify({ text: channelMsg.text, receivedAt: Date.now() })
         );
+
+        // High-confidence auto-forward to the premium channel (O2.5/O3.5 only).
+        if (env.PREMIUM_CHANNEL_ID) {
+          const parsed = parseForConfidenceScore(channelMsg.text);
+          const score = computeConfidenceScore(parsed);
+          if (score && score.passes) {
+            await sendTelegramMessage(
+              env,
+              env.PREMIUM_CHANNEL_ID,
+              `🔥 High Confidence (${Math.round(score.proba * 100)}%)\n\n${channelMsg.text}`
+            );
+          }
+        }
       }
 
       // Two-way support chat: a visitor DMs the bot, the admin gets it
