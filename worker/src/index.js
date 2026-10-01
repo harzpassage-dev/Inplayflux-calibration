@@ -173,6 +173,34 @@ function computeConfidenceScore(parsed) {
   return { proba, threshold: model.threshold, passes: proba >= model.threshold };
 }
 
+// Trims a full signal card down to just the essentials for the premium
+// channel: title, divider, league, match, target/progress, time, radar,
+// strike rate. Drops the Live Stats and Market/odds blocks entirely.
+function buildPremiumMessage(text, proba) {
+  const lines = text.split(/\r?\n/);
+  const keepPatterns = [
+    /🏆/, // league
+    /Target:/i, // target + progress
+    /\d+'[\s·•]+~?\d+\s*min left/i, // time
+    /Radar X:/i,
+    /Strike Rate:/i,
+    /^[_\-─—=]{3,}$/, // divider lines
+  ];
+  const matchLinePattern = /^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*.+?\s+\d+\s*[–-]\s*\d+\s+.+$/u;
+
+  const firstIdx = lines.findIndex((l) => l.trim().length > 0);
+  const kept = [];
+  if (firstIdx !== -1) kept.push(lines[firstIdx]);
+  for (let i = 0; i < lines.length; i++) {
+    if (i === firstIdx || !lines[i].trim()) continue;
+    const line = lines[i];
+    if (keepPatterns.some((p) => p.test(line)) || matchLinePattern.test(line)) {
+      kept.push(line);
+    }
+  }
+  return `🔥 High Confidence (${Math.round(proba * 100)}%)\n\n${kept.join("\n")}`;
+}
+
 async function resolveAccess(request, env) {
   const cookies = parseCookies(request);
   const url = new URL(request.url);
@@ -447,7 +475,7 @@ export default {
             await sendTelegramMessage(
               env,
               env.PREMIUM_CHANNEL_ID,
-              `🔥 High Confidence (${Math.round(score.proba * 100)}%)\n\n${channelMsg.text}`
+              buildPremiumMessage(channelMsg.text, score.proba)
             );
           }
         }
