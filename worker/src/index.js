@@ -68,6 +68,27 @@ async function sendTelegramMessage(env, chatId, text, replyToMessageId) {
   return data && data.ok ? data.result : null;
 }
 
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com", "guerrillamail.com", "guerrillamail.info", "temp-mail.org",
+  "tempmail.com", "10minutemail.com", "10minutemail.net", "throwawaymail.com",
+  "yopmail.com", "trashmail.com", "fakeinbox.com", "getnada.com", "maildrop.cc",
+  "dispostable.com", "sharklasers.com", "mailnesia.com", "test.com", "example.com",
+  "fake.com", "none.com", "nomail.com", "noemail.com",
+]);
+
+function looksLikeFakeEmail(email) {
+  const at = email.lastIndexOf("@");
+  if (at === -1) return false;
+  const local = email.slice(0, at).toLowerCase();
+  const domain = email.slice(at + 1).toLowerCase();
+  if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) return true;
+  // "report@report.com", "test@test.com": local part equals the domain's
+  // first label - a classic throwaway/placeholder pattern.
+  const domainFirstLabel = domain.split(".")[0];
+  if (local === domainFirstLabel) return true;
+  return false;
+}
+
 function looksLikeSignalCard(text) {
   if (!text) return false;
   // Loose heuristic: signal cards always name a league (trophy emoji) and a
@@ -545,7 +566,7 @@ export default {
       const lines = [
         "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
         `Name: ${name}`,
-        `E-Mail: ${email}`,
+        looksLikeFakeEmail(email) ? `E-Mail: ${email} ⚠️ wirkt wie Fake-/Wegwerf-Adresse` : `E-Mail: ${email}`,
         message ? `Nachricht: ${message}` : null,
       ].filter(Boolean);
       const sent = await sendTelegramMessage(env, env.ADMIN_CHAT_ID, lines.join("\n"));
