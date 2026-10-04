@@ -234,12 +234,11 @@ function buildPremiumMessage(text, label) {
 // Logs every premium-channel forward so it can later be cross-referenced
 // against a fresh CSV export (same join fields analyze_signals.py uses:
 // date, teams, signal minute) to check the model's real-world hit rate.
-async function logPremiumForward(env, parsed, score, kind) {
+async function logPremiumForward(env, parsed, score, keyPrefix) {
   const now = new Date();
   const record = {
     date: now.toISOString().slice(0, 10),
     forwardedAt: now.toISOString(),
-    kind: kind || "high_confidence", // "high_confidence" | "risk"
     targetLine: parsed.targetLine,
     homeTeam: parsed.homeTeam || null,
     awayTeam: parsed.awayTeam || null,
@@ -251,7 +250,7 @@ async function logPremiumForward(env, parsed, score, kind) {
     modelProba: score ? Math.round(score.proba * 1000) / 1000 : null,
     threshold: score ? score.threshold : null,
   };
-  const key = `premium:fwd:${now.getTime()}:${randomToken().slice(0, 8)}`;
+  const key = `${keyPrefix}:${now.getTime()}:${randomToken().slice(0, 8)}`;
   await env.ACCESS_KV.put(key, JSON.stringify(record), { expirationTtl: 180 * 24 * 60 * 60 });
 }
 
@@ -523,6 +522,26 @@ export default {
       return jsonResponse(rows);
     }
 
+    if (url.pathname === "/admin/api/risk-log" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const rows = [];
+      let cursor;
+      do {
+        const list = await env.ACCESS_KV.list({ prefix: "risk:fwd:", cursor });
+        for (const key of list.keys) {
+          const raw = await env.ACCESS_KV.get(key.name);
+          if (raw) {
+            try {
+              rows.push(JSON.parse(raw));
+            } catch (e) {}
+          }
+        }
+        cursor = list.list_complete ? undefined : list.cursor;
+      } while (cursor);
+      rows.sort((a, b) => b.forwardedAt.localeCompare(a.forwardedAt));
+      return jsonResponse(rows);
+    }
+
     // --- Telegram webhook: receives every new message from the bot's chat.
     // No access-token check here - authenticity is verified via the secret
     // Telegram sends back, set once when registering the webhook.
@@ -556,7 +575,7 @@ export default {
               env.PREMIUM_CHANNEL_ID,
               buildPremiumMessage(channelMsg.text, `🔥 High Confidence (${Math.round(score.proba * 100)}%)`)
             );
-            await logPremiumForward(env, parsed, score, "high_confidence");
+            await logPremiumForward(env, parsed, score, "premium:fwd");
           } else if (
             [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
             parsed.minute != null &&
@@ -568,7 +587,7 @@ export default {
               env.PREMIUM_CHANNEL_ID,
               buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote})`)
             );
-            await logPremiumForward(env, parsed, score, "risk");
+            await logPremiumForward(env, parsed, score, "risk:fwd");
           }
         }
       }
