@@ -2,10 +2,20 @@
   "source_files": [
     "data/inplayflux_sinyaller_2026-09-20.csv",
     "data/inplayflux_sinyaller_2026-09-27.csv",
-    "data/inplayflux_sinyaller_2026-09-30.csv"
+    "data/inplayflux_sinyaller_2026-09-30.csv",
+    "data/inplayflux_sinyaller_2026-10-04.csv"
   ],
-  "generated_from_signals": 8329,
-  "dedup_note": "Three rolling-window exports overlap heavily by date range (6579 rows across all three files are duplicates of a signal already seen in an earlier export). scripts/analyze_signals.py dedupes on (date, match, strategy, signal minute) before combining files. All numbers below are the deduped, combined-3-file numbers (n=8329 unique signals, 8311 decided).",
+  "generated_from_signals": 10531,
+  "dedup_note": "Four rolling-window exports overlap heavily by date range (9377 rows across all four files are duplicates of a signal already seen in an earlier export). scripts/analyze_signals.py dedupes on (date, match, strategy, signal minute) before combining files. All numbers below are the deduped, combined-4-file numbers (n=10531 unique signals, 10491 decided).",
+  "new_template_variants_note": "The 10-04 export introduced '... New' template variants ('MoneyBag 2-0/0-2 -> Over 2.5 New', 'MoneyBag + 3 Goals -> Over 3.5 New') alongside the originals. These fire the same market (Hedef/Target column says 'Over 2.5'/'Over 3.5' same as the base strategy) under a renamed rule, so tool_calibration and the live confidence models below group by the actual target line (what the signal card itself says), not by strategy name - exactly like the live worker does when scoring an incoming card. No code change was needed for this; it was already target-line-based.",
+  "premium_channel_validation": {
+    "note": "First real-world check of the live confidence filter, 2026-10-02 to 2026-10-04, 307 forwarded signals, all decided.",
+    "O2.5": { "n": 158, "win": 126, "loss": 32, "realized_win_rate": 0.797, "avg_predicted": 0.836 },
+    "O3.5": { "n": 137, "win": 107, "loss": 30, "realized_win_rate": 0.781, "avg_predicted": 0.778 },
+    "O1.5": { "n": 7, "win": 7, "loss": 0, "realized_win_rate": 1.0, "avg_predicted": 0.836, "caveat": "n too small to trust yet" },
+    "O0.5": { "n": 5, "win": 4, "loss": 1, "realized_win_rate": 0.80, "avg_predicted": 0.824, "caveat": "n too small to trust yet" },
+    "overall": { "n": 307, "win": 244, "loss": 63, "realized_win_rate": 0.795 }
+  },
   "breakeven_odds_formula": "mindestquote = 1 / win_rate  (decimal odds needed so that, at this win rate, wins on average cover losses; anything below this quote runs at a loss even if the win rate holds)",
   "strategies": {
     "MoneyBag 2-0/0-2 -> Over 2.5": {
@@ -148,38 +158,45 @@
     }
   },
   "tool_calibration": {
-    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed 2026-09-30 from all three exports combined and deduped (n=3673 for O2.5, n=2913 for O3.5, n=423 for O1.5 merged across its three template variants, n=343 for O0.5). Replaces the previous 2026-09-27 calibration.",
+    "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed 2026-10-04 from all four exports combined and deduped, grouped by actual target line (Hedef/Target column), which now also sweeps in the 'New' template variants of O2.5/O3.5 introduced in the 10-04 export. n=4819 for O2.5, n=3646 for O3.5, n=538 for O1.5 merged across its three template variants, n=398 for O0.5. Replaces the previous 2026-09-30 calibration.",
     "o25Buckets": [
-      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.3, "n": 2123 },
-      { "min": 56, "max": 60, "label": "56-60'", "wr": 75.3, "n": 906 },
-      { "min": 61, "max": 65, "label": "61-65'", "wr": 73.7, "n": 316 },
-      { "min": 66, "max": 70, "label": "66-70'", "wr": 60.2, "n": 226 },
-      { "min": 71, "max": 73, "label": "71-73'", "wr": 66.7, "n": 102 }
+      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.9, "n": 2612 },
+      { "min": 56, "max": 60, "label": "56-60'", "wr": 75.9, "n": 1309 },
+      { "min": 61, "max": 65, "label": "61-65'", "wr": 71.4, "n": 440 },
+      { "min": 66, "max": 70, "label": "66-70'", "wr": 59.3, "n": 327 },
+      { "min": 71, "max": 73, "label": "71-73'", "wr": 65.6, "n": 131 }
     ],
     "o35Matrix": [
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.2, "n": 1167 },
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 74.5, "n": 376 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 68.8, "n": 513 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 76.0, "n": 179 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 63.1, "n": 203 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 66.2, "n": 71 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 59.3, "n": 182 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 67.6, "n": 68 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 53.7, "n": 108 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 69.6, "n": 46 }
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.2, "n": 1404 },
+      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 74.9, "n": 463 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 69.9, "n": 692 },
+      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 76.1, "n": 243 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 62.9, "n": 251 },
+      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 65.6, "n": 93 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 58.5, "n": 224 },
+      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 68.6, "n": 86 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 54.5, "n": 132 },
+      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 65.5, "n": 58 }
     ],
     "o15Buckets": [
-      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 78.0, "n": 232 },
-      { "min": 62, "max": 64, "label": "62-64'", "wr": 70.1, "n": 77 },
-      { "min": 65, "max": 67, "label": "65-67'", "wr": 75.9, "n": 54 },
-      { "min": 68, "max": 71, "label": "68-71'", "wr": 37.1, "n": 35 },
-      { "min": 72, "max": 90, "label": ">=72'",  "wr": 92.0, "n": 25 }
+      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 77.7, "n": 282 },
+      { "min": 62, "max": 64, "label": "62-64'", "wr": 69.5, "n": 95 },
+      { "min": 65, "max": 67, "label": "65-67'", "wr": 76.5, "n": 85 },
+      { "min": 68, "max": 71, "label": "68-71'", "wr": 39.5, "n": 38 },
+      { "min": 72, "max": 90, "label": ">=72'",  "wr": 78.9, "n": 38 }
     ],
     "o05Buckets": [
-      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 72.9, "n": 280 },
-      { "min": 62, "max": 90, "label": ">=62'",  "wr": 69.8, "n": 63 }
+      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 73.0, "n": 319 },
+      { "min": 62, "max": 90, "label": ">=62'",  "wr": 69.6, "n": 79 }
     ],
-    "o15_o05_note": "Merged across all three 'Over 1.5' bot-template variants (💰 Over 1.5 / cloude / claude 1.änderung) since they're the same underlying strategy under different rule-tweak names - splitting them would have made each bucket too thin to trust. The '68-71' bucket for O1.5 (37.1% wr, n=35) is a real danger zone, not noise: it sits between two much stronger buckets on both sides and matches the same late-signal decay seen in O2.5/O3.5. The '>=72' bucket (92.0%, n=25) is a small sample and should be treated with caution despite the high win rate - re-check once more data accumulates there. O0.5 signals fire almost exclusively at minute 61-62, same as MoneyBag 0-0 -> Goal and Over 0.5 Value in the strategies section above (same underlying signal family)."
+    "o15_o05_note": "Merged across all three 'Over 1.5' bot-template variants (💰 Over 1.5 / cloude / claude 1.änderung) since they're the same underlying strategy under different rule-tweak names - splitting them would have made each bucket too thin to trust. The '68-71' bucket for O1.5 (39.5% wr, n=38) remains a real danger zone, not noise - consistent across two calibration rounds now. The '>=72' bucket has settled down to 78.9% (n=38, up from n=25) as more data came in - the earlier 92.0% was a small-sample artifact, exactly the caution flagged last time. O0.5 signals fire almost exclusively at minute 61-62, same as MoneyBag 0-0 -> Goal and Over 0.5 Value in the strategies section above (same underlying signal family)."
+  },
+  "live_confidence_models": {
+    "note": "Logistic-regression models powering worker/src/index.js's CONFIDENCE_MODELS (the premium-channel auto-forward filter). Features in order: [minute, total_sot, radar, goalline_pre], all z-scored with the mean/std below before applying coef+intercept, then sigmoid. Cross-validated (5-fold, out-of-fold) realized win rates at each strategy's live threshold: O2.5 >=80% -> 83.7% (n=1050, 21.8% of volume), O3.5 >=75% -> 78.6% (n=758, 20.8%), O1.5 >=80% -> 80.5% (n=118, 21.9%), O0.5 >=80% -> 79.1% (n=86, 21.6%). All four thresholds unchanged from the 2026-09-30 calibration - still well matched.",
+    "2.5": { "mean": [57.5489, 5.8099, 320.2728, 2.9927], "std": [4.447, 2.4613, 79.6106, 0.6112], "coef": [-0.2769, 0.0693, 0.0257, 0.2491], "intercept": 1.139, "threshold": 0.80 },
+    "3.5": { "mean": [62.0784, 7.0823, 333.6862, 3.0036], "std": [3.1719, 2.5982, 82.0626, 0.6556], "coef": [-0.2311, 0.076, 0.0504, 0.1891], "intercept": 0.8621, "threshold": 0.75 },
+    "1.5": { "mean": [63.1654, 6.0279, 377.4233, 3.2012], "std": [4.0098, 2.3251, 68.9015, 0.5045], "coef": [-0.2786, -0.1526, 0.2299, 0.2624], "intercept": 1.0578, "threshold": 0.80 },
+    "0.5": { "mean": [61.2337, 3.9322, 330.3406, 3.0892], "std": [0.5743, 2.4593, 77.9449, 0.5761], "coef": [-0.0684, 0.1215, 0.1318, 0.4201], "intercept": 1.0135, "threshold": 0.80 }
   },
   "radar_x_score": {
     "note": "No strong monotonic relationship with win rate (71.7-74.7% across all buckets from <200 to >=450 in the deduped combined dataset). Not currently a reliable standalone filter for the main strategies."

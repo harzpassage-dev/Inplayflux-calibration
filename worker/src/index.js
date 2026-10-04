@@ -111,32 +111,34 @@ const CONFIDENCE_MODELS = {
   // targetLine -> { mean, std, coef, intercept, threshold } for
   // features [minute, total_sot, radar, goalline_pre] in that order.
   2.5: {
-    mean: [57.394, 5.7405, 319.1647, 2.9703],
-    std: [4.3973, 2.4147, 80.1697, 0.5983],
-    coef: [-0.253, 0.0588, 0.0087, 0.268],
-    intercept: 1.1357,
+    // Grouped by the signal card's actual target line (not strategy name),
+    // so this also covers the "... New" template variant introduced 10-04.
+    mean: [57.5489, 5.8099, 320.2728, 2.9927],
+    std: [4.447, 2.4613, 79.6106, 0.6112],
+    coef: [-0.2769, 0.0693, 0.0257, 0.2491],
+    intercept: 1.139,
     threshold: 0.80,
   },
   3.5: {
-    mean: [62.0704, 7.0409, 334.1218, 2.9762],
-    std: [3.1945, 2.5805, 82.0656, 0.6364],
-    coef: [-0.2262, 0.0757, 0.0567, 0.1668],
-    intercept: 0.8502,
+    mean: [62.0784, 7.0823, 333.6862, 3.0036],
+    std: [3.1719, 2.5982, 82.0626, 0.6556],
+    coef: [-0.2311, 0.076, 0.0504, 0.1891],
+    intercept: 0.8621,
     threshold: 0.75,
   },
   1.5: {
     // Merged across all three "Over 1.5" bot-template variants.
-    mean: [62.9716, 6.0993, 378.9803, 3.2139],
-    std: [3.9398, 2.3317, 71.7645, 0.4997],
-    coef: [-0.2601, -0.0188, 0.3248, 0.1751],
-    intercept: 1.0728,
+    mean: [63.1654, 6.0279, 377.4233, 3.2012],
+    std: [4.0098, 2.3251, 68.9015, 0.5045],
+    coef: [-0.2786, -0.1526, 0.2299, 0.2624],
+    intercept: 1.0578,
     threshold: 0.80,
   },
   0.5: {
-    mean: [61.2245, 3.9767, 332.3947, 3.0977],
-    std: [0.5908, 2.514, 76.2783, 0.579],
-    coef: [-0.0611, 0.1548, 0.0886, 0.3934],
-    intercept: 1.0059,
+    mean: [61.2337, 3.9322, 330.3406, 3.0892],
+    std: [0.5743, 2.4593, 77.9449, 0.5761],
+    coef: [-0.0684, 0.1215, 0.1318, 0.4201],
+    intercept: 1.0135,
     threshold: 0.80,
   },
 };

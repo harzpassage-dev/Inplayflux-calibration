@@ -307,7 +307,7 @@
 <div class="hero">
   <h1>Money<span class="accent">Bag</span> Analyst</h1>
   <p class="subtitle">Dein Signal-Check in Sekunden: Signal reinpasten, Poisson-Modell und echte Kalibrierungsdaten aus tausenden ausgewerteten Spielen rechnen sofort dagegen — inklusive automatischem Quotenvergleich, bevor du überhaupt fertig gelesen hast.</p>
-  <div class="calib-badge">📅 Kalibriert: 30.09.2026 · 8.329 Signale</div>
+  <div class="calib-badge">📅 Kalibriert: 04.10.2026 · 10.531 Signale</div>
 </div>
 
 <div class="warn-box">
@@ -434,39 +434,39 @@
   "use strict";
 
   // ---------------------------------------------------------------------
-  // Default calibration (Stand: CSV-Exporte 20.09. + 27.09. + 30.09.2026,
+  // Default calibration (Stand: CSV-Exporte 20.09. + 27.09. + 30.09. + 04.10.2026,
   // dedupliziert kombiniert, siehe calibration/rules.json -> tool_calibration)
   // ---------------------------------------------------------------------
   const DEFAULT_CALIB = {
     o25Buckets: [
-      { min: 0,  max: 55, label: "<=55'",  wr: 77.3 },
-      { min: 56, max: 60, label: "56-60'", wr: 75.3 },
-      { min: 61, max: 65, label: "61-65'", wr: 73.7 },
-      { min: 66, max: 70, label: "66-70'", wr: 60.2 },
-      { min: 71, max: 73, label: "71-73'", wr: 66.7 }
+      { min: 0,  max: 55, label: "<=55'",  wr: 77.9 },
+      { min: 56, max: 60, label: "56-60'", wr: 75.9 },
+      { min: 61, max: 65, label: "61-65'", wr: 71.4 },
+      { min: 66, max: 70, label: "66-70'", wr: 59.3 },
+      { min: 71, max: 73, label: "71-73'", wr: 65.6 }
     ],
     o35Matrix: [
       { minMin: 60, maxMin: 60, label: "=60'",   sot: "<=8", wr: 72.2 },
-      { minMin: 60, maxMin: 60, label: "=60'",   sot: "9+",  wr: 74.5 },
-      { minMin: 61, maxMin: 63, label: "61-63'", sot: "<=8", wr: 68.8 },
-      { minMin: 61, maxMin: 63, label: "61-63'", sot: "9+",  wr: 76.0 },
-      { minMin: 64, maxMin: 66, label: "64-66'", sot: "<=8", wr: 63.1 },
-      { minMin: 64, maxMin: 66, label: "64-66'", sot: "9+",  wr: 66.2 },
-      { minMin: 67, maxMin: 69, label: "67-69'", sot: "<=8", wr: 59.3 },
-      { minMin: 67, maxMin: 69, label: "67-69'", sot: "9+",  wr: 67.6 },
-      { minMin: 70, maxMin: 71, label: "70-71'", sot: "<=8", wr: 53.7 },
-      { minMin: 70, maxMin: 71, label: "70-71'", sot: "9+",  wr: 69.6 }
+      { minMin: 60, maxMin: 60, label: "=60'",   sot: "9+",  wr: 74.9 },
+      { minMin: 61, maxMin: 63, label: "61-63'", sot: "<=8", wr: 69.9 },
+      { minMin: 61, maxMin: 63, label: "61-63'", sot: "9+",  wr: 76.1 },
+      { minMin: 64, maxMin: 66, label: "64-66'", sot: "<=8", wr: 62.9 },
+      { minMin: 64, maxMin: 66, label: "64-66'", sot: "9+",  wr: 65.6 },
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "<=8", wr: 58.5 },
+      { minMin: 67, maxMin: 69, label: "67-69'", sot: "9+",  wr: 68.6 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "<=8", wr: 54.5 },
+      { minMin: 70, maxMin: 71, label: "70-71'", sot: "9+",  wr: 65.5 }
     ],
     o15Buckets: [
-      { min: 0,  max: 61, label: "<=61'",  wr: 78.0 },
-      { min: 62, max: 64, label: "62-64'", wr: 70.1 },
-      { min: 65, max: 67, label: "65-67'", wr: 75.9 },
-      { min: 68, max: 71, label: "68-71'", wr: 37.1 },
-      { min: 72, max: 90, label: ">=72'",  wr: 92.0 }
+      { min: 0,  max: 61, label: "<=61'",  wr: 77.7 },
+      { min: 62, max: 64, label: "62-64'", wr: 69.5 },
+      { min: 65, max: 67, label: "65-67'", wr: 76.5 },
+      { min: 68, max: 71, label: "68-71'", wr: 39.5 },
+      { min: 72, max: 90, label: ">=72'",  wr: 78.9 }
     ],
     o05Buckets: [
-      { min: 0,  max: 61, label: "<=61'",  wr: 72.9 },
-      { min: 62, max: 90, label: ">=62'",  wr: 69.8 }
+      { min: 0,  max: 61, label: "<=61'",  wr: 73.0 },
+      { min: 62, max: 90, label: ">=62'",  wr: 69.6 }
     ]
   };
 
