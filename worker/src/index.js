@@ -206,7 +206,7 @@ function computeConfidenceScore(parsed) {
 // Trims a full signal card down to just the essentials for the premium
 // channel: title, divider, league, match, target/progress, time, radar,
 // strike rate. Drops the Live Stats and Market/odds blocks entirely.
-function buildPremiumMessage(text, proba) {
+function buildPremiumMessage(text, label) {
   const lines = text.split(/\r?\n/);
   const keepPatterns = [
     /🏆/, // league
@@ -228,17 +228,18 @@ function buildPremiumMessage(text, proba) {
       kept.push(line);
     }
   }
-  return `🔥 High Confidence (${Math.round(proba * 100)}%)\n\n${kept.join("\n")}`;
+  return `${label}\n\n${kept.join("\n")}`;
 }
 
 // Logs every premium-channel forward so it can later be cross-referenced
 // against a fresh CSV export (same join fields analyze_signals.py uses:
 // date, teams, signal minute) to check the model's real-world hit rate.
-async function logPremiumForward(env, parsed, score) {
+async function logPremiumForward(env, parsed, score, kind) {
   const now = new Date();
   const record = {
     date: now.toISOString().slice(0, 10),
     forwardedAt: now.toISOString(),
+    kind: kind || "high_confidence", // "high_confidence" | "risk"
     targetLine: parsed.targetLine,
     homeTeam: parsed.homeTeam || null,
     awayTeam: parsed.awayTeam || null,
@@ -247,8 +248,8 @@ async function logPremiumForward(env, parsed, score) {
     radar: parsed.radar,
     goallinePre: parsed.goallinePre,
     feedWR: parsed.feedWR != null ? parsed.feedWR : null,
-    modelProba: Math.round(score.proba * 1000) / 1000,
-    threshold: score.threshold,
+    modelProba: score ? Math.round(score.proba * 1000) / 1000 : null,
+    threshold: score ? score.threshold : null,
   };
   const key = `premium:fwd:${now.getTime()}:${randomToken().slice(0, 8)}`;
   await env.ACCESS_KV.put(key, JSON.stringify(record), { expirationTtl: 180 * 24 * 60 * 60 });
@@ -540,7 +541,12 @@ export default {
           JSON.stringify({ text: channelMsg.text, receivedAt: Date.now() })
         );
 
-        // High-confidence auto-forward to the premium channel (O2.5/O3.5 only).
+        // Auto-forward to the premium channel: high-confidence signals as
+        // before, plus a "Risiko" tier for late signals (minute >= 70,
+        // across all four target lines) that don't clear the confidence
+        // threshold. Historically these run well below average (see
+        // calibration/rules.json) - they're forwarded for visibility, not
+        // because they're secretly good, so they're clearly labeled as risk.
         if (env.PREMIUM_CHANNEL_ID) {
           const parsed = parseForConfidenceScore(channelMsg.text);
           const score = computeConfidenceScore(parsed);
@@ -548,9 +554,21 @@ export default {
             await sendTelegramMessage(
               env,
               env.PREMIUM_CHANNEL_ID,
-              buildPremiumMessage(channelMsg.text, score.proba)
+              buildPremiumMessage(channelMsg.text, `🔥 High Confidence (${Math.round(score.proba * 100)}%)`)
             );
-            await logPremiumForward(env, parsed, score);
+            await logPremiumForward(env, parsed, score, "high_confidence");
+          } else if (
+            [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
+            parsed.minute != null &&
+            parsed.minute >= 70
+          ) {
+            const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
+            await sendTelegramMessage(
+              env,
+              env.PREMIUM_CHANNEL_ID,
+              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote})`)
+            );
+            await logPremiumForward(env, parsed, score, "risk");
           }
         }
       }
