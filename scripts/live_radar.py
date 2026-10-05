@@ -14,6 +14,11 @@ login. Field mapping (feed key -> rule / export column):
     ar[0]+ar[1]  -> toplamSutTotal (total shots)
     xg           -> Radar X Score  (the "RXG" column's big number)
     p_goal       -> pre-match goal line (MÖ Gol Baremi)
+    p_goal_h     -> pre-match first-half goal line (MÖ İY Gol Baremi)
+    p_avg_g_g    -> avg goals in the teams' last matches (Ort Gol Atar)
+    p_avg_g_c    -> avg goals conceded (Ort Gol Yer)
+    sonGolDakikasi -> minute of the last goal
+    p_odds       -> kickoff 1X2 odds (who the favourite is)
     ou_odds      -> [live over odds, live under odds, live goal line]
     vu           -> paraCuvali (MoneyBag flag)
     value        -> value
@@ -36,6 +41,7 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_PATH = os.path.join(ROOT, "calibration", "rules.json")
+GOAL_SCORE_PATH = os.path.join(ROOT, "calibration", "goal_score.json")
 FEED_URL = "https://inplayflux.com/maclarv8/GETAllMatches.php?inplay=inplay&v={ts}"
 MIN_POLL_SECONDS = 30  # be polite to the site; the page itself refreshes about this often
 
@@ -56,6 +62,11 @@ STRATEGIES = [
      "partial": "son5iki/ustAdayi not in feed"},
 ]
 RISK_MINUTE = 70  # same cut as the worker's risk tier for late signals
+# Radar X adds a flat bonus when the live Over is priced as favourite
+# (over odds < under odds); see reports/2026-10-05-goal-drivers.md.
+RADAR_MARKET_BONUS = 124.7
+GOAL_SCORE_MIN_MINUTE = 50
+GOAL_SCORE_MIN_PREMIUM = -2  # band "-2..0" and better: >= ~75% historical goal rate
 
 
 def to_float(value):
@@ -74,7 +85,12 @@ def pair_sum(value):
 
 def load_rules():
     with open(RULES_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        rules = json.load(f)
+    rules["goal_score"] = None
+    if os.path.exists(GOAL_SCORE_PATH):
+        with open(GOAL_SCORE_PATH, encoding="utf-8") as f:
+            rules["goal_score"] = json.load(f)
+    return rules
 
 
 def fetch_feed():
@@ -91,18 +107,34 @@ def fetch_feed():
 def snapshot(match):
     """Flatten one feed entry into the values our rules and models use."""
     ou = match.get("ou_odds") or []
+    minute = to_float(match.get("minute"))
+    goals_h = int(to_float(match.get("hg")) or 0)
+    goals_a = int(to_float(match.get("ag")) or 0)
+    over_odds = to_float(ou[0]) if len(ou) > 0 else None
+    under_odds = to_float(ou[1]) if len(ou) > 1 else None
+    last_goal = to_float(match.get("sonGolDakikasi")) or 0
+    kickoff = match.get("p_odds") or []
+    fav_margin = None
+    if len(kickoff) > 2 and to_float(kickoff[0]) and to_float(kickoff[2]):
+        fav_home = to_float(kickoff[0]) < to_float(kickoff[2])
+        fav_margin = goals_h - goals_a if fav_home else goals_a - goals_h
     return {
         "id": match.get("id"),
         "league": match.get("l", ""),
         "match": f"{match.get('h', '?')} vs {match.get('a', '?')}",
-        "minute": to_float(match.get("minute")),
-        "goals_h": int(to_float(match.get("hg")) or 0),
-        "goals_a": int(to_float(match.get("ag")) or 0),
+        "minute": minute,
+        "goals_h": goals_h,
+        "goals_a": goals_a,
         "sot": pair_sum(match.get("so")),
         "shots": pair_sum(match.get("ar")),
         "radar": to_float(match.get("xg")),
         "goalline_pre": to_float(match.get("p_goal")),
-        "over_odds": to_float(ou[0]) if len(ou) > 0 else None,
+        "ht_line_pre": to_float(match.get("p_goal_h")),
+        "avg_conc": pair_sum(match.get("p_avg_g_c")),
+        "since_goal": None if minute is None else minute - last_goal,
+        "fav_margin": fav_margin,
+        "over_fav": bool(over_odds and under_odds and over_odds < under_odds),
+        "over_odds": over_odds,
         "live_line": to_float(ou[2]) if len(ou) > 2 else None,
         "vu": to_float(match.get("vu")) == 1,
         "value": to_float(match.get("value")) == 1,
@@ -136,6 +168,52 @@ def bucket_wr(calib, line, s):
         if b["min"] <= minute <= b["max"]:
             return b["wr"] / 100, b["label"], b["n"]
     return None, None, None
+
+
+def goal_score_conditions(s):
+    """Same conditions as score_conditions() in scripts/goal_drivers.py."""
+    m, line, ht = s["minute"], s["goalline_pre"], s["ht_line_pre"]
+    return {
+        "min_58_62": 58 <= m <= 62,
+        "min_63_65": 63 <= m <= 65,
+        "min_66p": m >= 66,
+        "line_lo": line is not None and line <= 2.5,
+        "line_hi": line is not None and line >= 3.25,
+        "ht_hi": ht is not None and ht >= 1.5,
+        "def_strong": s["avg_conc"] is not None and s["avg_conc"] <= 2.2,
+        "sot9": (s["sot"] or 0) >= 9,
+        "recent_goal": s["since_goal"] is not None and s["since_goal"] <= 5,
+        "over_odds_hi": s["over_odds"] is not None and s["over_odds"] > 2.03,
+        "fav_up1": s["fav_margin"] == 1,
+    }
+
+
+CONDITION_LABELS = {
+    "min_58_62": "58-62'", "min_63_65": "63-65'", "min_66p": "66'+",
+    "line_lo": "Vorab-Linie<=2.5", "line_hi": "Vorab-Linie>=3.25", "ht_hi": "HT-Linie>=1.5",
+    "def_strong": "starke Abwehren", "sot9": "SoT>=9", "recent_goal": "Tor <=5 min her",
+    "over_odds_hi": "Over-Quote>2.03", "fav_up1": "Favorit führt mit 1",
+}
+
+
+def goal_score(s, gs):
+    """Points-based chance that one more goal falls (calibration/goal_score.json)."""
+    # Calibrated on signals fired from ~55' on; earlier in the match it says nothing.
+    if not gs or s["minute"] is None or s["minute"] < GOAL_SCORE_MIN_MINUTE:
+        return None, None, []
+    active = [k for k, on in goal_score_conditions(s).items() if on and gs["points"].get(k)]
+    points = sum(gs["points"][k] for k in active)
+    wr = next((b["wr"] for b in gs["bands"].values() if b["min"] <= points <= b["max"]), None)
+    labels = [f"{CONDITION_LABELS[k]} {gs['points'][k]:+d}" for k in active]
+    return points, wr, labels
+
+
+def radar_split(s):
+    """Radar X = market bonus (live Over priced as favourite) + game part."""
+    if s["radar"] is None:
+        return None, None
+    market = RADAR_MARKET_BONUS if s["over_fav"] else 0.0
+    return market, s["radar"] - market
 
 
 def check_strategy(strat, s):
@@ -187,8 +265,14 @@ def evaluate(s, strat, rules):
     if s["live_line"] is not None and s["live_line"] != line:
         reasons.append(f"Live-Linie {s['live_line']} ≠ Ziel {line}")
 
+    points, goal_wr, goal_labels = goal_score(s, rules.get("goal_score"))
+    weak_goal_score = points is not None and points < GOAL_SCORE_MIN_PREMIUM
+    if weak_goal_score:
+        reasons.append(f"Tor-Score {points:+d}")
+
     passes = proba is not None and proba >= threshold
-    if passes and not beyond_rec and not late and odds_ok is not False and not s["red_cards"]:
+    if (passes and not beyond_rec and not late and odds_ok is not False and not s["red_cards"]
+            and not weak_goal_score):
         verdict = "PREMIUM"
     elif late or beyond_rec or odds_ok is False or (proba is not None and proba < 0.6):
         verdict = "RISIKO"
@@ -200,6 +284,7 @@ def evaluate(s, strat, rules):
         "proba": proba, "threshold": threshold, "bucket_wr": wr,
         "bucket": bucket_label, "bucket_n": bucket_n, "estimate": est,
         "breakeven": breakeven, "edge": edge, "reasons": reasons,
+        "goal_points": points, "goal_wr": goal_wr, "goal_labels": goal_labels,
     }
 
 
@@ -222,6 +307,10 @@ def fmt_num(x, digits=2):
     return "-" if x is None else f"{x:.{digits}f}"
 
 
+def fmt_goal(points, wr):
+    return "-" if points is None else f"{points:+d}/{wr * 100:.0f}%"
+
+
 ORDER = {"PREMIUM": 0, "OK": 1, "RISIKO": 2}
 
 
@@ -229,6 +318,7 @@ def scan(feed, rules, show_all=False):
     hits, watch, rest = [], [], []
     for match in feed:
         s = snapshot(match)
+        s["goal_points"], s["goal_wr"], s["goal_labels"] = goal_score(s, rules.get("goal_score"))
         matched = [evaluate(s, strat, rules) for strat in STRATEGIES if check_strategy(strat, s)]
         if matched:
             for ev in matched:
@@ -246,33 +336,38 @@ def print_report(hits, watch, rest, n_feed):
     if hits:
         print(f"{'Urteil':8} {'Min':>3} {'Score':5} {'Spiel':42} {'Strategie':32} "
               f"{'Modell':>6} {'Schw.':>5} {'Bucket':>6} {'Mind.Q':>6} {'Quote':>5} {'Edge':>6} "
-              f"{'Radar':>6} {'SoT':>3}  Hinweise")
+              f"{'Radar':>6} {'Markt':>5} {'SoT':>3} {'Tor-Sc':>6}  Hinweise")
         for s, ev in hits:
             print(f"{ev['verdict']:8} {int(s['minute']):>3} {s['goals_h']}-{s['goals_a']:<3} "
                   f"{s['match'][:42]:42} {ev['strategy'][:32]:32} {fmt_pct(ev['proba']):>6} "
                   f"{fmt_pct(ev['threshold']):>5} {fmt_pct(ev['bucket_wr']):>6} "
                   f"{fmt_num(ev['breakeven']):>6} {fmt_num(s['over_odds']):>5} "
-                  f"{fmt_pct(ev['edge']):>6} {fmt_num(s['radar'], 0):>6} {fmt_num(s['sot'], 0):>3}  "
-                  f"{'; '.join(ev['reasons'])}")
+                  f"{fmt_pct(ev['edge']):>6} {fmt_num(s['radar'], 0):>6} "
+                  f"{'+125' if s['over_fav'] else '0':>5} {fmt_num(s['sot'], 0):>3} "
+                  f"{fmt_goal(ev['goal_points'], ev['goal_wr']):>6}  {'; '.join(ev['reasons'])}")
+            if ev["goal_labels"]:
+                print(f"{'':9}Tor-Score: {', '.join(ev['goal_labels'])}")
     else:
         print("Keine Spiele erfüllen gerade eine Strategie-Regel.")
     if watch:
         print("\n--- Beobachten ---")
         for s, hint in watch:
             print(f"{int(s['minute']):>3}' {s['goals_h']}-{s['goals_a']}  {s['match'][:45]:45} "
-                  f"Radar {fmt_num(s['radar'], 0):>5}  SoT {fmt_num(s['sot'], 0):>2}  {hint}")
+                  f"Radar {fmt_num(s['radar'], 0):>5}  SoT {fmt_num(s['sot'], 0):>2}  "
+                  f"Tor-Score {fmt_goal(s['goal_points'], s['goal_wr']):>7}  {hint}")
     if rest:
         print("\n--- Übrige Live-Spiele ---")
         for s, _ in rest:
             minute = "-" if s["minute"] is None else int(s["minute"])
             print(f"{minute:>3}' {s['goals_h']}-{s['goals_a']}  {s['match'][:45]:45} "
-                  f"Radar {fmt_num(s['radar'], 0):>5}  SoT {fmt_num(s['sot'], 0):>2}  "
+                  f"Radar {fmt_num(s['radar'], 0):>5} (Markt {'+125' if s['over_fav'] else '   0'})  "
+                  f"SoT {fmt_num(s['sot'], 0):>2}  Tor-Score {fmt_goal(s['goal_points'], s['goal_wr']):>7}  "
                   f"MoneyBag {'ja' if s['vu'] else 'nein'}")
 
 
 LOG_FIELDS = ["logged_at", "match_id", "league", "match", "strategy", "line", "minute",
               "score", "radar", "sot", "goalline_pre", "over_odds", "live_line",
-              "proba", "bucket_wr", "breakeven", "edge", "verdict", "reasons",
+              "proba", "bucket_wr", "breakeven", "edge", "goal_points", "goal_wr", "verdict", "reasons",
               "result", "result_minute"]
 
 
@@ -309,7 +404,8 @@ def update_log(path, hits, feed, last_seen):
             "goalline_pre": s["goalline_pre"], "over_odds": s["over_odds"],
             "live_line": s["live_line"], "proba": fmt_num(ev["proba"], 3),
             "bucket_wr": fmt_num(ev["bucket_wr"], 3), "breakeven": fmt_num(ev["breakeven"]),
-            "edge": fmt_num(ev["edge"], 3), "verdict": ev["verdict"],
+            "edge": fmt_num(ev["edge"], 3), "goal_points": ev["goal_points"],
+            "goal_wr": fmt_num(ev["goal_wr"], 3), "verdict": ev["verdict"],
             "reasons": "; ".join(ev["reasons"]), "result": "pending", "result_minute": "",
         })
     current = {m.get("id"): snapshot(m) for m in feed}
