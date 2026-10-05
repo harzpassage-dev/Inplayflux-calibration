@@ -1,6 +1,10 @@
 name = "moneybag-access"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
+# Keep variables set in the Cloudflare dashboard (e.g. PREMIUM_CHANNEL_ID,
+# ADMIN_CHAT_ID) when deploying from Git - otherwise a deploy drops any
+# plaintext var that isn't listed here. Secrets are never touched.
+keep_vars = true
 
 [assets]
 directory = "./public"
