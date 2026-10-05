@@ -84,3 +84,33 @@ over again before redeploying:
 cp tools/moneybag-analyst.html worker/public/index.html
 npx wrangler deploy
 ```
+
+## Premium channel: live confirmation after 2 minutes
+
+High-confidence cards are **not** posted to the premium channel right away.
+The webhook queues them (KV key `premium:pending`), and a cron trigger
+(`[triggers] crons = ["* * * * *"]` in `wrangler.toml`) runs every minute:
+
+1. Once a queued card is at least 2 minutes old, the worker loads the
+   InPlayFlux live-scanner feed (`maclarv8/GETAllMatches.php`) and finds the
+   match by team names.
+2. It re-checks the match live, the same way `scripts/live_radar.py` does.
+   The signal is dropped if a goal has already fallen, a red card has
+   appeared, or the match is at minute 70 or later. It is also dropped if
+   the confidence model (on live minute, shots on target, radar and
+   pre-match line) is under its threshold, or if the goal score from
+   `calibration/goal_score.json` is below −2.
+3. If everything still holds, the card is posted with a "✅ Live bestätigt"
+   block (live minute, score, model, goal score, radar split, live Over
+   quote). Otherwise it is logged with the reason.
+4. If the match never shows up in the feed, or the feed can't be reached,
+   the card is dropped after 8 minutes.
+
+Late "Risiko" cards (minute ≥ 70) are still forwarded right away, unchanged.
+
+Log of all decisions (`pending`, `confirmed`, `rejected` with reasons):
+```bash
+curl -H "Authorization: Bearer <ADMIN_PASSWORD>" https://moneybag-signals.com/admin/api/confirm-log
+```
+The KV cost is one read per minute while nothing is queued. Writes only
+happen when a card is queued or decided.

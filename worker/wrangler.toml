@@ -11,6 +11,10 @@ binding = "ASSETS"
 # for every request.
 run_worker_first = true
 
+# Every minute: live-confirm queued premium signals (see processPendingPremium).
+[triggers]
+crons = ["* * * * *"]
+
 [[kv_namespaces]]
 binding = "ACCESS_KV"
 id = "4adee62e97ef429cac51cc3019d48a18"
