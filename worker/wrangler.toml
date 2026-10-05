@@ -25,3 +25,8 @@ id = "4adee62e97ef429cac51cc3019d48a18"
 
 # Set with: npx wrangler secret put ADMIN_PASSWORD
 # Never commit the actual password.
+
+# Workers logs in the dashboard (Beobachtbarkeit), e.g. to follow the
+# per-minute premium confirmation cron.
+[observability]
+enabled = true
