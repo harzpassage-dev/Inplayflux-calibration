@@ -653,6 +653,13 @@ async function handleAdminPage() {
 </section>
 
 <section>
+  <h3>Premium-Bestätigungen</h3>
+  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen.</p>
+  <button id="confirm-btn">Aktualisieren</button>
+  <div id="confirm-out" style="margin-top:10px;"></div>
+</section>
+
+<section>
   <h3>Alle Zugänge</h3>
   <button id="list-btn">Aktualisieren</button>
   <div id="list-out" style="margin-top:10px;"></div>
@@ -686,6 +693,42 @@ document.getElementById('ext-btn').addEventListener('click', async () => {
     const days = parseFloat(document.getElementById('ext-days').value) || 30;
     const res = await api('/admin/api/extend', { token, days });
     out.textContent = 'Verlängert bis: ' + new Date(res.expiresAt).toLocaleString('de-DE');
+  } catch (e) { out.textContent = e.message; }
+});
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function pct(v) { return v == null ? '-' : Math.round(v * 100) + '%'; }
+function hm(iso) { return iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'; }
+
+document.getElementById('confirm-btn').addEventListener('click', async () => {
+  const out = document.getElementById('confirm-out');
+  out.textContent = 'Lade …';
+  try {
+    const r = await fetch('/admin/api/confirm-log', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const data = await r.json();
+    const rows = data.confirmed.map(x => Object.assign({ ok: true }, x))
+      .concat(data.rejected.map(x => Object.assign({ ok: false }, x)))
+      .sort((a, b) => b.decidedAt.localeCompare(a.decidedAt));
+    const total = rows.length;
+    const okCount = data.confirmed.length;
+    let html = '<div style="font-size:0.85rem;margin-bottom:8px;">Wartend: <b>' + data.pending.length + '</b> · Gepostet: <b>' + okCount + '</b> · Verworfen: <b>' + (total - okCount) + '</b></div>';
+    if (data.pending.length) {
+      html += '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:8px;">Wartet: ' + data.pending.map(p => esc((p.parsed.homeTeam || '?') + ' – ' + (p.parsed.awayTeam || '?'))).join(', ') + '</div>';
+    }
+    if (!total) { out.innerHTML = html + 'Noch keine Entscheidungen.'; return; }
+    html += '<table><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th><th>Live</th></tr>';
+    rows.slice(0, 100).forEach(x => {
+      const live = x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-';
+      const detail = x.ok
+        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>Modell ' + pct(x.liveProba) + ' · Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + '</small>'
+        : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + '</small>';
+      html += '<tr><td>' + hm(x.decidedAt) + '</td><td>' + esc(x.homeTeam) + ' – ' + esc(x.awayTeam) + '<br><small>O' + esc(x.targetLine) + ' · Signal ' + esc(x.signalMinute) + "' · " + pct(x.signalProba) + '</small></td><td>' + detail + '</td><td>' + live + '</td></tr>';
+    });
+    html += '</table>';
+    out.innerHTML = html;
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -761,7 +804,10 @@ export default {
         const raw = await env.ACCESS_KV.get(key.name);
         if (raw) {
           try {
-            rows.push(JSON.parse(raw));
+            const rec = JSON.parse(raw);
+            // The same KV namespace also holds signal logs and queues;
+            // only access-token records have a token and an expiry.
+            if (rec && typeof rec.token === "string" && rec.expiresAt) rows.push(rec);
           } catch (e) {}
         }
       }
