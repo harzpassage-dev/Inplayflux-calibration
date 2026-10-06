@@ -521,6 +521,52 @@ async function listLog(env, prefix) {
   return rows;
 }
 
+// One CSV row per logged decision, for scripts/premium_report.py:
+//   forwarded / risk    -> posted to the premium channel (premium:fwd / risk:fwd)
+//   confirmed / rejected -> outcome of the 2-minute live check (premium:ok / premium:rej)
+async function premiumExportCsv(env) {
+  const kinds = [
+    ["premium:fwd:", "forwarded"],
+    ["risk:fwd:", "risk"],
+    ["premium:ok:", "confirmed"],
+    ["premium:rej:", "rejected"],
+  ];
+  const cols = [
+    "kind", "time", "date", "home", "away", "target_line", "signal_minute", "signal_proba",
+    "live_minute", "live_score", "live_proba", "goal_points", "over_odds", "reason",
+  ];
+  const cell = (v) => {
+    const t = v == null ? "" : String(v);
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const lines = [cols.join(",")];
+  for (const [prefix, kind] of kinds) {
+    let cursor;
+    do {
+      const list = await env.ACCESS_KV.list({ prefix, cursor });
+      for (const key of list.keys) {
+        const raw = await env.ACCESS_KV.get(key.name);
+        if (!raw) continue;
+        let r;
+        try {
+          r = JSON.parse(raw);
+        } catch (e) {
+          continue;
+        }
+        const live = r.live || {};
+        lines.push([
+          kind, r.forwardedAt || r.decidedAt, r.date, r.homeTeam, r.awayTeam, r.targetLine,
+          r.signalMinute != null ? r.signalMinute : r.minute,
+          r.signalProba != null ? r.signalProba : r.modelProba,
+          live.minute, live.score, r.liveProba, r.goalPoints, live.overOdds, r.reason,
+        ].map(cell).join(","));
+      }
+      cursor = list.list_complete ? undefined : list.cursor;
+    } while (cursor);
+  }
+  return lines.join("\n") + "\n";
+}
+
 async function resolveAccess(request, env) {
   const cookies = parseCookies(request);
   const url = new URL(request.url);
@@ -656,6 +702,7 @@ async function handleAdminPage() {
   <h3>Premium-Bestätigungen</h3>
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen.</p>
   <button id="confirm-btn">Aktualisieren</button>
+  <button id="export-btn" style="margin-left:6px;">Log als CSV exportieren</button>
   <div id="confirm-out" style="margin-top:10px;"></div>
 </section>
 
@@ -729,6 +776,24 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
     });
     html += '</table>';
     out.innerHTML = html;
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const out = document.getElementById('confirm-out');
+  try {
+    const r = await fetch('/admin/api/premium-export', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const csv = await r.text();
+    const name = 'premium_log_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    // Fallback for browsers that ignore blob downloads (some iPad browsers): show it to copy.
+    out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">' + (csv.trim().split('\\n').length - 1) +
+      ' Einträge. Falls kein Download startet: Text kopieren und als ' + name + ' speichern.</div>' +
+      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -853,6 +918,16 @@ export default {
       } while (cursor);
       rows.sort((a, b) => b.forwardedAt.localeCompare(a.forwardedAt));
       return jsonResponse(rows);
+    }
+
+    if (url.pathname === "/admin/api/premium-export" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      return new Response(await premiumExportCsv(env), {
+        headers: {
+          "content-type": "text/csv; charset=utf-8",
+          "content-disposition": `attachment; filename="premium_log_${new Date().toISOString().slice(0, 10)}.csv"`,
+        },
+      });
     }
 
     if (url.pathname === "/admin/api/confirm-log" && request.method === "GET") {

@@ -35,6 +35,10 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
   window) and writes the points-based goal score to
   `calibration/goal_score.json`, which `live_radar.py` shows per match.
   Needs `pandas` and `scikit-learn`. See `reports/2026-10-05-goal-drivers.md`.
+- `scripts/premium_report.py` – premium-channel hit rates: joins the
+  worker's premium log (admin panel → "Log als CSV exportieren") with
+  signal exports that carry results; reports posted vs. rejected signals of
+  the 2-minute live check, per target line and per day.
 - `worker/` – Cloudflare Worker that gates `tools/moneybag-analyst.html`
   behind time-limited access tokens (24h trial links, manually extended
   after payment). See `worker/README.md` for deploy and admin usage.
