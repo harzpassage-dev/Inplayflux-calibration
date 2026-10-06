@@ -90,3 +90,12 @@ Die Spalte „O/U Üst Oranı“ im Export liegt im Schnitt bei 1,89. Das ist di
 geschönt und wird hier bewusst nicht angegeben. Maßgeblich ist die **Mindestquote**: Ein
 Premium-Signal ist nur profitabel, wenn die Over-Quote auf die Ziel-Linie mindestens etwa
 **1,24** beträgt.
+
+## Umgesetzt (06.10.)
+
+- **2-Minuten-Prüfung:** Die Modellschwelle bei der Live-Prüfung hat jetzt 5 pp Toleranz
+  (`CONFIRM_TOLERANCE` im Worker).
+- **Risiko-Stufe:** Nur noch Karten ab Minute 72 oder mit Radar ≥ 410 werden gepostet.
+  - Rückrechnung über 480 Risiko-Signale: behalten 244 mit 64,8 %, wegfallend 236 mit 55,9 %.
+  - In beiden Hälften des Zeitraums geprüft: 68,2 % / 60,7 % gegenüber 56,3 % / 55,6 %.
+  - Mindestquote der verbleibenden Risiko-Signale: etwa 1,55.
