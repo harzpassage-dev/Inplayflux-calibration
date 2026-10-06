@@ -234,7 +234,7 @@ function buildPremiumMessage(text, label) {
 // Logs every premium-channel forward so it can later be cross-referenced
 // against a fresh CSV export (same join fields analyze_signals.py uses:
 // date, teams, signal minute) to check the model's real-world hit rate.
-async function logPremiumForward(env, parsed, score, keyPrefix) {
+async function logPremiumForward(env, parsed, score, keyPrefix, extra = {}) {
   const now = new Date();
   const record = {
     date: now.toISOString().slice(0, 10),
@@ -249,6 +249,7 @@ async function logPremiumForward(env, parsed, score, keyPrefix) {
     feedWR: parsed.feedWR != null ? parsed.feedWR : null,
     modelProba: score ? Math.round(score.proba * 1000) / 1000 : null,
     threshold: score ? score.threshold : null,
+    ...extra,
   };
   const key = `${keyPrefix}:${now.getTime()}:${randomToken().slice(0, 8)}`;
   await env.ACCESS_KV.put(key, JSON.stringify(record), { expirationTtl: 180 * 24 * 60 * 60 });
@@ -322,6 +323,49 @@ function findMatch(feed, homeTeam, awayTeam) {
     }) ||
     null
   );
+}
+
+async function fetchFeed() {
+  try {
+    const resp = await fetch(FEED_URL + Date.now(), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (moneybag-access live confirm)",
+        Referer: "https://inplayflux.com/live-scanner?page=open&lang=en",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    return resp.ok ? await resp.json() : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Live over/under quote as InPlayFlux shows it: the market's main live goal
+// line, which is not always the signal's target line - so the line is logged
+// with it, and only quotes where line == target line are exact for the bet.
+function oddsSnapshot(m) {
+  if (!m) return null;
+  const ou = m.ou_odds || [];
+  const over = num(ou[0]);
+  if (!over) return null;
+  return {
+    over,
+    under: num(ou[1]),
+    line: num(ou[2]),
+    minute: num(m.minute),
+    score: `${num(m.hg) || 0}-${num(m.ag) || 0}`,
+    at: new Date().toISOString(),
+  };
+}
+
+async function signalOddsFor(parsed) {
+  const feed = await fetchFeed();
+  return Array.isArray(feed) ? oddsSnapshot(findMatch(feed, parsed.homeTeam, parsed.awayTeam)) : null;
+}
+
+function oddsText(o) {
+  return o ? `Over ${o.line != null ? o.line + " " : ""}@ ${o.over.toFixed(2)}` : null;
 }
 
 function liveSnapshot(m) {
@@ -411,7 +455,7 @@ function confirmationBlock(res) {
     `Modell ${Math.round(res.score.proba * 100)}% · Tor-Score ${signed(res.goal.points)} (${Math.round(res.goal.wr * 100)}%)`,
   ];
   const radarNote = s.radar != null ? `Radar ${Math.round(s.radar)}${s.overFav ? ` (davon Markt +${Math.round(RADAR_MARKET_BONUS)})` : ""}` : null;
-  const oddsNote = s.overOdds ? `Over ${s.liveLine != null ? s.liveLine + " " : ""}@ ${s.overOdds.toFixed(2)}` : null;
+  const oddsNote = res.postOdds ? oddsText(res.postOdds) + (res.signalOdds ? ` (bei Signal ${res.signalOdds.over.toFixed(2)})` : "") : null;
   const extra = [radarNote, s.sot != null ? `SoT ${s.sot}` : null, oddsNote].filter(Boolean);
   if (extra.length) lines.push(extra.join(" · "));
   return lines.join("\n");
@@ -427,9 +471,9 @@ async function readPending(env) {
   }
 }
 
-async function queuePremium(env, text, parsed, score) {
+async function queuePremium(env, text, parsed, score, signalOdds) {
   const pending = await readPending(env);
-  pending.push({ id: randomToken().slice(0, 12), text, parsed, proba: score.proba, receivedAt: Date.now() });
+  pending.push({ id: randomToken().slice(0, 12), text, parsed, proba: score.proba, signalOdds, receivedAt: Date.now() });
   await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(pending), { expirationTtl: 24 * 60 * 60 });
 }
 
@@ -448,6 +492,8 @@ async function logConfirmation(env, item, res, keyPrefix) {
     live: res.live || null,
     liveProba: res.score ? Math.round(res.score.proba * 1000) / 1000 : null,
     goalPoints: res.goal ? res.goal.points : null,
+    signalOdds: item.signalOdds || null,
+    postOdds: res.postOdds || null,
   };
   await env.ACCESS_KV.put(`${keyPrefix}:${now.getTime()}:${item.id}`, JSON.stringify(record), {
     expirationTtl: 180 * 24 * 60 * 60,
@@ -461,19 +507,7 @@ async function processPendingPremium(env) {
   const due = pending.filter((p) => now - p.receivedAt >= CONFIRM_DELAY_MS);
   if (!due.length) return;
 
-  let feed = null;
-  try {
-    const resp = await fetch(FEED_URL + now, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (moneybag-access live confirm)",
-        Referer: "https://inplayflux.com/live-scanner?page=open&lang=en",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-    });
-    if (resp.ok) feed = await resp.json();
-  } catch (e) {
-    feed = null;
-  }
+  const feed = await fetchFeed();
 
   const done = new Set();
   for (const item of due) {
@@ -489,10 +523,15 @@ async function processPendingPremium(env) {
     }
     done.add(item.id);
     const res = confirmLive(item, match);
+    res.postOdds = oddsSnapshot(match);
+    res.signalOdds = item.signalOdds || null;
     if (res.ok) {
       const label = `🔥 High Confidence (${Math.round(item.proba * 100)}% → live ${Math.round(res.score.proba * 100)}%)`;
       await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, buildPremiumMessage(item.text, label) + "\n" + confirmationBlock(res));
-      await logPremiumForward(env, item.parsed, res.score, "premium:fwd");
+      await logPremiumForward(env, item.parsed, res.score, "premium:fwd", {
+        signalOdds: item.signalOdds || null,
+        postOdds: res.postOdds,
+      });
       await logConfirmation(env, item, res, "premium:ok");
     } else {
       await logConfirmation(env, item, res, "premium:rej");
@@ -542,7 +581,8 @@ async function premiumExportCsv(env) {
   ];
   const cols = [
     "kind", "time", "date", "home", "away", "target_line", "signal_minute", "signal_proba",
-    "live_minute", "live_score", "live_proba", "goal_points", "over_odds", "reason",
+    "live_minute", "live_score", "live_proba", "goal_points",
+    "signal_over", "signal_under", "signal_line", "post_over", "post_under", "post_line", "reason",
   ];
   const cell = (v) => {
     const t = v == null ? "" : String(v);
@@ -563,11 +603,14 @@ async function premiumExportCsv(env) {
           continue;
         }
         const live = r.live || {};
+        const so = r.signalOdds || {};
+        const po = r.postOdds || {};
         lines.push([
           kind, r.forwardedAt || r.decidedAt, r.date, r.homeTeam, r.awayTeam, r.targetLine,
           r.signalMinute != null ? r.signalMinute : r.minute,
           r.signalProba != null ? r.signalProba : r.modelProba,
-          live.minute, live.score, r.liveProba, r.goalPoints, live.overOdds, r.reason,
+          live.minute, live.score, r.liveProba, r.goalPoints,
+          so.over, so.under, so.line, po.over, po.under, po.line, r.reason,
         ].map(cell).join(","));
       }
       cursor = list.list_complete ? undefined : list.cursor;
@@ -777,7 +820,9 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
     if (!total) { out.innerHTML = html + 'Noch keine Entscheidungen.'; return; }
     html += '<table><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th><th>Live</th></tr>';
     rows.slice(0, 100).forEach(x => {
-      const live = x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-';
+      const q = o => o ? 'O' + esc(o.line) + ' @ ' + Number(o.over).toFixed(2) : '-';
+      const live = (x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-') +
+        '<br><small>Signal ' + q(x.signalOdds) + '<br>Post ' + q(x.postOdds) + '</small>';
       const detail = x.ok
         ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>Modell ' + pct(x.liveProba) + ' · Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + '</small>'
         : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + '</small>';
@@ -975,7 +1020,8 @@ export default {
           if (score && score.passes) {
             // Not posted yet: the cron trigger re-checks the match live after
             // CONFIRM_DELAY_MS and only then posts (see processPendingPremium).
-            await queuePremium(env, channelMsg.text, parsed, score);
+            // The quote at signal time is logged so posted bets can be priced later.
+            await queuePremium(env, channelMsg.text, parsed, score, await signalOddsFor(parsed));
           } else if (
             [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
             parsed.minute != null &&
@@ -983,12 +1029,14 @@ export default {
             (parsed.minute >= RISK_MIN_MINUTE || (parsed.radar != null && parsed.radar >= RISK_MIN_RADAR))
           ) {
             const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
+            const odds = await signalOddsFor(parsed);
             await sendTelegramMessage(
               env,
               env.PREMIUM_CHANNEL_ID,
-              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote})`)
+              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote})`) +
+                (odds ? `\nQuote: ${oddsText(odds)}` : "")
             );
-            await logPremiumForward(env, parsed, score, "risk:fwd");
+            await logPremiumForward(env, parsed, score, "risk:fwd", { signalOdds: odds, postOdds: odds });
           }
         }
       }

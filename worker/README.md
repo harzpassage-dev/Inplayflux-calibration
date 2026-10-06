@@ -106,7 +106,15 @@ The webhook queues them (KV key `premium:pending`), and a cron trigger
 4. If the match never shows up in the feed, or the feed can't be reached,
    the card is dropped after 8 minutes.
 
-Late "Risiko" cards (minute ≥ 70) are still forwarded right away, unchanged.
+Late "Risiko" cards are still forwarded right away, but only from minute 72
+or with Radar ≥ 410 (see reports/2026-10-06-premium-channel.md).
+
+Odds: for every queued and risk card the worker also logs the live
+over/under quote from the feed at signal time (`signalOdds`) and when it
+posts (`postOdds`), including the line the quote belongs to. The feed shows
+the market's main live line, so the quote matches the bet only when that
+line equals the card's target line. Both show up in the admin panel and in
+the CSV export (`signal_*` / `post_*` columns).
 
 Log of all decisions (`pending`, `confirmed`, `rejected` with reasons):
 ```bash

@@ -10,6 +10,10 @@ Tiers in the log:
     confirmed  passed the 2-minute live check (also appears as forwarded)
     rejected   held back by the live check - shows what the check filtered out
 
+Quotes: since 2026-10-06 the log carries the live over/under quote at signal
+time and at posting (signal_* / post_* columns). ROI is only computed where
+the logged line equals the target line.
+
 Matching: same target line, same teams (normalised), log date within one day
 of the export date, signal minute within 3 minutes when both are known.
 
@@ -95,6 +99,16 @@ def summary(label, rows):
     pred = f"  Ø Modell {sum(probas) / len(probas) * 100:4.1f}%" if probas else ""
     print(f"{label:34} {w:4}/{n:<4} = {wr * 100:5.1f}%  Mindestquote {1 / wr:4.2f}{pred}"
           f"  (ohne Ergebnis: {unmatched})")
+    # Real return, only where the logged live quote is for the signal's own
+    # target line (InPlayFlux logs the market's main line, which can differ).
+    priced = [r for r in decided if to_float(r.get("post_over")) and
+              to_float(r.get("post_line")) == to_float(r.get("target_line"))]
+    if priced:
+        odds = [to_float(r["post_over"]) for r in priced]
+        profit = sum((o - 1) if r["won"] else -1 for o, r in zip(odds, priced))
+        above = sum(o >= 1 / wr for o in odds)
+        print(f"{'':34} mit Quote auf Ziel-Linie: n={len(priced)}, Ø Quote {sum(odds) / len(odds):4.2f}, "
+              f"über Mindestquote {above}/{len(priced)}, ROI {profit / len(priced) * 100:+5.1f}%")
 
 
 def main():
