@@ -103,11 +103,18 @@ The webhook queues them (KV key `premium:pending`), and a cron trigger
 3. If everything still holds, the card is posted with a "✅ Live bestätigt"
    block (live minute, score, model, goal score, radar split, live Over
    quote). Otherwise it is logged with the reason.
-4. If the match never shows up in the feed, or the feed can't be reached,
-   the card is dropped after 8 minutes.
+4. If the feed can't be reached, or the match doesn't show up in it within
+   4 minutes, the card is posted anyway, marked "ohne Live-Prüfung".
 
 Late "Risiko" cards are still forwarded right away, but only from minute 72
 or with Radar ≥ 410 (see reports/2026-10-06-premium-channel.md).
+
+"Half-Risiko" cards (minute 68–69, under the confidence threshold) are
+forwarded right away with 0.5 units, but only if the match is in the live
+feed, no goal or red card came since the card, and the live goal score is
+≥ −7. Backtest: 66.3 % (n = 172) against 51.8 % for the rest at 68–69
+(see reports/2026-10-07-half-risk.md). Without the feed they are skipped.
+They are tracked and logged as `half:fwd`.
 
 Odds: for every queued and risk card the worker also logs the live
 over/under quote from the feed at signal time (`signalOdds`) and when it

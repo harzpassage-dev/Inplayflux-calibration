@@ -283,6 +283,14 @@ const RISK_WR = 0.648;
 const UNITS_STRONG = 2; // goal score >= +1 (historically ~82%)
 const UNITS_NORMAL = 1;
 const UNITS_RISK = 0.5;
+// Half-Risiko tier: cards at minute 68-69 below the confidence threshold,
+// only when the live goal score is >= -7 (backtest 2026-10-07: 66.3%, n=172,
+// both halves 62% / 75%; the rest at 68-69 only 51.8%). Needs the live feed
+// for the goal score; without it the card is skipped.
+const HALF_MIN_MINUTE = 68;
+const HALF_MIN_GOAL_POINTS = -7;
+const HALF_WR = 0.663;
+const UNITS_HALF = 0.5;
 // Result tracking of posted signals.
 const TRACK_KEY = "track:open";
 const TRACK_LOST_AFTER_MIN = 85;      // match last seen at 85'+ and then gone -> no more goal
@@ -414,6 +422,34 @@ function oddsSnapshot(m) {
   };
 }
 
+// Half-Risiko: minute 68-69 card below the threshold. Posted right away, but
+// only if the match is in the live feed, no goal or red card came since the
+// card, and the goal score clears HALF_MIN_GOAL_POINTS.
+async function maybePostHalfRisk(env, text, parsed, score) {
+  const snap = await signalSnapshotFor(parsed);
+  if (!snap.match) return false;
+  const live = liveSnapshot(snap.match);
+  if (live.goals > parsed.targetLine - 0.5 || live.redCards > 0) return false;
+  const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute });
+  if (gs.points < HALF_MIN_GOAL_POINTS) return false;
+  const odds = snap.odds;
+  const mq = minQuote(HALF_WR);
+  const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
+  await sendTelegramMessage(
+    env,
+    env.PREMIUM_CHANNEL_ID,
+    buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote})`) +
+      (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
+      stakeAdvice(parsed.targetLine, mq, UNITS_HALF, odds)
+  );
+  await trackSignal(env, {
+    tier: "half", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
+    line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds,
+  });
+  await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points });
+  return true;
+}
+
 async function signalOddsFor(parsed) {
   return (await signalSnapshotFor(parsed)).odds;
 }
@@ -421,7 +457,7 @@ async function signalOddsFor(parsed) {
 async function signalSnapshotFor(parsed) {
   const feed = await fetchFeed();
   const match = Array.isArray(feed) ? findMatch(feed, parsed.homeTeam, parsed.awayTeam) : null;
-  return { odds: oddsSnapshot(match), matchId: match ? match.id : null };
+  return { odds: oddsSnapshot(match), matchId: match ? match.id : null, match };
 }
 
 function oddsText(o) {
@@ -795,6 +831,7 @@ function summarize(rows) {
     all: tally(decided),
     premium: tally(decided.filter((r) => r.tier === "premium")),
     risk: tally(decided.filter((r) => r.tier === "risk")),
+    half: tally(decided.filter((r) => r.tier === "half")),
     priced: priced.length,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
@@ -811,6 +848,7 @@ function weeklyReportText(sum, fromDate, toDate) {
     `📊 Wochenbilanz Premium (${d(fromDate)}–${d(toDate)})`,
     "",
     `🔥 High Confidence: ${pctText(sum.premium)}`,
+    `🟠 Half-Risiko: ${pctText(sum.half)}`,
     `⚠️ Risiko: ${pctText(sum.risk)}`,
     `Gesamt: ${pctText(sum.all)}`,
   ];
@@ -851,12 +889,13 @@ async function listLog(env, prefix) {
 }
 
 // One CSV row per logged decision, for scripts/premium_report.py:
-//   forwarded / risk    -> posted to the premium channel (premium:fwd / risk:fwd)
+//   forwarded / risk / half -> posted to the premium channel (premium:fwd / risk:fwd / half:fwd)
 //   confirmed / rejected -> outcome of the 2-minute live check (premium:ok / premium:rej)
 async function premiumExportCsv(env) {
   const kinds = [
     ["premium:fwd:", "forwarded"],
     ["risk:fwd:", "risk"],
+    ["half:fwd:", "half"],
     ["premium:ok:", "confirmed"],
     ["premium:rej:", "rejected"],
   ];
@@ -1197,7 +1236,7 @@ async function loadResults(days) {
     const d = await r.json();
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
-    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
     html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
@@ -1207,7 +1246,7 @@ async function loadResults(days) {
         const res = x.result === 'won' ? '<span style="color:#4caf7a;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
           : x.result === 'lost' ? '<span style="color:#e0a040;">✖ kein Tor</span>' : '<span style="color:#8891a3;">– unklar</span>';
         const q = x.quote != null ? Number(x.quote).toFixed(2) + (x.betPlaced ? '' : ' (unter ' + Number(x.minQuote).toFixed(2) + ')') : '–';
-        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : 'Premium') + ' · O' + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
+        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : 'Premium') + ' · O' + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
       });
       html += '</table>';
     }
@@ -1540,6 +1579,13 @@ export default {
               line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_RISK, odds,
             });
             await logPremiumForward(env, parsed, score, "risk:fwd", { signalOdds: odds, postOdds: odds });
+          } else if (
+            [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
+            parsed.minute != null &&
+            parsed.minute >= HALF_MIN_MINUTE &&
+            parsed.minute < RISK_MINUTE
+          ) {
+            await maybePostHalfRisk(env, channelMsg.text, parsed, score);
           }
         }
       }
