@@ -1034,6 +1034,8 @@ async function handleAdminPage() {
 <section>
   <h3>Bilanz (automatisch ausgewertet)</h3>
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jedes gepostete Signal wird im Live-Spielstand verfolgt und als Treffer oder Fehlschlag gewertet. Die Wochenbilanz geht jeden Montag um 10 Uhr (MESZ) automatisch in den Premium-Kanal.</p>
+  <button id="test-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test-Signal an Premium-Kanal senden</button>
+  <div class="out" id="test-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
   <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
   <div id="res-out" style="margin-top:10px;"></div>
@@ -1212,6 +1214,29 @@ async function loadResults(days) {
     out.innerHTML = html;
   } catch (e) { out.textContent = e.message; }
 }
+let testArmed = false;
+document.getElementById('test-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-out');
+  const btn = document.getElementById('test-btn');
+  if (!testArmed) {
+    testArmed = true;
+    btn.textContent = 'Wirklich senden? Nochmal tippen';
+    out.textContent = 'Der Test-Post geht an alle Abonnenten (deutlich als TEST markiert).';
+    setTimeout(() => { testArmed = false; btn.textContent = 'Test-Signal an Premium-Kanal senden'; }, 8000);
+    return;
+  }
+  testArmed = false;
+  btn.textContent = 'Test-Signal an Premium-Kanal senden';
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
+      (d.feedOk ? 'Live-Feed erreichbar (' + d.matches + ' Spiele)' + (d.match ? ', Beispiel: ' + d.match : '') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
+  } catch (e) { out.textContent = e.message; }
+});
+
 document.getElementById('res7-btn').addEventListener('click', () => loadResults(7));
 document.getElementById('res30-btn').addEventListener('click', () => loadResults(30));
 
@@ -1392,6 +1417,55 @@ export default {
           "content-disposition": `attachment; filename="premium_log_${new Date().toISOString().slice(0, 10)}.csv"`,
         },
       });
+    }
+
+    // End-to-end test of the premium pipeline from Cloudflare: fetch the live
+    // feed (token + cookie), build a post for a running match exactly like the
+    // live check does, and send it to the premium channel clearly marked as a
+    // test. Not tracked, not logged, not counted in the results.
+    if (url.pathname === "/admin/api/test-post" && request.method === "POST") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      if (!env.PREMIUM_CHANNEL_ID || !env.TELEGRAM_BOT_TOKEN) return jsonResponse({ error: "Premium-Kanal oder Bot-Token fehlt." }, 500);
+      const feed = await fetchFeed();
+      const feedOk = Array.isArray(feed);
+      let text;
+      let matchInfo = null;
+      if (feedOk) {
+        const live = feed
+          .map((m) => ({ m, s: liveSnapshot(m) }))
+          .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 85);
+        live.sort((a, b) => Math.abs(a.s.minute - 60) - Math.abs(b.s.minute - 60));
+        const pick = live[0];
+        if (pick) {
+          const s = pick.s;
+          const line = s.goals + 0.5;
+          const score = computeConfidenceScore({ targetLine: line, minute: s.minute, totalSot: s.sot, radar: s.radar, goallinePre: s.goallinePre });
+          const goal = goalScore(s);
+          const proba = score ? score.proba : null;
+          const mq = minQuote(Math.min(proba || goal.wr || 0.75, goal.wr || 1));
+          const units = goal.points >= 1 ? UNITS_STRONG : UNITS_NORMAL;
+          const res = { live: s, score: score || { proba: proba || 0 }, goal, postOdds: oddsSnapshot(pick.m), signalOdds: null };
+          matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
+          text = [
+            "🧪 TEST-SIGNAL – kein Tipp, bitte nicht setzen",
+            "",
+            `🏆 ${pick.m.l || ""}`,
+            `⚽ ${pick.m.h} ${s.score} ${pick.m.a}`,
+            `🎯 Beispiel-Ziel: Over ${line}`,
+            confirmationBlock(res).replace("✅ Live bestätigt nach 2 min", "✅ Live-Daten abgerufen"),
+            "",
+            stakeAdvice(line, mq, units, res.postOdds),
+            "",
+            `Live-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele)`,
+          ].join("\n");
+        } else {
+          text = `🧪 TEST – kein Tipp\n\nLive-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele), aber gerade kein laufendes Spiel zwischen 20' und 85'.`;
+        }
+      } else {
+        text = "🧪 TEST – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Premium-Signale werden in diesem Zustand \"ohne Live-Prüfung\" gepostet.";
+      }
+      const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+      return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo });
     }
 
     if (url.pathname === "/admin/api/results" && request.method === "GET") {
