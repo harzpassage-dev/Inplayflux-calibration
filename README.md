@@ -43,6 +43,8 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
   behind time-limited access tokens (24h trial links, manually extended
   after payment). See `worker/README.md` for deploy and admin usage.
 
+Notfall-Wiederherstellung und Backups: siehe `RESTORE.md`.
+
 ## Usage
 
 ```bash

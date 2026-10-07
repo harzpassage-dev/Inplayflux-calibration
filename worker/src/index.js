@@ -759,6 +759,16 @@ async function handleAdminPage() {
 </section>
 
 <section>
+  <h3>Backup</h3>
+  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Sichert alle Zugänge, Premium-Logs und Warteschlangen. Datei z. B. in Dropbox oder iCloud ablegen. Einspielen überschreibt gleichnamige Einträge, löscht aber nichts.</p>
+  <button id="backup-btn">Backup herunterladen</button>
+  <label for="restore-file" style="margin-top:12px;">Backup einspielen (JSON-Datei)</label>
+  <input type="file" id="restore-file" accept="application/json,.json">
+  <button id="restore-btn">Einspielen</button>
+  <div class="out" id="backup-out"></div>
+</section>
+
+<section>
   <h3>Alle Zugänge</h3>
   <button id="list-btn">Aktualisieren</button>
   <div id="list-out" style="margin-top:10px;"></div>
@@ -848,6 +858,42 @@ document.getElementById('export-btn').addEventListener('click', async () => {
     out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">' + (csv.trim().split('\\n').length - 1) +
       ' Einträge. Falls kein Download startet: Text kopieren und als ' + name + ' speichern.</div>' +
       '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('backup-btn').addEventListener('click', async () => {
+  const out = document.getElementById('backup-out');
+  out.textContent = 'Erstelle Backup …';
+  try {
+    const r = await fetch('/admin/api/backup', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const text = await r.text();
+    const data = JSON.parse(text);
+    const name = 'moneybag_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    out.innerHTML = 'Backup mit <b>' + data.count + '</b> Einträgen erstellt (' + esc(name) + '). Falls kein Download startet: Text kopieren und als .json speichern.' +
+      '<textarea readonly style="width:100%;height:120px;margin-top:6px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(text) + '</textarea>';
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('restore-btn').addEventListener('click', async () => {
+  const out = document.getElementById('backup-out');
+  const file = document.getElementById('restore-file').files[0];
+  if (!file) { out.textContent = 'Bitte zuerst eine Backup-Datei auswählen.'; return; }
+  out.textContent = 'Spiele Backup ein …';
+  try {
+    const text = await file.text();
+    const r = await fetch('/admin/api/restore', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + pw(), 'Content-Type': 'application/json' },
+      body: text
+    });
+    const res = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(res.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = res.restored + ' Einträge wiederhergestellt' + (res.expired ? ', ' + res.expired + ' bereits abgelaufene übersprungen.' : '.');
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -972,6 +1018,52 @@ export default {
       } while (cursor);
       rows.sort((a, b) => b.forwardedAt.localeCompare(a.forwardedAt));
       return jsonResponse(rows);
+    }
+
+    // Full KV backup: every key with its value and expiry, as one JSON file.
+    if (url.pathname === "/admin/api/backup" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const entries = [];
+      let cursor;
+      do {
+        const list = await env.ACCESS_KV.list({ cursor });
+        for (const key of list.keys) {
+          const value = await env.ACCESS_KV.get(key.name);
+          if (value != null) entries.push({ key: key.name, value, expiration: key.expiration || null });
+        }
+        cursor = list.list_complete ? undefined : list.cursor;
+      } while (cursor);
+      const body = JSON.stringify({ format: "moneybag-kv-backup", version: 1, createdAt: new Date().toISOString(), count: entries.length, entries });
+      return new Response(body, {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="moneybag_backup_${new Date().toISOString().slice(0, 10)}.json"`,
+        },
+      });
+    }
+
+    // Restore from such a backup. Writes every entry back (overwriting keys
+    // with the same name); never deletes anything. Already-expired entries
+    // are skipped.
+    if (url.pathname === "/admin/api/restore" && request.method === "POST") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const backup = await request.json().catch(() => null);
+      if (!backup || backup.format !== "moneybag-kv-backup" || !Array.isArray(backup.entries)) {
+        return jsonResponse({ error: "Keine gültige Backup-Datei." }, 400);
+      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      let restored = 0;
+      let expired = 0;
+      for (const e of backup.entries) {
+        if (!e || typeof e.key !== "string" || typeof e.value !== "string") continue;
+        if (e.expiration && e.expiration <= nowSec + 60) {
+          expired++;
+          continue;
+        }
+        await env.ACCESS_KV.put(e.key, e.value, e.expiration ? { expiration: e.expiration } : undefined);
+        restored++;
+      }
+      return jsonResponse({ ok: true, restored, expired });
     }
 
     if (url.pathname === "/admin/api/premium-export" && request.method === "GET") {
