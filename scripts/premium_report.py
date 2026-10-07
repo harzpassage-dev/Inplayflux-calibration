@@ -8,6 +8,7 @@ Tiers in the log:
                then only after the 2-minute live check)
     risk       posted as "Risiko" (minute >= 70)
     half       posted as "Half-Risiko" (minute 68-69, goal score >= -7)
+    half_rejected  minute 68-69 card the Half-Risiko check held back
     confirmed  passed the 2-minute live check (also appears as forwarded)
     rejected   held back by the live check - shows what the check filtered out
 
@@ -134,6 +135,7 @@ def main():
     summary("  mit 2-min-Prüfung (ab 05.10.)", [r for r in by_kind["forwarded"] if (parse_day(r["date"] or r["time"]) or cut) >= cut])
     summary("Risiko-Signale (ab 70')", by_kind["risk"])
     summary("Half-Risiko (68-69')", by_kind["half"])
+    summary("  Half-Risiko verworfen", by_kind["half_rejected"])
 
     print("\n=== 2-Minuten-Prüfung ===")
     summary("bestätigt + gepostet", by_kind["confirmed"])

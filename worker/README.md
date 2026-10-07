@@ -114,7 +114,10 @@ forwarded right away with 0.5 units, but only if the match is in the live
 feed, no goal or red card came since the card, and the live goal score is
 ≥ −7. Backtest: 66.3 % (n = 172) against 51.8 % for the rest at 68–69
 (see reports/2026-10-07-half-risk.md). Without the feed they are skipped.
-They are tracked and logged as `half:fwd`.
+They are tracked and logged as `half:fwd`. Every Half-Risiko decision is also
+logged as `half:ok` / `half:rej` (with reason, live minute, score, goal score
+and quote) and listed under "Premium-Bestätigungen" in the admin panel; the
+CSV export has them as `half` / `half_rejected`.
 
 Odds: for every queued and risk card the worker also logs the live
 over/under quote from the feed at signal time (`signalOdds`) and when it

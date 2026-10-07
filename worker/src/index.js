@@ -425,14 +425,22 @@ function oddsSnapshot(m) {
 // Half-Risiko: minute 68-69 card below the threshold. Posted right away, but
 // only if the match is in the live feed, no goal or red card came since the
 // card, and the goal score clears HALF_MIN_GOAL_POINTS.
+// Every decision is logged (half:ok / half:rej) and shows up in the admin
+// panel next to the premium confirmations.
 async function maybePostHalfRisk(env, text, parsed, score) {
   const snap = await signalSnapshotFor(parsed);
-  if (!snap.match) return false;
-  const live = liveSnapshot(snap.match);
-  if (live.goals > parsed.targetLine - 0.5 || live.redCards > 0) return false;
-  const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute });
-  if (gs.points < HALF_MIN_GOAL_POINTS) return false;
   const odds = snap.odds;
+  const item = { id: randomToken().slice(0, 12), parsed, proba: score ? score.proba : null, signalOdds: odds, receivedAt: Date.now() };
+  const reject = async (reason, extra = {}) => {
+    await logConfirmation(env, item, { tier: "half", reason, ...extra }, "half:rej");
+    return false;
+  };
+  if (!snap.match) return reject("Spiel nicht im Live-Feed");
+  const live = liveSnapshot(snap.match);
+  if (live.goals > parsed.targetLine - 0.5) return reject(`Tor schon gefallen (${live.score})`, { live });
+  if (live.redCards > 0) return reject("Rote Karte", { live });
+  const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute });
+  if (gs.points < HALF_MIN_GOAL_POINTS) return reject(`Tor-Score ${gs.points} < ${HALF_MIN_GOAL_POINTS}`, { live, goal: gs });
   const mq = minQuote(HALF_WR);
   const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
   await sendTelegramMessage(
@@ -447,6 +455,7 @@ async function maybePostHalfRisk(env, text, parsed, score) {
     line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds,
   });
   await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points });
+  await logConfirmation(env, item, { tier: "half", live, goal: gs, postOdds: odds }, "half:ok");
   return true;
 }
 
@@ -583,7 +592,8 @@ async function logConfirmation(env, item, res, keyPrefix) {
     homeTeam: item.parsed.homeTeam || null,
     awayTeam: item.parsed.awayTeam || null,
     signalMinute: item.parsed.minute,
-    signalProba: Math.round(item.proba * 1000) / 1000,
+    signalProba: item.proba != null ? Math.round(item.proba * 1000) / 1000 : null,
+    tier: res.tier || "premium",
     reason: res.reason || null,
     live: res.live || null,
     liveProba: res.score ? Math.round(res.score.proba * 1000) / 1000 : null,
@@ -898,6 +908,7 @@ async function premiumExportCsv(env) {
     ["half:fwd:", "half"],
     ["premium:ok:", "confirmed"],
     ["premium:rej:", "rejected"],
+    ["half:rej:", "half_rejected"],
   ];
   const cols = [
     "kind", "time", "date", "home", "away", "target_line", "signal_minute", "signal_proba",
@@ -1084,7 +1095,7 @@ async function handleAdminPage() {
 
 <section>
   <h3>Premium-Bestätigungen</h3>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen.</p>
+  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen. Half-Risiko-Karten (68–69') werden sofort geprüft und stehen ebenfalls hier, mit 🟠 markiert.</p>
   <button id="confirm-btn">Aktualisieren</button>
   <button id="export-btn" style="margin-left:6px;">Log als CSV exportieren</button>
   <div id="confirm-out" style="margin-top:10px;"></div>
@@ -1166,9 +1177,9 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
       const live = (x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-') +
         '<br><small>Signal ' + q(x.signalOdds) + '<br>Post ' + q(x.postOdds) + '</small>';
       const detail = x.ok
-        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>Modell ' + pct(x.liveProba) + ' · Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + '</small>'
+        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>' + (x.tier === 'half' ? '' : 'Modell ' + pct(x.liveProba) + ' · ') + 'Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + '</small>'
         : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + '</small>';
-      html += '<tr><td>' + hm(x.decidedAt) + '</td><td>' + esc(x.homeTeam) + ' – ' + esc(x.awayTeam) + '<br><small>O' + esc(x.targetLine) + ' · Signal ' + esc(x.signalMinute) + "' · " + pct(x.signalProba) + '</small></td><td>' + detail + '</td><td>' + live + '</td></tr>';
+      html += '<tr><td>' + hm(x.decidedAt) + '</td><td>' + esc(x.homeTeam) + ' – ' + esc(x.awayTeam) + '<br><small>' + (x.tier === 'half' ? '🟠 Half-Risiko · ' : '') + 'O' + esc(x.targetLine) + ' · Signal ' + esc(x.signalMinute) + "' · " + pct(x.signalProba) + '</small></td><td>' + detail + '</td><td>' + live + '</td></tr>';
     });
     html += '</table>';
     out.innerHTML = html;
@@ -1586,7 +1597,12 @@ export default {
 
     if (url.pathname === "/admin/api/confirm-log" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
-      const [confirmed, rejected] = await Promise.all([listLog(env, "premium:ok:"), listLog(env, "premium:rej:")]);
+      const [ok, rej, halfOk, halfRej] = await Promise.all([
+        listLog(env, "premium:ok:"), listLog(env, "premium:rej:"), listLog(env, "half:ok:"), listLog(env, "half:rej:"),
+      ]);
+      const byTime = (a, b) => b.decidedAt.localeCompare(a.decidedAt);
+      const confirmed = ok.concat(halfOk).sort(byTime);
+      const rejected = rej.concat(halfRej).sort(byTime);
       return jsonResponse({ pending: await readPending(env), confirmed, rejected });
     }
 
