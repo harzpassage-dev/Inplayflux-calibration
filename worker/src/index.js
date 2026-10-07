@@ -264,7 +264,7 @@ async function logPremiumForward(env, parsed, score, keyPrefix, extra = {}) {
 // yet, no red card, not late). Only if it still holds is it posted.
 const PENDING_KEY = "premium:pending";
 const CONFIRM_DELAY_MS = 2 * 60 * 1000;
-const CONFIRM_GIVE_UP_MS = 8 * 60 * 1000; // feed unreachable / match not found for this long -> drop
+const CONFIRM_GIVE_UP_MS = 4 * 60 * 1000; // match not found in the feed for this long -> post unchecked
 const FEED_URL = "https://inplayflux.com/maclarv8/GETAllMatches.php?inplay=inplay&v=";
 const RISK_MINUTE = 70;
 // The model docks every minute, so re-scoring at the later live minute pushed
@@ -338,17 +338,59 @@ function findMatch(feed, homeTeam, awayTeam) {
   );
 }
 
+// Since 2026-10-07 the feed needs a short-lived X-IR-Token bound to a session
+// cookie. The scanner page hands out both on a HEAD request with
+// ?ir_token_refresh=1 (the same call the page itself makes every 4 minutes).
+// Kept per isolate and renewed after FEED_TOKEN_TTL_MS or on a 403.
+const SCANNER_URL = "https://inplayflux.com/live-scanner?page=open&lang=en";
+const FEED_TOKEN_TTL_MS = 8 * 60 * 1000;
+const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36";
+let feedSession = null; // { token, cookie, at }
+
+async function refreshFeedSession() {
+  try {
+    const resp = await fetch(SCANNER_URL + "&ir_token_refresh=1", {
+      method: "HEAD",
+      headers: { "User-Agent": BROWSER_UA },
+      signal: AbortSignal.timeout(8000),
+    });
+    const token = resp.headers.get("X-IR-Token");
+    const setCookies = typeof resp.headers.getSetCookie === "function"
+      ? resp.headers.getSetCookie()
+      : [resp.headers.get("Set-Cookie") || ""];
+    const cookie = setCookies.map((c) => c.split(";")[0].trim()).filter(Boolean).join("; ");
+    feedSession = token && /^[a-f0-9]{64}$/i.test(token) ? { token, cookie, at: Date.now() } : null;
+  } catch (e) {
+    feedSession = null;
+  }
+  return feedSession;
+}
+
+async function fetchFeedOnce(session) {
+  const headers = {
+    "User-Agent": BROWSER_UA,
+    Referer: SCANNER_URL,
+    "X-Requested-With": "XMLHttpRequest",
+  };
+  if (session) {
+    headers["X-IR-Token"] = session.token;
+    if (session.cookie) headers.Cookie = session.cookie;
+  }
+  const resp = await fetch(FEED_URL + Date.now(), { headers, signal: AbortSignal.timeout(8000) });
+  if (!resp.ok) return { ok: false, status: resp.status };
+  const data = await resp.json();
+  return Array.isArray(data) ? { ok: true, data } : { ok: false, status: 403 };
+}
+
 async function fetchFeed() {
   try {
-    const resp = await fetch(FEED_URL + Date.now(), {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (moneybag-access live confirm)",
-        Referer: "https://inplayflux.com/live-scanner?page=open&lang=en",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      signal: AbortSignal.timeout(5000),
-    });
-    return resp.ok ? await resp.json() : null;
+    let session = feedSession && Date.now() - feedSession.at < FEED_TOKEN_TTL_MS ? feedSession : await refreshFeedSession();
+    let res = await fetchFeedOnce(session);
+    if (!res.ok && (res.status === 401 || res.status === 403)) {
+      session = await refreshFeedSession();
+      res = await fetchFeedOnce(session);
+    }
+    return res.ok ? res.data : null;
   } catch (e) {
     return null;
   }
@@ -530,6 +572,26 @@ async function runMinuteJobs(env) {
   if (tracked.length) await settleTracked(env, feed);
 }
 
+async function postUnchecked(env, item, reason) {
+  const mq = minQuote(item.proba);
+  const label = `🔥 High Confidence (${Math.round(item.proba * 100)}%) · ohne Live-Prüfung`;
+  await sendTelegramMessage(
+    env,
+    env.PREMIUM_CHANNEL_ID,
+    buildPremiumMessage(item.text, label) + "\n\n" +
+      stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds)
+  );
+  await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
+    signalOdds: item.signalOdds || null,
+    unchecked: reason,
+  });
+  await logConfirmation(env, item, { reason: `ohne Prüfung gepostet: ${reason}` }, "premium:ok");
+  await trackSignal(env, {
+    tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
+    line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units: UNITS_NORMAL, odds: item.signalOdds || null,
+  });
+}
+
 async function processPendingPremium(env, due, feed) {
   const now = Date.now();
 
@@ -537,11 +599,15 @@ async function processPendingPremium(env, due, feed) {
   for (const item of due) {
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
     if (!match) {
-      // Retry on the next tick until we give up.
-      if (now - item.receivedAt >= CONFIRM_GIVE_UP_MS) {
+      // A card that cleared the model must never be lost to an infrastructure
+      // problem: with the feed down post it right away, with the match not
+      // found keep retrying until CONFIRM_GIVE_UP_MS - then post it marked as
+      // not live-checked (the old, pre-check behaviour, ~80% historically).
+      const feedDown = !Array.isArray(feed);
+      if (feedDown || now - item.receivedAt >= CONFIRM_GIVE_UP_MS) {
         done.add(item.id);
-        const reason = Array.isArray(feed) ? "Spiel nicht im Live-Feed gefunden" : "Live-Feed nicht erreichbar";
-        await logConfirmation(env, item, { reason }, "premium:rej");
+        const reason = feedDown ? "Live-Feed nicht erreichbar" : "Spiel nicht im Live-Feed gefunden";
+        await postUnchecked(env, item, reason);
       }
       continue;
     }

@@ -6,7 +6,7 @@ channel (calibration/rules.json -> live_confidence_models).
 
 The scanner page (inplayflux.com/live-scanner) loads its table from
 maclarv8/GETAllMatches.php as plain JSON; the raw match data needs no
-login. Field mapping (feed key -> rule / export column):
+login, only the short-lived guest token the page itself uses (see feed_session). Field mapping (feed key -> rule / export column):
 
     minute       -> dakika / Signal Min
     hg, ag       -> toplamGol (goals at signal)
@@ -93,15 +93,36 @@ def load_rules():
     return rules
 
 
+SCANNER_URL = "https://inplayflux.com/live-scanner?page=open&lang=en"
+BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+
+
+def feed_session():
+    """Since 2026-10-07 the feed needs an X-IR-Token bound to a session cookie;
+    the scanner page hands out both on a HEAD request with ?ir_token_refresh=1."""
+    req = urllib.request.Request(SCANNER_URL + "&ir_token_refresh=1", method="HEAD",
+                                 headers={"User-Agent": BROWSER_UA})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        token = resp.headers.get("X-IR-Token")
+        cookies = [c.split(";")[0].strip() for c in resp.headers.get_all("Set-Cookie") or []]
+    return token, "; ".join(c for c in cookies if c)
+
+
 def fetch_feed():
+    token, cookie = feed_session()
     url = FEED_URL.format(ts=int(time.time() * 1000))
     req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (live_radar.py; personal calibration)",
-        "Referer": "https://inplayflux.com/live-scanner?page=open&lang=en",
+        "User-Agent": BROWSER_UA,
+        "Referer": SCANNER_URL,
         "X-Requested-With": "XMLHttpRequest",
+        "X-IR-Token": token or "",
+        "Cookie": cookie,
     })
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.load(resp)
+        data = json.load(resp)
+    if not isinstance(data, list):
+        raise RuntimeError(f"Feed abgelehnt: {data}")
+    return data
 
 
 def snapshot(match):
