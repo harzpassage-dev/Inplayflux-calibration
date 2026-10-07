@@ -1075,6 +1075,8 @@ async function handleAdminPage() {
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jedes gepostete Signal wird im Live-Spielstand verfolgt und als Treffer oder Fehlschlag gewertet. Die Wochenbilanz geht jeden Montag um 10 Uhr (MESZ) automatisch in den Premium-Kanal.</p>
   <button id="test-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test-Signal an Premium-Kanal senden</button>
   <div class="out" id="test-out" style="margin-bottom:10px;"></div>
+  <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
+  <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
   <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
   <div id="res-out" style="margin-top:10px;"></div>
@@ -1276,6 +1278,29 @@ document.getElementById('test-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+let halfArmed = false;
+document.getElementById('test-half-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-half-out');
+  const btn = document.getElementById('test-half-btn');
+  if (!halfArmed) {
+    halfArmed = true;
+    btn.textContent = 'Wirklich senden? Nochmal tippen';
+    out.textContent = 'Der Test-Post geht an alle Abonnenten (deutlich als TEST markiert).';
+    setTimeout(() => { halfArmed = false; btn.textContent = 'Test Half-Risiko senden'; }, 8000);
+    return;
+  }
+  halfArmed = false;
+  btn.textContent = 'Test Half-Risiko senden';
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?tier=half', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
+      (d.feedOk ? 'Beispiel: ' + (d.match || 'kein laufendes Spiel') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
+  } catch (e) { out.textContent = e.message; }
+});
+
 document.getElementById('res7-btn').addEventListener('click', () => loadResults(7));
 document.getElementById('res30-btn').addEventListener('click', () => loadResults(30));
 
@@ -1469,6 +1494,46 @@ export default {
       const feedOk = Array.isArray(feed);
       let text;
       let matchInfo = null;
+      if (url.searchParams.get("tier") === "half") {
+        // Same layout as a real Half-Risiko post, on the live match closest
+        // to minute 68. Not tracked or logged.
+        let wouldPass = null;
+        if (feedOk) {
+          const live = feed
+            .map((m) => ({ m, s: liveSnapshot(m) }))
+            .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 89);
+          live.sort((a, b) => Math.abs(a.s.minute - HALF_MIN_MINUTE) - Math.abs(b.s.minute - HALF_MIN_MINUTE));
+          const pick = live[0];
+          if (pick) {
+            const s = pick.s;
+            const line = s.goals + 0.5;
+            const gs = goalScore(s);
+            const odds = oddsSnapshot(pick.m);
+            wouldPass = s.minute >= HALF_MIN_MINUTE && s.minute < RISK_MINUTE && gs.points >= HALF_MIN_GOAL_POINTS && s.redCards === 0;
+            matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
+            text = [
+              "🧪 TEST – kein Tipp, bitte nicht setzen",
+              `🟠 Half-Risiko-Signal (Minute ${s.minute}' · Tor-Score ${gs.points})`,
+              "",
+              `🏆 ${pick.m.l || ""}`,
+              `⚽ ${pick.m.h} ${s.score} ${pick.m.a}`,
+              `🎯 Beispiel-Ziel: Over ${line}`,
+              `📡 Radar X: ${s.radar != null ? s.radar : "–"}`,
+              odds ? `Quote: ${oddsText(odds)}` : null,
+              "",
+              stakeAdvice(line, minQuote(HALF_WR), UNITS_HALF, odds),
+              "",
+              `Echt gepostet wird nur bei Minute 68–69 und Tor-Score ≥ ${HALF_MIN_GOAL_POINTS}. Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.`,
+            ].filter((x) => x != null).join("\n");
+          } else {
+            text = `🧪 TEST Half-Risiko – kein Tipp\n\nLive-Feed erreichbar (${feed.length} Spiele), aber gerade kein laufendes Spiel.`;
+          }
+        } else {
+          text = "🧪 TEST Half-Risiko – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Half-Risiko-Signale werden in diesem Zustand übersprungen.";
+        }
+        const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+        return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass });
+      }
       if (feedOk) {
         const live = feed
           .map((m) => ({ m, s: liveSnapshot(m) }))
