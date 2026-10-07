@@ -1130,7 +1130,7 @@ async function loadResults(days) {
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
     let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
-    if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + ' Tipps): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
+    if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
     html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
     if (d.rows.length) {

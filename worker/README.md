@@ -122,3 +122,26 @@ curl -H "Authorization: Bearer <ADMIN_PASSWORD>" https://moneybag-signals.com/ad
 ```
 The KV cost is one read per minute while nothing is queued. Writes only
 happen when a card is queued or decided.
+
+## Stake advice, result tracking and weekly summary
+
+- Every premium post ends with a minimum quote and a stake in units:
+  `💶 Nur setzen ab Quote 1,22 (Over 2.5) · Einsatz: 2 Einheiten`.
+  - The minimum quote is 1 / expected hit rate, rounded up. The expected hit rate is the
+    lower of the live model and the goal-score band; risk cards use 64.8 %.
+  - Units are 2 for goal score ≥ +1, 1 otherwise, and 0.5 for risk cards.
+  - If the logged live quote for the target line is already below the minimum, the post
+    says to wait.
+- Each posted card is tracked (`track:open`) and settled from the live feed every minute.
+  - It counts as won as soon as total goals exceed the line.
+  - It counts as lost once the match, last seen at minute 85 or later, has been gone from
+    the feed for 10 minutes.
+  - It counts as void if it is never seen late within 4 hours.
+  - Results are stored as `result:*` and are part of the KV backup.
+  - Profit in units is only computed when the logged quote is for the card's own line and
+    at least the minimum quote.
+- The admin panel shows this under **Bilanz** (7 or 30 days), including a preview of the
+  weekly post. A second cron (`0 8 * * 1`, Monday 08:00 UTC) posts that summary to the
+  premium channel.
+- Writes to KV only happen when something changes (a post, a settled result, a match
+  passing minute 85), so idle minutes cost two KV reads and no writes.
