@@ -1111,6 +1111,8 @@ async function handleAdminPage() {
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jedes gepostete Signal wird im Live-Spielstand verfolgt und als Treffer oder Fehlschlag gewertet. Die Wochenbilanz geht jeden Montag um 10 Uhr (MESZ) automatisch in den Premium-Kanal.</p>
   <button id="test-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test-Signal an Premium-Kanal senden</button>
   <div class="out" id="test-out" style="margin-bottom:10px;"></div>
+  <button id="test-o05-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 0.5 senden</button>
+  <div class="out" id="test-o05-out" style="margin-bottom:10px;"></div>
   <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
   <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -1311,6 +1313,29 @@ document.getElementById('test-btn').addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
     out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
       (d.feedOk ? 'Live-Feed erreichbar (' + d.matches + ' Spiele)' + (d.match ? ', Beispiel: ' + d.match : '') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
+  } catch (e) { out.textContent = e.message; }
+});
+
+let o05Armed = false;
+document.getElementById('test-o05-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-o05-out');
+  const btn = document.getElementById('test-o05-btn');
+  if (!o05Armed) {
+    o05Armed = true;
+    btn.textContent = 'Wirklich senden? Nochmal tippen';
+    out.textContent = 'Der Test-Post geht an alle Abonnenten (deutlich als TEST markiert).';
+    setTimeout(() => { o05Armed = false; btn.textContent = 'Test Over 0.5 senden'; }, 8000);
+    return;
+  }
+  o05Armed = false;
+  btn.textContent = 'Test Over 0.5 senden';
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?line=0.5', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
+      (d.feedOk ? 'Beispiel: ' + (d.match || 'gerade kein 0-0-Spiel') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -1570,11 +1595,14 @@ export default {
         const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
         return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass });
       }
+      // ?line=0.5: example on a live 0-0 match near minute 61 (Over 0.5 cards).
+      const only00 = url.searchParams.get("line") === "0.5";
+      const target = only00 ? 61 : 60;
       if (feedOk) {
         const live = feed
           .map((m) => ({ m, s: liveSnapshot(m) }))
-          .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 85);
-        live.sort((a, b) => Math.abs(a.s.minute - 60) - Math.abs(b.s.minute - 60));
+          .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 85 && (!only00 || x.s.goals === 0));
+        live.sort((a, b) => Math.abs(a.s.minute - target) - Math.abs(b.s.minute - target));
         const pick = live[0];
         if (pick) {
           const s = pick.s;
@@ -1599,7 +1627,7 @@ export default {
             `Live-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele)`,
           ].join("\n");
         } else {
-          text = `🧪 TEST – kein Tipp\n\nLive-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele), aber gerade kein laufendes Spiel zwischen 20' und 85'.`;
+          text = `🧪 TEST – kein Tipp\n\nLive-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele), aber gerade kein laufendes ${only00 ? "0-0-" : ""}Spiel zwischen 20' und 85'.`;
         }
       } else {
         text = "🧪 TEST – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Premium-Signale werden in diesem Zustand \"ohne Live-Prüfung\" gepostet.";
