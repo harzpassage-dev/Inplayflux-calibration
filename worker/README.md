@@ -106,6 +106,16 @@ The webhook queues them (KV key `premium:pending`), and a cron trigger
 4. If the feed can't be reached, or the match doesn't show up in it within
    4 minutes, the card is posted anyway, marked "ohne Live-Prüfung".
 
+Market check: at the 2-minute check the worker also computes the market's
+probability of one more goal from the feed's live O/U line and odds (margin
+removed, Poisson with push/quarter-line handling, same as step 3b in the
+analyst tool). It is shown in the post ("Markt NN%") and logged as
+`marketProba` / CSV `market_proba` for every decision. A premium card is
+held back if the market is below 60 %. The exports carry no live line, so
+this cut could not be backtested; it is deliberately low and should be
+recalibrated from the log (`scripts/premium_report.py` prints hit rates by
+market band).
+
 Late "Risiko" cards are still forwarded right away, but only from minute 72
 or with Radar ≥ 410 (see reports/2026-10-06-premium-channel.md).
 

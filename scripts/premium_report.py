@@ -12,6 +12,9 @@ Tiers in the log:
     confirmed  passed the 2-minute live check (also appears as forwarded)
     rejected   held back by the live check - shows what the check filtered out
 
+Market: since 2026-10-09 every live check logs market_proba (one more goal,
+from the feed's live O/U line and odds); premium needs >= 60%.
+
 Quotes: since 2026-10-06 the log carries the live over/under quote at signal
 time and at posting (signal_* / post_* columns). ROI is only computed where
 the logged line equals the target line.
@@ -146,6 +149,12 @@ def main():
         reasons[reason].append(r)
     for reason, rows in sorted(reasons.items(), key=lambda kv: -len(kv[1])):
         summary(f"  {reason[:32]}", rows)
+
+    print("\n=== Nach Markt-Wahrscheinlichkeit (alle Live-Prüfungen, gepostet + verworfen) ===")
+    checked = by_kind["confirmed"] + by_kind["rejected"] + by_kind["half"] + by_kind["half_rejected"]
+    for lo, hi in [(0, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 1.01)]:
+        summary(f"Markt {int(lo * 100)}-{min(int(hi * 100), 100)}%",
+                [r for r in checked if to_float(r.get("market_proba")) is not None and lo <= to_float(r["market_proba"]) < hi])
 
     print("\n=== Nach Ziel-Linie (gepostet, High Confidence) ===")
     for line in sorted({to_float(r["target_line"]) for r in by_kind["forwarded"]} - {None}):

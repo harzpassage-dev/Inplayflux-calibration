@@ -461,17 +461,18 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   };
   if (!snap.match) return reject("Spiel nicht im Live-Feed");
   const live = liveSnapshot(snap.match);
+  const market = marketProb(snap.match, parsed.targetLine);
   if (live.goals > parsed.targetLine - 0.5) return reject(`Tor schon gefallen (${live.score})`, { live });
-  if (live.redCards > 0) return reject("Rote Karte", { live });
+  if (live.redCards > 0) return reject("Rote Karte", { live, market });
   const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute });
-  if (gs.points < HALF_MIN_GOAL_POINTS) return reject(`Tor-Score ${gs.points} < ${HALF_MIN_GOAL_POINTS}`, { live, goal: gs });
+  if (gs.points < HALF_MIN_GOAL_POINTS) return reject(`Tor-Score ${gs.points} < ${HALF_MIN_GOAL_POINTS}`, { live, goal: gs, market });
   if (!(await claimSignal(env, parsed))) return false; // already posted for this match and line
   const mq = minQuote(HALF_WR);
   const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
   await sendTelegramMessage(
     env,
     env.PREMIUM_CHANNEL_ID,
-    buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote})`) +
+    buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
       (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
       stakeAdvice(parsed.targetLine, mq, UNITS_HALF, odds)
   );
@@ -479,8 +480,8 @@ async function maybePostHalfRisk(env, text, parsed, score) {
     tier: "half", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
     line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds,
   });
-  await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points });
-  await logConfirmation(env, item, { tier: "half", live, goal: gs, postOdds: odds }, "half:ok");
+  await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points, marketProba: market });
+  await logConfirmation(env, item, { tier: "half", live, goal: gs, postOdds: odds, market }, "half:ok");
   return true;
 }
 
@@ -529,6 +530,57 @@ function liveSnapshot(m) {
   };
 }
 
+// Market probability for one more goal (target line), from the feed's live
+// main O/U line and its odds: margin removed, then the remaining-goals Poisson
+// lambda solved so the over price matches (whole lines push, quarter lines
+// split the stake). Same maths as step 3b in the analyst tool.
+// Veto for premium: the exports carry no live line, so this could not be
+// backtested; the cut is deliberately low and only drops cards the market
+// clearly disagrees with. Every decision logs marketProba for calibration.
+const MARKET_MIN_PREMIUM = 0.6;
+
+function poissonPmf(k, l) {
+  let p = Math.exp(-l);
+  for (let i = 1; i <= k; i++) p *= l / i;
+  return p;
+}
+function poissonTail(k, l) {
+  if (k <= 0) return 1;
+  let cdf = 0;
+  for (let i = 0; i < k; i++) cdf += poissonPmf(i, l);
+  return Math.max(0, 1 - cdf);
+}
+function overLineProb(line, l) {
+  const frac = Math.round((line - Math.floor(line)) * 100) / 100;
+  if (frac === 0.25 || frac === 0.75) return (overLineProb(line - 0.25, l) + overLineProb(line + 0.25, l)) / 2;
+  if (frac === 0) {
+    const push = poissonPmf(line, l);
+    return push >= 1 ? 0 : poissonTail(line + 1, l) / (1 - push);
+  }
+  return poissonTail(Math.floor(line) + 1, l);
+}
+function marketProb(match, targetLine) {
+  if (!match || targetLine == null) return null;
+  const ou = match.ou_odds || [];
+  const over = num(ou[0]);
+  const under = num(ou[1]);
+  const line = num(ou[2]);
+  if (!over || !under || line == null) return null;
+  const goals = (num(match.hg) || 0) + (num(match.ag) || 0);
+  const rest = line - goals;
+  if (rest <= 0) return null;
+  const pFair = (1 / over) / (1 / over + 1 / under);
+  let lo = 0;
+  let hi = 20;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (overLineProb(rest, mid) < pFair) lo = mid;
+    else hi = mid;
+  }
+  const p = poissonTail(Math.floor(targetLine - goals) + 1, (lo + hi) / 2);
+  return Math.round(p * 1000) / 1000;
+}
+
 // Same conditions as goal_score_conditions() in scripts/live_radar.py.
 function goalScore(s) {
   const c = {
@@ -570,10 +622,14 @@ function confirmLive(item, match) {
     return { ok: false, reason: `Modell ${Math.round(score.proba * 100)}% < ${Math.round((score.threshold - CONFIRM_TOLERANCE) * 100)}%`, live: s, score };
   }
   const goal = goalScore(s);
+  const market = marketProb(match, item.parsed.targetLine);
   if (goal.points < GOAL_SCORE.minPremium) {
-    return { ok: false, reason: `Tor-Score ${goal.points}`, live: s, score, goal };
+    return { ok: false, reason: `Tor-Score ${goal.points}`, live: s, score, goal, market };
   }
-  return { ok: true, live: s, score, goal };
+  if (market != null && market < MARKET_MIN_PREMIUM) {
+    return { ok: false, reason: `Markt ${Math.round(market * 100)}% < ${Math.round(MARKET_MIN_PREMIUM * 100)}%`, live: s, score, goal, market };
+  }
+  return { ok: true, live: s, score, goal, market };
 }
 
 function confirmationBlock(res) {
@@ -582,7 +638,8 @@ function confirmationBlock(res) {
   const lines = [
     "",
     `✅ Live bestätigt nach 2 min: ${s.minute}' · ${s.score}`,
-    `Modell ${Math.round(res.score.proba * 100)}% · Tor-Score ${signed(res.goal.points)} (${Math.round(res.goal.wr * 100)}%)`,
+    `Modell ${Math.round(res.score.proba * 100)}% · Tor-Score ${signed(res.goal.points)} (${Math.round(res.goal.wr * 100)}%)` +
+      (res.market != null ? ` · Markt ${Math.round(res.market * 100)}%` : ""),
   ];
   const radarNote = s.radar != null ? `Radar ${Math.round(s.radar)}${s.overFav ? ` (davon Markt +${Math.round(RADAR_MARKET_BONUS)})` : ""}` : null;
   const oddsNote = res.postOdds ? oddsText(res.postOdds) + (res.signalOdds ? ` (bei Signal ${res.signalOdds.over.toFixed(2)})` : "") : null;
@@ -623,6 +680,7 @@ async function logConfirmation(env, item, res, keyPrefix) {
     live: res.live || null,
     liveProba: res.score ? Math.round(res.score.proba * 1000) / 1000 : null,
     goalPoints: res.goal ? res.goal.points : null,
+    marketProba: res.market != null ? res.market : null,
     signalOdds: item.signalOdds || null,
     postOdds: res.postOdds || null,
   };
@@ -705,6 +763,8 @@ async function processPendingPremium(env, due, feed) {
       await logPremiumForward(env, item.parsed, res.score, "premium:fwd", {
         signalOdds: item.signalOdds || null,
         postOdds: res.postOdds,
+        goalPoints: res.goal ? res.goal.points : null,
+        marketProba: res.market != null ? res.market : null,
       });
       await logConfirmation(env, item, res, "premium:ok");
     } else {
@@ -937,7 +997,7 @@ async function premiumExportCsv(env) {
   ];
   const cols = [
     "kind", "time", "date", "home", "away", "target_line", "signal_minute", "signal_proba",
-    "live_minute", "live_score", "live_proba", "goal_points",
+    "live_minute", "live_score", "live_proba", "goal_points", "market_proba",
     "signal_over", "signal_under", "signal_line", "post_over", "post_under", "post_line", "reason",
   ];
   const cell = (v) => {
@@ -965,7 +1025,7 @@ async function premiumExportCsv(env) {
           kind, r.forwardedAt || r.decidedAt, r.date, r.homeTeam, r.awayTeam, r.targetLine,
           r.signalMinute != null ? r.signalMinute : r.minute,
           r.signalProba != null ? r.signalProba : r.modelProba,
-          live.minute, live.score, r.liveProba, r.goalPoints,
+          live.minute, live.score, r.liveProba, r.goalPoints, r.marketProba,
           so.over, so.under, so.line, po.over, po.under, po.line, r.reason,
         ].map(cell).join(","));
       }
@@ -1204,8 +1264,8 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
       const live = (x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-') +
         '<br><small>Signal ' + q(x.signalOdds) + '<br>Post ' + q(x.postOdds) + '</small>';
       const detail = x.ok
-        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>' + (x.tier === 'half' ? '' : 'Modell ' + pct(x.liveProba) + ' · ') + 'Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + '</small>'
-        : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + '</small>';
+        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>' + (x.tier === 'half' ? '' : 'Modell ' + pct(x.liveProba) + ' · ') + 'Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>'
+        : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>';
       html += '<tr><td>' + hm(x.decidedAt) + '</td><td>' + esc(x.homeTeam) + ' – ' + esc(x.awayTeam) + '<br><small>' + (x.tier === 'half' ? '🟠 Half-Risiko · ' : '') + 'O' + esc(x.targetLine) + ' · Signal ' + esc(x.signalMinute) + "' · " + pct(x.signalProba) + '</small></td><td>' + detail + '</td><td>' + live + '</td></tr>';
     });
     html += '</table>';
@@ -1703,11 +1763,12 @@ export default {
             const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
             const snap = await signalSnapshotFor(parsed);
             const odds = snap.odds;
+            const market = marketProb(snap.match, parsed.targetLine);
             const mq = minQuote(RISK_WR);
             await sendTelegramMessage(
               env,
               env.PREMIUM_CHANNEL_ID,
-              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote})`) +
+              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
                 (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
                 stakeAdvice(parsed.targetLine, mq, UNITS_RISK, odds)
             );
@@ -1715,7 +1776,7 @@ export default {
               tier: "risk", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
               line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_RISK, odds,
             });
-            await logPremiumForward(env, parsed, score, "risk:fwd", { signalOdds: odds, postOdds: odds });
+            await logPremiumForward(env, parsed, score, "risk:fwd", { signalOdds: odds, postOdds: odds, marketProba: market });
           } else if (
             [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
             parsed.minute != null &&
