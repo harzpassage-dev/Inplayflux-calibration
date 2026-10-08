@@ -178,10 +178,19 @@ function parseForConfidenceScore(text) {
   if (m) out.radar = parseInt(m[1], 10);
   m = text.match(/O\/U\s*([\d.]+)\s*→/i);
   if (m) out.goallinePre = parseFloat(m[1]);
-  m = text.match(/^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+\d+\s*[–-]\s*\d+\s+(.+?)\s*$/mu);
-  if (m) {
-    out.homeTeam = m[1].replace(/^[^\p{L}\p{N}]+/u, "").trim();
-    out.awayTeam = m[2].trim();
+  // Team/score line. Skips strategy headers like "💰 MoneyBag 0-0 → Goal",
+  // which have the same "name n-n name" shape.
+  for (const tm of text.matchAll(/^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/gmu)) {
+    if (/→|moneybag/i.test(tm[0])) continue;
+    out.homeTeam = tm[1].replace(/^[^\p{L}\p{N}]+/u, "").trim();
+    out.awayTeam = tm[4].trim();
+    out.goals = parseInt(tm[2], 10) + parseInt(tm[3], 10);
+    break;
+  }
+  // Generic "Target: Goal" cards (MoneyBag 0-0 -> Goal): every strategy needs
+  // exactly one more goal, so the line is the current goals + 0.5.
+  if (out.targetLine == null && out.goals != null && /Target:\s*Goal\b/i.test(text)) {
+    out.targetLine = out.goals + 0.5;
   }
   m = text.match(/Strike Rate:\s*(\d+)%/i);
   if (m) out.feedWR = parseInt(m[1], 10);
