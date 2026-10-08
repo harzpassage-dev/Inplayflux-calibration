@@ -519,7 +519,9 @@
     // (📊, 📕, ⚽, ... - add more here if a new one shows up). Made
     // optional as a safety net since the pattern (team, score-score,
     // team) is distinctive enough on its own not to false-match.
-    m = text.match(/^(?:📊|📕|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/mu);
+    // Strategy headers like "💰 MoneyBag 0-0 → Goal" have the same shape, skip them.
+    m = [...text.matchAll(/^(?:📊|📕|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/gmu)]
+      .find((x) => !/→|moneybag/i.test(x[0]));
     if (m) {
       r.homeTeam = m[1].replace(/^[^\p{L}\p{N}]+/u, "").trim();
       r.homeScore = parseInt(m[2], 10);
@@ -582,6 +584,13 @@
       const headerText = text.split(/Target:/i)[0];
       m = headerText.match(/Over\s*([\d.]+)/i);
       if (m) r.targetLine = parseFloat(m[1]);
+    }
+
+    // Generic "Target: Goal" (MoneyBag 0-0 -> Goal): every strategy needs
+    // exactly one more goal, so the line is the current goals + 0.5.
+    if (r.homeScore != null && r.awayScore != null) {
+      if (r.goalsAtSignal == null) r.goalsAtSignal = r.homeScore + r.awayScore;
+      if (r.targetLine == null && /^Goal\b/i.test(r.targetRaw || "")) r.targetLine = r.goalsAtSignal + 0.5;
     }
 
     return r;
