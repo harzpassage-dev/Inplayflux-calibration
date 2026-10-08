@@ -422,6 +422,21 @@ function oddsSnapshot(m) {
   };
 }
 
+// One premium post per match and target line. InPlayFlux sometimes sends a
+// card twice (or edits it, which arrives as edited_channel_post); without
+// this the premium channel got the same signal twice and the tracking
+// counted it twice. Returns false if this match/line was already claimed.
+const CLAIM_TTL_S = 3 * 60 * 60;
+async function claimSignal(env, parsed) {
+  const h = normTeam(parsed.homeTeam);
+  const a = normTeam(parsed.awayTeam);
+  if (!h || !a) return true;
+  const key = `claim:${h}:${a}:${parsed.targetLine}`;
+  if (await env.ACCESS_KV.get(key)) return false;
+  await env.ACCESS_KV.put(key, "1", { expirationTtl: CLAIM_TTL_S });
+  return true;
+}
+
 // Half-Risiko: minute 68-69 card below the threshold. Posted right away, but
 // only if the match is in the live feed, no goal or red card came since the
 // card, and the goal score clears HALF_MIN_GOAL_POINTS.
@@ -441,6 +456,7 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   if (live.redCards > 0) return reject("Rote Karte", { live });
   const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute });
   if (gs.points < HALF_MIN_GOAL_POINTS) return reject(`Tor-Score ${gs.points} < ${HALF_MIN_GOAL_POINTS}`, { live, goal: gs });
+  if (!(await claimSignal(env, parsed))) return false; // already posted for this match and line
   const mq = minQuote(HALF_WR);
   const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
   await sendTelegramMessage(
@@ -1637,12 +1653,15 @@ export default {
             // Not posted yet: the cron trigger re-checks the match live after
             // CONFIRM_DELAY_MS and only then posts (see processPendingPremium).
             // The quote at signal time is logged so posted bets can be priced later.
-            await queuePremium(env, channelMsg.text, parsed, score, await signalOddsFor(parsed));
+            if (await claimSignal(env, parsed)) {
+              await queuePremium(env, channelMsg.text, parsed, score, await signalOddsFor(parsed));
+            }
           } else if (
             [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
             parsed.minute != null &&
             parsed.minute >= RISK_MINUTE &&
-            (parsed.minute >= RISK_MIN_MINUTE || (parsed.radar != null && parsed.radar >= RISK_MIN_RADAR))
+            (parsed.minute >= RISK_MIN_MINUTE || (parsed.radar != null && parsed.radar >= RISK_MIN_RADAR)) &&
+            (await claimSignal(env, parsed))
           ) {
             const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
             const snap = await signalSnapshotFor(parsed);
