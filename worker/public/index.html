@@ -670,18 +670,23 @@
     if (f.ouLine1 != null && f.ouLine2 != null && f.overOdds && f.underOdds && targetLine != null) {
       const pOverRaw = 1 / f.overOdds, pUnderRaw = 1 / f.underOdds;
       const pFair = pOverRaw / (pOverRaw + pUnderRaw);
+      // "O/U a → b" on the card are the PRE-MATCH lines (whole game), not the
+      // live line. So the implied lambda is for 90 minutes and has to be scaled
+      // to the time left; using it as if it were the rest of the game gave
+      // e.g. 94% for O0.5 at 62' 0-0.
       const effectiveLine = (f.ouLine1 + f.ouLine2) / 2;
-      const restThreshold = effectiveLine - goals;
-      const kMarket = Math.floor(restThreshold) + 1;
-      if (kMarket >= 1) {
-        const lambdaMarket = solveLambdaForTail(kMarket, pFair);
+      const kMarket = Math.floor(effectiveLine) + 1;
+      const left = minutesLeft != null ? minutesLeft : (minute != null ? Math.max(0, 90 - minute) : null);
+      if (kMarket >= 1 && left != null) {
+        const lambdaGame = solveLambdaForTail(kMarket, pFair);
+        const lambdaMarket = lambdaGame * left / 90;
         const restTarget1 = targetLine - goals; // Ziel: Ziellinie selbst (z.B. 2.5 oder 3.5)
         const kTarget1 = Math.floor(restTarget1) + 1;
         const pTarget1 = poissonTailGE(kTarget1, lambdaMarket);
         const restTarget2 = targetLine + 1 - goals; // fuer O3.5: zusaetzlich Ziellinie+1 (3.5 -> auch 4.5)
         const kTarget2 = Math.floor(restTarget2) + 1;
         const pTarget2 = poissonTailGE(kTarget2, lambdaMarket);
-        market = { pFair, effectiveLine, restThreshold, kMarket, lambdaMarket, pTarget1, pTarget2 };
+        market = { pFair, effectiveLine, kMarket, lambdaGame, lambdaMarket, left, pTarget1, pTarget2 };
       }
     }
 
@@ -797,8 +802,9 @@
       html += `<h2 style="border:none;padding:0;margin:14px 0 6px;">3b. Marktlinien-Umrechnung</h2>
       <div class="field-grid">
         <div class="k">Faire Markt-Wahrsch. (angezeigte Linie)</div><div class="v">${fmtPct(a.market.pFair)}</div>
-        <div class="k">Effektive Linie</div><div class="v">${a.market.effectiveLine}</div>
-        <div class="k">Implizites λ</div><div class="v">${a.market.lambdaMarket.toFixed(2)}</div>
+        <div class="k">Vorab-Linie (ganzes Spiel)</div><div class="v">${a.market.effectiveLine}</div>
+        <div class="k">Implizites λ ganzes Spiel</div><div class="v">${a.market.lambdaGame.toFixed(2)}</div>
+        <div class="k">λ für die ${a.market.left} Restminuten</div><div class="v">${a.market.lambdaMarket.toFixed(2)}</div>
         <div class="k">Markt-Wahrsch. für Ziellinie ${f.targetLine}</div><div class="v">${fmtPct(a.market.pTarget1)}</div>
       </div>`;
     } else {
