@@ -562,8 +562,9 @@ function overLineProb(line, l) {
   }
   return poissonTail(Math.floor(line) + 1, l);
 }
-function marketProb(match, targetLine) {
-  if (!match || targetLine == null) return null;
+// Remaining-goals Poisson lambda implied by the feed's live main O/U line.
+function marketLambda(match) {
+  if (!match) return null;
   const ou = match.ou_odds || [];
   const over = num(ou[0]);
   const under = num(ou[1]);
@@ -580,8 +581,142 @@ function marketProb(match, targetLine) {
     if (overLineProb(rest, mid) < pFair) lo = mid;
     else hi = mid;
   }
-  const p = poissonTail(Math.floor(targetLine - goals) + 1, (lo + hi) / 2);
+  return (lo + hi) / 2;
+}
+
+function marketProb(match, targetLine) {
+  if (!match || targetLine == null) return null;
+  const lambda = marketLambda(match);
+  if (lambda == null) return null;
+  const goals = (num(match.hg) || 0) + (num(match.ag) || 0);
+  const p = poissonTail(Math.floor(targetLine - goals) + 1, lambda);
   return Math.round(p * 1000) / 1000;
+}
+
+// ---------------------------------------------------------------------
+// Under 3.5 shadow log: every O2.5 card (2 goals) is logged without any
+// post, with the feed's live line and odds, to check whether Under 3.5 (at
+// most one more goal) pays (reports: Under 3.5 hits ~64% after O2.5
+// signals, break-even quote ~1.56; the real quotes are unknown).
+// KV: one key per UTC day ("u35:YYYY-MM-DD", array of entries). A card adds
+// one write; the cron only writes when a 4th goal turns an entry lost.
+// "Won" is derived when read: no 4th goal seen until the match is over.
+const U35_PREFIX = "u35:";
+const U35_TTL_S = 180 * 24 * 60 * 60;
+const U35_WATCH_MIN = 110; // watch until about signal + (110 - minute) min
+
+function u35Key(ms) {
+  return U35_PREFIX + new Date(ms).toISOString().slice(0, 10);
+}
+
+async function readU35(env, key) {
+  const raw = await env.ACCESS_KV.get(key);
+  if (!raw) return [];
+  try {
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function u35Deadline(e) {
+  return e.at + Math.max(15, U35_WATCH_MIN - (e.minute || 60)) * 60 * 1000;
+}
+
+function u35Status(e, now) {
+  if (e.lostAt) return "lost";
+  if (!e.matchId) return "void";
+  return now >= u35Deadline(e) ? "won" : "open";
+}
+
+async function logUnder35(env, parsed, score) {
+  if (parsed.targetLine !== 2.5) return;
+  const feed = await fetchFeed();
+  const match = Array.isArray(feed) ? findMatch(feed, parsed.homeTeam, parsed.awayTeam) : null;
+  const now = Date.now();
+  const key = u35Key(now);
+  const [today, before] = await Promise.all([readU35(env, key), readU35(env, u35Key(now - DAY_MS))]);
+  const same = (e) =>
+    (match && e.matchId === match.id) ||
+    (normTeam(e.home) === normTeam(parsed.homeTeam) && normTeam(e.away) === normTeam(parsed.awayTeam));
+  if (today.some(same) || before.some((e) => same(e) && now - e.at < 4 * 60 * 60 * 1000)) return;
+  const ou = match ? match.ou_odds || [] : [];
+  const lambda = marketLambda(match);
+  const goals = match ? (num(match.hg) || 0) + (num(match.ag) || 0) : null;
+  const entry = {
+    id: randomToken().slice(0, 10),
+    at: now,
+    home: parsed.homeTeam || null,
+    away: parsed.awayTeam || null,
+    matchId: match ? match.id : null,
+    minute: parsed.minute,
+    liveMinute: match ? num(match.minute) : null,
+    goals,
+    line: num(ou[2]),
+    over: num(ou[0]),
+    under: num(ou[1]),
+    // Market chance of at most one more goal (= Under 3.5 at 2 goals).
+    marketU35: lambda != null && goals === 2 ? Math.round(Math.exp(-lambda) * (1 + lambda) * 1000) / 1000 : null,
+    premium: !!(score && score.passes),
+    proba: score ? Math.round(score.proba * 1000) / 1000 : null,
+  };
+  today.push(entry);
+  await env.ACCESS_KV.put(key, JSON.stringify(today), { expirationTtl: U35_TTL_S });
+}
+
+async function settleU35(env, feed, lists) {
+  if (!Array.isArray(feed)) return;
+  const now = Date.now();
+  for (const [key, list] of lists) {
+    const lost = {};
+    for (const e of list) {
+      if (u35Status(e, now) !== "open") continue;
+      const m = feed.find((x) => x.id === e.matchId);
+      if (!m) continue;
+      const goals = (num(m.hg) || 0) + (num(m.ag) || 0);
+      if (goals >= 4) lost[e.id] = { lostAt: now, lostMinute: num(m.minute), finalGoals: goals };
+    }
+    if (!Object.keys(lost).length) continue;
+    // Re-read so a card the webhook added meanwhile is not overwritten.
+    const latest = await readU35(env, key);
+    for (const e of latest) if (lost[e.id]) Object.assign(e, lost[e.id]);
+    await env.ACCESS_KV.put(key, JSON.stringify(latest), { expirationTtl: U35_TTL_S });
+  }
+}
+
+async function u35Rows(env, days) {
+  const now = Date.now();
+  const keys = [];
+  for (let d = 0; d < days; d++) keys.push(u35Key(now - d * DAY_MS));
+  const lists = await Promise.all(keys.map((k) => readU35(env, k)));
+  return lists.flat().map((e) => ({ ...e, status: u35Status(e, now) })).sort((a, b) => b.at - a.at);
+}
+
+function u35Summary(rows) {
+  const decided = rows.filter((r) => r.status === "won" || r.status === "lost");
+  const part = (list) => {
+    const won = list.filter((r) => r.status === "won").length;
+    const priced = list.filter((r) => r.line === 3.5 && r.under);
+    const profit = priced.reduce((a, r) => a + (r.status === "won" ? r.under - 1 : -1), 0);
+    const mk = list.filter((r) => r.marketU35 != null);
+    return {
+      n: list.length,
+      won,
+      rate: list.length ? Math.round((won / list.length) * 1000) / 1000 : null,
+      marketAvg: mk.length ? Math.round((mk.reduce((a, r) => a + r.marketU35, 0) / mk.length) * 1000) / 1000 : null,
+      line35: priced.length,
+      underAvg35: priced.length ? Math.round((priced.reduce((a, r) => a + r.under, 0) / priced.length) * 100) / 100 : null,
+      profit35: Math.round(profit * 100) / 100,
+    };
+  };
+  return {
+    all: part(decided),
+    nonPremium: part(decided.filter((r) => !r.premium)),
+    premium: part(decided.filter((r) => r.premium)),
+    open: rows.filter((r) => r.status === "open").length,
+    void: rows.filter((r) => r.status === "void").length,
+  };
 }
 
 // Same conditions as goal_score_conditions() in scripts/live_radar.py.
@@ -695,13 +830,18 @@ async function logConfirmation(env, item, res, keyPrefix) {
 // Runs every minute: confirms queued cards, then settles tracked ones. The
 // feed is fetched at most once, and only when either job has work.
 async function runMinuteJobs(env) {
-  const [pending, tracked] = await Promise.all([readPending(env), readTracked(env)]);
   const now = Date.now();
+  const u35Keys = [u35Key(now), u35Key(now - DAY_MS)];
+  const [pending, tracked, ...u35Lists] = await Promise.all([
+    readPending(env), readTracked(env), ...u35Keys.map((k) => readU35(env, k)),
+  ]);
   const due = pending.filter((p) => now - p.receivedAt >= CONFIRM_DELAY_MS);
-  if (!due.length && !tracked.length) return; // the common case: two KV reads, no fetch, no writes
+  const u35Open = u35Lists.some((l) => l.some((e) => u35Status(e, now) === "open"));
+  if (!due.length && !tracked.length && !u35Open) return; // the common case: KV reads only, no fetch, no writes
   const feed = await fetchFeed();
   if (due.length) await processPendingPremium(env, due, feed);
   if (tracked.length) await settleTracked(env, feed);
+  if (u35Open) await settleU35(env, feed, u35Keys.map((k, i) => [k, u35Lists[i]]));
 }
 
 async function postUnchecked(env, item, reason) {
@@ -1184,6 +1324,14 @@ async function handleAdminPage() {
 </section>
 
 <section>
+  <h3>Under 3.5 (still protokolliert)</h3>
+  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jede Over-2.5-Karte wird ohne Post mitgeschrieben: Live-Linie, Quoten, Markt-Wahrscheinlichkeit. Under 3.5 gewinnt, wenn höchstens noch ein Tor fällt. Gewinn nur dort gerechnet, wo die Live-Linie genau 3,5 war (dann ist die Under-Quote die echte Under-3.5-Quote).</p>
+  <button id="u35-btn">Auswerten (14 Tage)</button>
+  <button id="u35-csv-btn" style="margin-left:6px;">CSV</button>
+  <div id="u35-out" style="margin-top:10px;"></div>
+</section>
+
+<section>
   <h3>Premium-Bestätigungen</h3>
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen. Half-Risiko-Karten (68–69') werden sofort geprüft und stehen ebenfalls hier, mit 🟠 markiert.</p>
   <button id="confirm-btn">Aktualisieren</button>
@@ -1422,6 +1570,50 @@ document.getElementById('test-half-btn').addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
     out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
       (d.feedOk ? 'Beispiel: ' + (d.match || 'kein laufendes Spiel') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
+  } catch (e) { out.textContent = e.message; }
+});
+
+function u35Part(label, x) {
+  const p = v => v == null ? '–' : Math.round(v * 1000) / 10 + ' %';
+  return '<tr><td>' + label + '</td><td>' + x.won + '/' + x.n + '<br><small>' + p(x.rate) + '</small></td><td>' + p(x.marketAvg) + '</td><td>' +
+    (x.line35 ? x.line35 + ' × Ø ' + x.underAvg35 + '<br><small>' + (x.profit35 >= 0 ? '+' : '') + x.profit35 + ' E.</small>' : '–') + '</td></tr>';
+}
+document.getElementById('u35-btn').addEventListener('click', async () => {
+  const out = document.getElementById('u35-out');
+  out.textContent = 'Lade …';
+  try {
+    const r = await fetch('/admin/api/u35?days=14', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const d = await r.json();
+    const s = d.summary;
+    let html = '<table><tr><th></th><th>Under 3.5</th><th>Markt</th><th>Linie 3,5</th></tr>' +
+      u35Part('Alle', s.all) + u35Part('ohne Premium', s.nonPremium) + u35Part('Premium', s.premium) + '</table>' +
+      '<div style="font-size:0.8rem;color:#8891a3;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
+    if (d.rows.length) {
+      html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Linie</th><th>Ergebnis</th></tr>';
+      d.rows.slice(0, 60).forEach(x => {
+        const st = x.status === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0a040;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : '–';
+        html += '<tr><td>' + hm(new Date(x.at).toISOString()) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + esc(x.minute) + "'" + (x.premium ? ' · Premium' : '') + '</small></td><td>' +
+          (x.line != null ? esc(x.line) + '<br><small>U ' + esc(x.under) + (x.marketU35 != null ? ' · ' + pct(x.marketU35) : '') + '</small>' : '–') + '</td><td>' + st + '</td></tr>';
+      });
+      html += '</table>';
+    }
+    out.innerHTML = html;
+  } catch (e) { out.textContent = e.message; }
+});
+document.getElementById('u35-csv-btn').addEventListener('click', async () => {
+  const out = document.getElementById('u35-out');
+  try {
+    const r = await fetch('/admin/api/u35?days=60&format=csv', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const csv = await r.text();
+    const name = 'under35_log_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">Falls kein Download startet: Text kopieren und als ' + name + ' speichern.</div>' +
+      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -1699,6 +1891,26 @@ export default {
       return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo });
     }
 
+    if (url.pathname === "/admin/api/u35" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 14, 180);
+      const rows = await u35Rows(env, days);
+      if (url.searchParams.get("format") === "csv") {
+        const cols = ["time", "home", "away", "minute", "live_minute", "goals", "line", "over", "under",
+          "market_u35", "premium", "proba", "status", "lost_minute"];
+        const cell = (v) => {
+          const t = v == null ? "" : String(v);
+          return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+        };
+        const lines = [cols.join(",")].concat(rows.map((r) => [
+          new Date(r.at).toISOString(), r.home, r.away, r.minute, r.liveMinute, r.goals, r.line, r.over, r.under,
+          r.marketU35, r.premium, r.proba, r.status, r.lostMinute,
+        ].map(cell).join(",")));
+        return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+      }
+      return jsonResponse({ days, summary: u35Summary(rows), rows: rows.slice(0, 200) });
+    }
+
     if (url.pathname === "/admin/api/results" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const days = Number(url.searchParams.get("days")) || 7;
@@ -1788,6 +2000,10 @@ export default {
           ) {
             await maybePostHalfRisk(env, channelMsg.text, parsed, score);
           }
+          // Shadow log only, nothing is posted.
+          try {
+            await logUnder35(env, parsed, score);
+          } catch (e) {}
         }
       }
 
