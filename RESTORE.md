@@ -82,6 +82,6 @@ legen.
 ## Was nicht gesichert werden muss
 
 - **Statistik und Modelle:** Sie liegen in `calibration/` und lassen sich jederzeit mit
-  `scripts/analyze_signals.py`, `scripts/goal_drivers.py` und
-  `scripts/premium_report.py` aus den CSV-Exporten neu berechnen.
+  `scripts/recalibrate.py`, `scripts/analyze_signals.py`,
+  `scripts/goal_drivers.py` und `scripts/premium_report.py` aus den CSV-Exporten neu berechnen.
 - **Live-Feed:** Er kommt jederzeit neu von InPlayFlux.

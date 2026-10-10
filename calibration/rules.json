@@ -3,18 +3,51 @@
     "data/inplayflux_sinyaller_2026-09-20.csv",
     "data/inplayflux_sinyaller_2026-09-27.csv",
     "data/inplayflux_sinyaller_2026-09-30.csv",
-    "data/inplayflux_sinyaller_2026-10-04.csv"
+    "data/inplayflux_sinyaller_2026-10-04.csv",
+    "data/inplayflux_sinyaller_2026-10-06.csv",
+    "data/inplayflux_sinyaller_2026-10-10.csv"
   ],
-  "generated_from_signals": 10531,
+  "generated_from_signals": 11610,
   "dedup_note": "Four rolling-window exports overlap heavily by date range (9377 rows across all four files are duplicates of a signal already seen in an earlier export). scripts/analyze_signals.py dedupes on (date, match, strategy, signal minute) before combining files. All numbers below are the deduped, combined-4-file numbers (n=10531 unique signals, 10491 decided).",
   "new_template_variants_note": "The 10-04 export introduced '... New' template variants ('MoneyBag 2-0/0-2 -> Over 2.5 New', 'MoneyBag + 3 Goals -> Over 3.5 New') alongside the originals. These fire the same market (Hedef/Target column says 'Over 2.5'/'Over 3.5' same as the base strategy) under a renamed rule, so tool_calibration and the live confidence models below group by the actual target line (what the signal card itself says), not by strategy name - exactly like the live worker does when scoring an incoming card. No code change was needed for this; it was already target-line-based.",
   "premium_channel_validation": {
     "note": "First real-world check of the live confidence filter, 2026-10-02 to 2026-10-04, 307 forwarded signals, all decided.",
-    "O2.5": { "n": 158, "win": 126, "loss": 32, "realized_win_rate": 0.797, "avg_predicted": 0.836 },
-    "O3.5": { "n": 137, "win": 107, "loss": 30, "realized_win_rate": 0.781, "avg_predicted": 0.778 },
-    "O1.5": { "n": 7, "win": 7, "loss": 0, "realized_win_rate": 1.0, "avg_predicted": 0.836, "caveat": "n too small to trust yet" },
-    "O0.5": { "n": 5, "win": 4, "loss": 1, "realized_win_rate": 0.80, "avg_predicted": 0.824, "caveat": "n too small to trust yet" },
-    "overall": { "n": 307, "win": 244, "loss": 63, "realized_win_rate": 0.795 }
+    "O2.5": {
+      "n": 158,
+      "win": 126,
+      "loss": 32,
+      "realized_win_rate": 0.797,
+      "avg_predicted": 0.836
+    },
+    "O3.5": {
+      "n": 137,
+      "win": 107,
+      "loss": 30,
+      "realized_win_rate": 0.781,
+      "avg_predicted": 0.778
+    },
+    "O1.5": {
+      "n": 7,
+      "win": 7,
+      "loss": 0,
+      "realized_win_rate": 1.0,
+      "avg_predicted": 0.836,
+      "caveat": "n too small to trust yet"
+    },
+    "O0.5": {
+      "n": 5,
+      "win": 4,
+      "loss": 1,
+      "realized_win_rate": 0.8,
+      "avg_predicted": 0.824,
+      "caveat": "n too small to trust yet"
+    },
+    "overall": {
+      "n": 307,
+      "win": 244,
+      "loss": 63,
+      "realized_win_rate": 0.795
+    }
   },
   "breakeven_odds_formula": "mindestquote = 1 / win_rate  (decimal odds needed so that, at this win rate, wins on average cover losses; anything below this quote runs at a loss even if the win rate holds)",
   "strategies": {
@@ -33,7 +66,7 @@
       "sample_size": 2913,
       "win_rate": 0.697,
       "breakeven_odds": 1.43,
-      "avg_over_odds_observed": 1.90,
+      "avg_over_odds_observed": 1.9,
       "odds_margin": 0.47,
       "recommended_rule": "dakika <= 63 | dakika >= 60 | paraCuvali = 1 | toplamGol = 3",
       "note": "Minute 60 solid (72-75%), 61-63 still decent (69-76% depending on SoT), then decays through 64-71. <=63 remains the conservative cutoff; shots-on-target (9+ vs <=8) matters more than the minute alone in the 61-71 range - see tool_calibration.o35Matrix."
@@ -41,7 +74,7 @@
     "Over 2.5 Odd Filter": {
       "current_rule": "dakika <= 73 | dakika >= 55 | ouOverOdds >= 1.7 | paraCuvali = 1 | toplamGol = 2",
       "sample_size": 747,
-      "win_rate": 0.740,
+      "win_rate": 0.74,
       "breakeven_odds": 1.35,
       "avg_over_odds_observed": 1.91,
       "odds_margin": 0.56,
@@ -91,10 +124,10 @@
     "Over 1.5 claude 1.änderung": {
       "current_rule": "dakika <= 75 | dakika >= 60 | paraCuvali = 1 | rx >= 300 | son5iki >= 60 | toplamGol = 1 | toplamSutTotal >= 10 | ustAdayi = 1",
       "sample_size": 140,
-      "win_rate": 0.750,
+      "win_rate": 0.75,
       "breakeven_odds": 1.33,
       "avg_over_odds_observed": 1.83,
-      "odds_margin": 0.50,
+      "odds_margin": 0.5,
       "recommended_rule": "no change recommended yet",
       "note": "Best-performing of the three Over 1.5 variants (75.0% vs 73.1-73.2%), and unlike the other two it still holds up at 65-69' (76.0%, n=25). Worth watching as the strongest of the three, not yet enough to retire the others."
     },
@@ -104,7 +137,7 @@
       "win_rate": 0.575,
       "breakeven_odds": 1.74,
       "avg_over_odds_observed": 1.94,
-      "odds_margin": 0.20,
+      "odds_margin": 0.2,
       "recommended_rule": "dakika <= 20 | dakika >= 10 | maviBomba = 1 | rx <= 178 | s5 >= 3 | toplamGol <= 1 | toplamSut >= 3 | vanPersie = 1",
       "note": "No new 'HT over 0.5' signals appeared in either the 09-27 or 09-30 export - still the same 40 signals from 09-20. The s5>=3 tightened rule (hypothesis from n=18 subset, see prior report) has not been re-tested against fresh data yet since the strategy hasn't fired again. Still unresolved - needs a fresh export where this strategy actually triggers again."
     }
@@ -112,91 +145,458 @@
   "breakeven_odds_by_signal_minute": {
     "note": "Mindestquote per signal-minute bucket, overall across strategies, three exports combined and deduped (n=8329).",
     "buckets": {
-      "<57": {"win_rate": 0.767, "breakeven_odds": 1.30},
-      "57-59": {"win_rate": 0.744, "breakeven_odds": 1.34},
-      "60-64": {"win_rate": 0.722, "breakeven_odds": 1.39},
-      "65-69": {"win_rate": 0.653, "breakeven_odds": 1.53},
-      ">=70": {"win_rate": 0.609, "breakeven_odds": 1.64}
+      "<57": {
+        "win_rate": 0.767,
+        "breakeven_odds": 1.3
+      },
+      "57-59": {
+        "win_rate": 0.744,
+        "breakeven_odds": 1.34
+      },
+      "60-64": {
+        "win_rate": 0.722,
+        "breakeven_odds": 1.39
+      },
+      "65-69": {
+        "win_rate": 0.653,
+        "breakeven_odds": 1.53
+      },
+      ">=70": {
+        "win_rate": 0.609,
+        "breakeven_odds": 1.64
+      }
     }
   },
   "breakeven_odds_by_strategy_and_signal_minute": {
     "note": "Mindestquote per strategy x signal-minute bucket (n>=15), three exports combined and deduped. avg_over_odds is the observed average Over-odds for that combination. margin = avg_over_odds - breakeven_odds.",
     "MoneyBag 2-0/0-2 -> Over 2.5": {
-      "<57":   {"n": 2699, "win_rate": 0.772, "breakeven_odds": 1.30, "avg_over_odds": 1.91, "margin": 0.61},
-      "57-59": {"n": 259,  "win_rate": 0.741, "breakeven_odds": 1.35, "avg_over_odds": 1.91, "margin": 0.56},
-      "60-64": {"n": 325,  "win_rate": 0.714, "breakeven_odds": 1.40, "avg_over_odds": 1.92, "margin": 0.52},
-      "65-69": {"n": 246,  "win_rate": 0.659, "breakeven_odds": 1.52, "avg_over_odds": 1.90, "margin": 0.38},
-      ">=70":  {"n": 144,  "win_rate": 0.625, "breakeven_odds": 1.60, "avg_over_odds": 1.88, "margin": 0.28}
+      "<57": {
+        "n": 2699,
+        "win_rate": 0.772,
+        "breakeven_odds": 1.3,
+        "avg_over_odds": 1.91,
+        "margin": 0.61
+      },
+      "57-59": {
+        "n": 259,
+        "win_rate": 0.741,
+        "breakeven_odds": 1.35,
+        "avg_over_odds": 1.91,
+        "margin": 0.56
+      },
+      "60-64": {
+        "n": 325,
+        "win_rate": 0.714,
+        "breakeven_odds": 1.4,
+        "avg_over_odds": 1.92,
+        "margin": 0.52
+      },
+      "65-69": {
+        "n": 246,
+        "win_rate": 0.659,
+        "breakeven_odds": 1.52,
+        "avg_over_odds": 1.9,
+        "margin": 0.38
+      },
+      ">=70": {
+        "n": 144,
+        "win_rate": 0.625,
+        "breakeven_odds": 1.6,
+        "avg_over_odds": 1.88,
+        "margin": 0.28
+      }
     },
     "MoneyBag + 3 Goals -> Over 3.5": {
-      "60-64": {"n": 2320, "win_rate": 0.718, "breakeven_odds": 1.39, "avg_over_odds": 1.91, "margin": 0.52},
-      "65-69": {"n": 439,  "win_rate": 0.629, "breakeven_odds": 1.59, "avg_over_odds": 1.89, "margin": 0.30},
-      ">=70":  {"n": 154,  "win_rate": 0.584, "breakeven_odds": 1.71, "avg_over_odds": 1.90, "margin": 0.19}
+      "60-64": {
+        "n": 2320,
+        "win_rate": 0.718,
+        "breakeven_odds": 1.39,
+        "avg_over_odds": 1.91,
+        "margin": 0.52
+      },
+      "65-69": {
+        "n": 439,
+        "win_rate": 0.629,
+        "breakeven_odds": 1.59,
+        "avg_over_odds": 1.89,
+        "margin": 0.3
+      },
+      ">=70": {
+        "n": 154,
+        "win_rate": 0.584,
+        "breakeven_odds": 1.71,
+        "avg_over_odds": 1.9,
+        "margin": 0.19
+      }
     },
     "Over 2.5 Odd Filter": {
-      "<57":   {"n": 544, "win_rate": 0.754, "breakeven_odds": 1.33, "avg_over_odds": 1.91, "margin": 0.58},
-      "57-59": {"n": 57,  "win_rate": 0.754, "breakeven_odds": 1.33, "avg_over_odds": 1.92, "margin": 0.59},
-      "60-64": {"n": 54,  "win_rate": 0.667, "breakeven_odds": 1.50, "avg_over_odds": 1.91, "margin": 0.41},
-      "65-69": {"n": 57,  "win_rate": 0.754, "breakeven_odds": 1.33, "avg_over_odds": 1.90, "margin": 0.57},
-      ">=70":  {"n": 35,  "win_rate": 0.600, "breakeven_odds": 1.67, "avg_over_odds": 1.88, "margin": 0.21}
+      "<57": {
+        "n": 544,
+        "win_rate": 0.754,
+        "breakeven_odds": 1.33,
+        "avg_over_odds": 1.91,
+        "margin": 0.58
+      },
+      "57-59": {
+        "n": 57,
+        "win_rate": 0.754,
+        "breakeven_odds": 1.33,
+        "avg_over_odds": 1.92,
+        "margin": 0.59
+      },
+      "60-64": {
+        "n": 54,
+        "win_rate": 0.667,
+        "breakeven_odds": 1.5,
+        "avg_over_odds": 1.91,
+        "margin": 0.41
+      },
+      "65-69": {
+        "n": 57,
+        "win_rate": 0.754,
+        "breakeven_odds": 1.33,
+        "avg_over_odds": 1.9,
+        "margin": 0.57
+      },
+      ">=70": {
+        "n": 35,
+        "win_rate": 0.6,
+        "breakeven_odds": 1.67,
+        "avg_over_odds": 1.88,
+        "margin": 0.21
+      }
     },
     "Over 0.5 Value": {
-      "60-64": {"n": 341, "win_rate": 0.724, "breakeven_odds": 1.38, "avg_over_odds": 1.91, "margin": 0.53}
+      "60-64": {
+        "n": 341,
+        "win_rate": 0.724,
+        "breakeven_odds": 1.38,
+        "avg_over_odds": 1.91,
+        "margin": 0.53
+      }
     },
     "MoneyBag 0-0 -> Goal": {
-      "60-64": {"n": 169, "win_rate": 0.740, "breakeven_odds": 1.35, "avg_over_odds": 1.90, "margin": 0.55}
+      "60-64": {
+        "n": 169,
+        "win_rate": 0.74,
+        "breakeven_odds": 1.35,
+        "avg_over_odds": 1.9,
+        "margin": 0.55
+      }
     },
     "Over 1.5 (all variants merged)": {
-      "<=61":   {"n": 232, "win_rate": 0.780, "breakeven_odds": 1.28, "avg_over_odds": 1.89, "margin": 0.61},
-      "62-64":  {"n": 77,  "win_rate": 0.701, "breakeven_odds": 1.43, "avg_over_odds": 1.82, "margin": 0.40},
-      "65-67":  {"n": 54,  "win_rate": 0.759, "breakeven_odds": 1.32, "avg_over_odds": 1.82, "margin": 0.51},
-      "68-71":  {"n": 35,  "win_rate": 0.371, "breakeven_odds": 2.69, "avg_over_odds": 1.83, "margin": -0.87},
-      ">=72":   {"n": 25,  "win_rate": 0.920, "breakeven_odds": 1.09, "avg_over_odds": 1.79, "margin": 0.70}
+      "<=61": {
+        "n": 232,
+        "win_rate": 0.78,
+        "breakeven_odds": 1.28,
+        "avg_over_odds": 1.89,
+        "margin": 0.61
+      },
+      "62-64": {
+        "n": 77,
+        "win_rate": 0.701,
+        "breakeven_odds": 1.43,
+        "avg_over_odds": 1.82,
+        "margin": 0.4
+      },
+      "65-67": {
+        "n": 54,
+        "win_rate": 0.759,
+        "breakeven_odds": 1.32,
+        "avg_over_odds": 1.82,
+        "margin": 0.51
+      },
+      "68-71": {
+        "n": 35,
+        "win_rate": 0.371,
+        "breakeven_odds": 2.69,
+        "avg_over_odds": 1.83,
+        "margin": -0.87
+      },
+      ">=72": {
+        "n": 25,
+        "win_rate": 0.92,
+        "breakeven_odds": 1.09,
+        "avg_over_odds": 1.79,
+        "margin": 0.7
+      }
     },
     "HT over 0.5": {
-      "<57": {"n": 40, "win_rate": 0.575, "breakeven_odds": 1.74, "avg_over_odds": 1.94, "margin": 0.20}
+      "<57": {
+        "n": 40,
+        "win_rate": 0.575,
+        "breakeven_odds": 1.74,
+        "avg_over_odds": 1.94,
+        "margin": 0.2
+      }
     }
   },
   "tool_calibration": {
     "note": "Source of truth for tools/moneybag-analyst.html's DEFAULT_CALIB. Recomputed 2026-10-04 from all four exports combined and deduped, grouped by actual target line (Hedef/Target column), which now also sweeps in the 'New' template variants of O2.5/O3.5 introduced in the 10-04 export. n=4819 for O2.5, n=3646 for O3.5, n=538 for O1.5 merged across its three template variants, n=398 for O0.5. Replaces the previous 2026-09-30 calibration.",
     "o25Buckets": [
-      { "min": 0,  "max": 55, "label": "<=55'",  "wr": 77.9, "n": 2612 },
-      { "min": 56, "max": 60, "label": "56-60'", "wr": 75.9, "n": 1309 },
-      { "min": 61, "max": 65, "label": "61-65'", "wr": 71.4, "n": 440 },
-      { "min": 66, "max": 70, "label": "66-70'", "wr": 59.3, "n": 327 },
-      { "min": 71, "max": 73, "label": "71-73'", "wr": 65.6, "n": 131 }
+      {
+        "min": 0,
+        "max": 55,
+        "label": "<=55'",
+        "wr": 77.5,
+        "n": 3174
+      },
+      {
+        "min": 56,
+        "max": 60,
+        "label": "56-60'",
+        "wr": 75.3,
+        "n": 1697
+      },
+      {
+        "min": 61,
+        "max": 65,
+        "label": "61-65'",
+        "wr": 71.2,
+        "n": 535
+      },
+      {
+        "min": 66,
+        "max": 70,
+        "label": "66-70'",
+        "wr": 60.6,
+        "n": 414
+      },
+      {
+        "min": 71,
+        "max": 73,
+        "label": "71-73'",
+        "wr": 65.5,
+        "n": 165
+      }
     ],
     "o35Matrix": [
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "<=8", "wr": 72.2, "n": 1404 },
-      { "minMin": 60, "maxMin": 60, "label": "=60'",   "sot": "9+",  "wr": 74.9, "n": 463 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "<=8", "wr": 69.9, "n": 692 },
-      { "minMin": 61, "maxMin": 63, "label": "61-63'", "sot": "9+",  "wr": 76.1, "n": 243 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "<=8", "wr": 62.9, "n": 251 },
-      { "minMin": 64, "maxMin": 66, "label": "64-66'", "sot": "9+",  "wr": 65.6, "n": 93 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "<=8", "wr": 58.5, "n": 224 },
-      { "minMin": 67, "maxMin": 69, "label": "67-69'", "sot": "9+",  "wr": 68.6, "n": 86 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "<=8", "wr": 54.5, "n": 132 },
-      { "minMin": 70, "maxMin": 71, "label": "70-71'", "sot": "9+",  "wr": 65.5, "n": 58 }
+      {
+        "minMin": 60,
+        "maxMin": 60,
+        "label": "=60'",
+        "sot": "<=8",
+        "wr": 72.1,
+        "n": 1508
+      },
+      {
+        "minMin": 60,
+        "maxMin": 60,
+        "label": "=60'",
+        "sot": "9+",
+        "wr": 76.0,
+        "n": 508
+      },
+      {
+        "minMin": 61,
+        "maxMin": 63,
+        "label": "61-63'",
+        "sot": "<=8",
+        "wr": 71.2,
+        "n": 785
+      },
+      {
+        "minMin": 61,
+        "maxMin": 63,
+        "label": "61-63'",
+        "sot": "9+",
+        "wr": 75.4,
+        "n": 276
+      },
+      {
+        "minMin": 64,
+        "maxMin": 66,
+        "label": "64-66'",
+        "sot": "<=8",
+        "wr": 62.8,
+        "n": 269
+      },
+      {
+        "minMin": 64,
+        "maxMin": 66,
+        "label": "64-66'",
+        "sot": "9+",
+        "wr": 66.7,
+        "n": 96
+      },
+      {
+        "minMin": 67,
+        "maxMin": 69,
+        "label": "67-69'",
+        "sot": "<=8",
+        "wr": 59.5,
+        "n": 237
+      },
+      {
+        "minMin": 67,
+        "maxMin": 69,
+        "label": "67-69'",
+        "sot": "9+",
+        "wr": 68.5,
+        "n": 89
+      },
+      {
+        "minMin": 70,
+        "maxMin": 71,
+        "label": "70-71'",
+        "sot": "<=8",
+        "wr": 54.7,
+        "n": 139
+      },
+      {
+        "minMin": 70,
+        "maxMin": 71,
+        "label": "70-71'",
+        "sot": "9+",
+        "wr": 62.9,
+        "n": 62
+      }
     ],
     "o15Buckets": [
-      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 77.7, "n": 282 },
-      { "min": 62, "max": 64, "label": "62-64'", "wr": 69.5, "n": 95 },
-      { "min": 65, "max": 67, "label": "65-67'", "wr": 76.5, "n": 85 },
-      { "min": 68, "max": 71, "label": "68-71'", "wr": 39.5, "n": 38 },
-      { "min": 72, "max": 90, "label": ">=72'",  "wr": 78.9, "n": 38 }
+      {
+        "min": 0,
+        "max": 61,
+        "label": "<=61'",
+        "wr": 73.8,
+        "n": 382
+      },
+      {
+        "min": 62,
+        "max": 64,
+        "label": "62-64'",
+        "wr": 73.0,
+        "n": 111
+      },
+      {
+        "min": 65,
+        "max": 67,
+        "label": "65-67'",
+        "wr": 77.5,
+        "n": 89
+      },
+      {
+        "min": 68,
+        "max": 71,
+        "label": "68-71'",
+        "wr": 46.5,
+        "n": 43
+      },
+      {
+        "min": 72,
+        "max": 90,
+        "label": ">=72'",
+        "wr": 69.4,
+        "n": 49
+      }
     ],
     "o05Buckets": [
-      { "min": 0,  "max": 61, "label": "<=61'",  "wr": 73.0, "n": 319 },
-      { "min": 62, "max": 90, "label": ">=62'",  "wr": 69.6, "n": 79 }
+      {
+        "min": 0,
+        "max": 61,
+        "label": "<=61'",
+        "wr": 71.4,
+        "n": 689
+      },
+      {
+        "min": 62,
+        "max": 90,
+        "label": ">=62'",
+        "wr": 70.3,
+        "n": 293
+      }
     ],
     "o15_o05_note": "Merged across all three 'Over 1.5' bot-template variants (💰 Over 1.5 / cloude / claude 1.änderung) since they're the same underlying strategy under different rule-tweak names - splitting them would have made each bucket too thin to trust. The '68-71' bucket for O1.5 (39.5% wr, n=38) remains a real danger zone, not noise - consistent across two calibration rounds now. The '>=72' bucket has settled down to 78.9% (n=38, up from n=25) as more data came in - the earlier 92.0% was a small-sample artifact, exactly the caution flagged last time. O0.5 signals fire almost exclusively at minute 61-62, same as MoneyBag 0-0 -> Goal and Over 0.5 Value in the strategies section above (same underlying signal family)."
   },
   "live_confidence_models": {
-    "note": "Logistic-regression models powering worker/src/index.js's CONFIDENCE_MODELS (the premium-channel auto-forward filter). Features in order: [minute, total_sot, radar, goalline_pre], all z-scored with the mean/std below before applying coef+intercept, then sigmoid. Cross-validated (5-fold, out-of-fold) realized win rates at each strategy's live threshold: O2.5 >=80% -> 83.7% (n=1050, 21.8% of volume), O3.5 >=75% -> 78.6% (n=758, 20.8%), O1.5 >=80% -> 80.5% (n=118, 21.9%), O0.5 >=80% -> 79.1% (n=86, 21.6%). All four thresholds unchanged from the 2026-09-30 calibration - still well matched.",
-    "2.5": { "mean": [57.5489, 5.8099, 320.2728, 2.9927], "std": [4.447, 2.4613, 79.6106, 0.6112], "coef": [-0.2769, 0.0693, 0.0257, 0.2491], "intercept": 1.139, "threshold": 0.80 },
-    "3.5": { "mean": [62.0784, 7.0823, 333.6862, 3.0036], "std": [3.1719, 2.5982, 82.0626, 0.6556], "coef": [-0.2311, 0.076, 0.0504, 0.1891], "intercept": 0.8621, "threshold": 0.75 },
-    "1.5": { "mean": [63.1654, 6.0279, 377.4233, 3.2012], "std": [4.0098, 2.3251, 68.9015, 0.5045], "coef": [-0.2786, -0.1526, 0.2299, 0.2624], "intercept": 1.0578, "threshold": 0.80 },
-    "0.5": { "mean": [61.2337, 3.9322, 330.3406, 3.0892], "std": [0.5743, 2.4593, 77.9449, 0.5761], "coef": [-0.0684, 0.1215, 0.1318, 0.4201], "intercept": 1.0135, "threshold": 0.80 }
+    "note": "Logistic-regression models powering worker/src/index.js's CONFIDENCE_MODELS. Features [minute, total_sot, radar, goalline_pre], z-scored with mean/std, then coef+intercept, sigmoid. Generated by scripts/recalibrate.py. 5-fold out-of-fold win rates at the live thresholds: O2.5 >=0.80 -> 83.1% (n=1174, 19.6% of volume); O3.5 >=0.75 -> 78.8% (n=934, 23.5% of volume); O1.5 >=0.80 -> 84.3% (n=89, 13.2% of volume); O0.5 >=0.75 -> 80.8% (n=250, 25.5% of volume).",
+    "2.5": {
+      "mean": [
+        57.5659,
+        5.8057,
+        321.4948,
+        3.0048
+      ],
+      "std": [
+        4.4538,
+        2.4354,
+        79.7539,
+        0.6193
+      ],
+      "coef": [
+        -0.2612,
+        0.0724,
+        0.0282,
+        0.2531
+      ],
+      "intercept": 1.1195,
+      "threshold": 0.8
+    },
+    "3.5": {
+      "mean": [
+        62.0355,
+        7.0857,
+        333.7679,
+        3.0188
+      ],
+      "std": [
+        3.1329,
+        2.5753,
+        82.6006,
+        0.6705
+      ],
+      "coef": [
+        -0.2294,
+        0.0716,
+        0.0536,
+        0.1985
+      ],
+      "intercept": 0.8828,
+      "threshold": 0.75
+    },
+    "1.5": {
+      "mean": [
+        61.3487,
+        5.8976,
+        368.088,
+        3.201
+      ],
+      "std": [
+        9.5617,
+        2.2539,
+        79.8899,
+        0.4925
+      ],
+      "coef": [
+        -0.1536,
+        -0.175,
+        0.3342,
+        0.1727
+      ],
+      "intercept": 0.977,
+      "threshold": 0.8
+    },
+    "0.5": {
+      "mean": [
+        60.6527,
+        4.0825,
+        328.6762,
+        3.1067
+      ],
+      "std": [
+        5.6055,
+        2.4818,
+        81.4413,
+        0.5128
+      ],
+      "coef": [
+        0.1003,
+        0.0236,
+        -0.0121,
+        0.3286
+      ],
+      "intercept": 0.9238,
+      "threshold": 0.75
+    }
   },
   "radar_x_score": {
     "note": "No strong monotonic relationship with win rate (71.7-74.7% across all buckets from <200 to >=450 in the deduped combined dataset). Not currently a reliable standalone filter for the main strategies."
