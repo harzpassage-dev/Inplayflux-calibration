@@ -303,6 +303,17 @@ const HALF_MIN_GOAL_POINTS = -7;
 // Recalibrated 2026-10-10 with the refit goal score: 65.0% (n=183).
 const HALF_WR = 0.65;
 const UNITS_HALF = 0.5;
+// "Under 3.5 – mit Vorsicht setzen": O2.5 cards (2 goals) that are not
+// premium and whose live goal score is low. Backtest on 5,985 O2.5 signals
+// (Under 3.5 = at most one more goal): goal score <= -6 82%, -5..-3 68.7%,
+// stable in both time halves. Posted only when the live main line is 3.5,
+// so the feed's under quote is the real Under 3.5 quote, and only if it
+// clears the band's minimum quote. Small stake; still being validated by
+// the shadow log.
+const UNDER_MAX_GOAL_POINTS = -3;
+const UNDER_WR_LOW = 0.82;   // goal score <= -6
+const UNDER_WR_MID = 0.687;  // goal score -5..-3
+const UNITS_UNDER = 0.5;
 // Result tracking of posted signals.
 const TRACK_KEY = "track:open";
 const TRACK_LOST_AFTER_MIN = 85;      // match last seen at 85'+ and then gone -> no more goal
@@ -485,6 +496,44 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   });
   await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points, marketProba: market });
   await logConfirmation(env, item, { tier: "half", live, goal: gs, postOdds: odds, market }, "half:ok");
+  return true;
+}
+
+// Posts an Under 3.5 tip for an O2.5 card when the conditions above hold.
+async function maybePostUnder35(env, text, parsed, score) {
+  if (parsed.targetLine !== 2.5 || (score && score.passes)) return false;
+  const snap = await signalSnapshotFor(parsed);
+  if (!snap.match) return false;
+  const live = liveSnapshot(snap.match);
+  if (live.goals !== 2 || live.redCards > 0) return false;
+  const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute }).points;
+  if (gs > UNDER_MAX_GOAL_POINTS) return false;
+  const wr = gs <= -6 ? UNDER_WR_LOW : UNDER_WR_MID;
+  const mq = minQuote(wr);
+  const odds = snap.odds;
+  if (!odds || odds.line !== 3.5 || !odds.under || odds.under < mq) return false;
+  if (!(await claimSignal(env, { ...parsed, targetLine: "u3.5" }))) return false;
+  const keep = text.split(/\r?\n/).filter((l) =>
+    /🏆/.test(l) || /\d+'[\s·•]+~?\d+\s*min left/i.test(l) || /Radar X:/i.test(l) ||
+    (/^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*.+?\s+\d+\s*[–-]\s*\d+\s+.+$/u.test(l) && !/→|moneybag/i.test(l)));
+  const signed = gs > 0 ? `+${gs}` : String(gs);
+  const msg = [
+    `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${signed} · Rückrechnung ${Math.round(wr * 100)}%)`,
+    "",
+    ...keep,
+    "🎯 Tipp: Under 3.5 Tore (gewinnt, wenn höchstens noch 1 Tor fällt)",
+    `Quote: Under 3.5 @ ${odds.under.toFixed(2)}`,
+    "",
+    `💶 Nur setzen ab Quote ${fmtQuote(mq)} (Under 3.5) · Einsatz: ${String(UNITS_UNDER).replace(".", ",")} Einheiten`,
+  ].join("\n");
+  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, msg);
+  await trackSignal(env, {
+    tier: "under", under: true, home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
+    line: 3.5, minute: parsed.minute, minQuote: mq, units: UNITS_UNDER, odds,
+  });
+  await logPremiumForward(env, { ...parsed, targetLine: 3.5 }, score, "under:fwd", {
+    signalOdds: odds, postOdds: odds, goalPoints: gs,
+  });
   return true;
 }
 
@@ -1012,7 +1061,7 @@ async function settleTracked(env, feed) {
       const goals = (num(m.hg) || 0) + (num(m.ag) || 0);
       const minute = num(m.minute);
       if (goals > t.line) {
-        result = "won";
+        result = t.under ? "lost" : "won";
         t.resultMinute = minute;
       } else {
         if (minute != null && minute >= TRACK_LOST_AFTER_MIN && !t.late) {
@@ -1029,7 +1078,7 @@ async function settleTracked(env, feed) {
         t.missingSince = now;
         changed = true;
       } else if (now - t.missingSince >= TRACK_MISSING_GRACE_MS) {
-        result = "lost";
+        result = t.under ? "won" : "lost";
       }
     } else if (now - t.postedAt >= TRACK_GIVE_UP_MS) {
       result = "void";
@@ -1054,7 +1103,8 @@ async function settleTracked(env, feed) {
 async function saveResult(env, t, result) {
   const now = new Date();
   // Profit in units only where the logged quote is for the signal's own line.
-  const priced = t.odds && t.odds.line === t.line && t.odds.over ? t.odds.over : null;
+  const quoteSide = t.under ? "under" : "over";
+  const priced = t.odds && t.odds.line === t.line && t.odds[quoteSide] ? t.odds[quoteSide] : null;
   const betPlaced = priced != null && priced >= t.minQuote;
   let profit = null;
   if (betPlaced && result !== "void") profit = result === "won" ? t.units * (priced - 1) : -t.units;
@@ -1100,6 +1150,7 @@ function summarize(rows) {
     premium: tally(decided.filter((r) => r.tier === "premium")),
     risk: tally(decided.filter((r) => r.tier === "risk")),
     half: tally(decided.filter((r) => r.tier === "half")),
+    under: tally(decided.filter((r) => r.tier === "under")),
     priced: priced.length,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
@@ -1118,6 +1169,7 @@ function weeklyReportText(sum, fromDate, toDate) {
     `🔥 High Confidence: ${pctText(sum.premium)}`,
     `🟠 Half-Risiko: ${pctText(sum.half)}`,
     `⚠️ Risiko: ${pctText(sum.risk)}`,
+    `🛡️ Under 3.5 (mit Vorsicht): ${pctText(sum.under || { n: 0 })}`,
     `Gesamt: ${pctText(sum.all)}`,
   ];
   if (sum.priced) {
@@ -1164,6 +1216,7 @@ async function premiumExportCsv(env) {
     ["premium:fwd:", "forwarded"],
     ["risk:fwd:", "risk"],
     ["half:fwd:", "half"],
+    ["under:fwd:", "under35"],
     ["premium:ok:", "confirmed"],
     ["premium:rej:", "rejected"],
     ["half:rej:", "half_rejected"],
@@ -1517,17 +1570,19 @@ async function loadResults(days) {
     const d = await r.json();
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
-    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
     html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
     if (d.rows.length) {
       html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th><th>Quote</th></tr>';
       d.rows.slice(0, 100).forEach(x => {
-        const res = x.result === 'won' ? '<span style="color:#4caf7a;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
+        const res = x.tier === 'under'
+          ? (x.result === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.result === 'lost' ? '<span style="color:#e0a040;">✖ 2. Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>' : '<span style="color:#8891a3;">– unklar</span>')
+          : x.result === 'won' ? '<span style="color:#4caf7a;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
           : x.result === 'lost' ? '<span style="color:#e0a040;">✖ kein Tor</span>' : '<span style="color:#8891a3;">– unklar</span>';
         const q = x.quote != null ? Number(x.quote).toFixed(2) + (x.betPlaced ? '' : ' (unter ' + Number(x.minQuote).toFixed(2) + ')') : '–';
-        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : 'Premium') + ' · O' + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
+        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : x.tier === 'under' ? 'Under' : 'Premium') + (x.tier === 'under' ? ' · U' : ' · O') + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
       });
       html += '</table>';
     }
@@ -2034,6 +2089,9 @@ export default {
           // Shadow log only, nothing is posted.
           try {
             await logUnder35(env, parsed, score);
+          } catch (e) {}
+          try {
+            await maybePostUnder35(env, channelMsg.text, parsed, score);
           } catch (e) {}
         }
       }

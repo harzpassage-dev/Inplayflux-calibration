@@ -116,6 +116,14 @@ this cut could not be backtested; it is deliberately low and should be
 recalibrated from the log (`scripts/premium_report.py` prints hit rates by
 market band).
 
+Under 3.5 tips ("🛡️ Under 3.5 Tore – mit Vorsicht setzen"): an O2.5 card
+that is not premium is posted as an Under 3.5 tip when the match is in the
+feed with 2 goals and no red card, the live goal score is <= -3 (backtest:
+<= -6 82 %, -5..-3 68.7 %), the live main line is exactly 3.5 and its under
+quote clears the band's minimum quote (1.22 / 1.46). 0.5 units, tracked as
+tier `under` (lost on a 4th goal, won when the match ends without one),
+shown in the Bilanz and the weekly report, logged as `under:fwd`.
+
 Under 3.5 shadow log: every O2.5 card (2 goals) is logged without a post,
 with the feed's live main line, over/under odds, the goal score at the card
 and the market's chance of at most one more goal (`u35:YYYY-MM-DD` in KV, one key per day). The cron
