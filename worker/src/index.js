@@ -1399,6 +1399,8 @@ async function handleAdminPage() {
   <div class="out" id="test-out" style="margin-bottom:10px;"></div>
   <button id="test-o05-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 0.5 senden</button>
   <div class="out" id="test-o05-out" style="margin-bottom:10px;"></div>
+  <button id="test-under-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Under 3.5 senden</button>
+  <div class="out" id="test-under-out" style="margin-bottom:10px;"></div>
   <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
   <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -1632,6 +1634,29 @@ document.getElementById('test-o05-btn').addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
     out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
       (d.feedOk ? 'Beispiel: ' + (d.match || 'gerade kein 0-0-Spiel') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
+  } catch (e) { out.textContent = e.message; }
+});
+
+let underArmed = false;
+document.getElementById('test-under-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-under-out');
+  const btn = document.getElementById('test-under-btn');
+  if (!underArmed) {
+    underArmed = true;
+    btn.textContent = 'Wirklich senden? Nochmal tippen';
+    out.textContent = 'Der Test-Post geht an alle Abonnenten (deutlich als TEST markiert).';
+    setTimeout(() => { underArmed = false; btn.textContent = 'Test Under 3.5 senden'; }, 8000);
+    return;
+  }
+  underArmed = false;
+  btn.textContent = 'Test Under 3.5 senden';
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?tier=under', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
+      (d.feedOk ? 'Beispiel: ' + (d.match || 'gerade kein Spiel mit 2 Toren') + '.' : '⚠️ Live-Feed von Cloudflare NICHT erreichbar.');
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -1896,6 +1921,48 @@ export default {
       const feedOk = Array.isArray(feed);
       let text;
       let matchInfo = null;
+      if (url.searchParams.get("tier") === "under") {
+        // Same layout as a real Under 3.5 tip, on the live 2-goal match
+        // closest to minute 58. Not tracked or logged.
+        let wouldPass = null;
+        if (feedOk) {
+          const live = feed
+            .map((m) => ({ m, s: liveSnapshot(m) }))
+            .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 85 && x.s.goals === 2);
+          live.sort((a, b) => Math.abs(a.s.minute - 58) - Math.abs(b.s.minute - 58));
+          const pick = live[0];
+          if (pick) {
+            const s = pick.s;
+            const gs = goalScore(s).points;
+            const wr = gs <= -6 ? UNDER_WR_LOW : UNDER_WR_MID;
+            const mq = minQuote(wr);
+            const odds = oddsSnapshot(pick.m);
+            wouldPass = gs <= UNDER_MAX_GOAL_POINTS && s.redCards === 0 && !!odds && odds.line === 3.5 && odds.under >= mq;
+            matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
+            text = [
+              "🧪 TEST – kein Tipp, bitte nicht setzen",
+              `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${gs > 0 ? "+" + gs : gs} · Rückrechnung ${Math.round(wr * 100)}%)`,
+              "",
+              `🏆 ${pick.m.l || ""}`,
+              `⚽ ${pick.m.h} ${s.score} ${pick.m.a}`,
+              `⏱ ${s.minute}'`,
+              `📡 Radar X: ${s.radar != null ? s.radar : "–"}`,
+              "🎯 Tipp: Under 3.5 Tore (gewinnt, wenn höchstens noch 1 Tor fällt)",
+              odds && odds.under ? `Quote: Under ${odds.line} @ ${odds.under.toFixed(2)}` : null,
+              "",
+              `💶 Nur setzen ab Quote ${fmtQuote(mq)} (Under 3.5) · Einsatz: ${String(UNITS_UNDER).replace(".", ",")} Einheiten`,
+              "",
+              `Echt gepostet wird nur bei Tor-Score ≤ ${UNDER_MAX_GOAL_POINTS}, Live-Linie 3,5 und Quote ab Mindestquote. Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.`,
+            ].filter((x) => x != null).join("\n");
+          } else {
+            text = `🧪 TEST Under 3.5 – kein Tipp\n\nLive-Feed erreichbar (${feed.length} Spiele), aber gerade kein laufendes Spiel mit 2 Toren.`;
+          }
+        } else {
+          text = "🧪 TEST Under 3.5 – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Under-Tipps werden in diesem Zustand übersprungen.";
+        }
+        const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+        return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass });
+      }
       if (url.searchParams.get("tier") === "half") {
         // Same layout as a real Half-Risiko post, on the live match closest
         // to minute 68. Not tracked or logged.
