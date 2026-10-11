@@ -653,6 +653,13 @@ async function logUnder35(env, parsed, score) {
   const ou = match ? match.ou_odds || [] : [];
   const lambda = marketLambda(match);
   const goals = match ? (num(match.hg) || 0) + (num(match.ag) || 0) : null;
+  // Goal score at the card: low scores favour Under 3.5 (backtest: <= -6
+  // ~82%, >= +1 ~56%).
+  let gs = null;
+  if (match) {
+    const live = liveSnapshot(match);
+    gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute }).points;
+  }
   const entry = {
     id: randomToken().slice(0, 10),
     at: now,
@@ -669,6 +676,7 @@ async function logUnder35(env, parsed, score) {
     marketU35: lambda != null && goals === 2 ? Math.round(Math.exp(-lambda) * (1 + lambda) * 1000) / 1000 : null,
     premium: !!(score && score.passes),
     proba: score ? Math.round(score.proba * 1000) / 1000 : null,
+    gs,
     v: 2,
   };
   today.push(entry);
@@ -723,10 +731,18 @@ function u35Summary(rows) {
       profit35: Math.round(profit * 100) / 100,
     };
   };
+  const withGs = decided.filter((r) => r.gs != null);
   return {
     all: part(decided),
     nonPremium: part(decided.filter((r) => !r.premium)),
     premium: part(decided.filter((r) => r.premium)),
+    // Backtest hit rates per band, for comparison with the live quotes.
+    byGoalScore: [
+      { label: "≤ −6", min: -99, max: -6, backtest: 0.82 },
+      { label: "−5 … −3", min: -5, max: -3, backtest: 0.687 },
+      { label: "−2 … 0", min: -2, max: 0, backtest: 0.637 },
+      { label: "≥ +1", min: 1, max: 99, backtest: 0.556 },
+    ].map((b) => ({ ...b, ...part(withGs.filter((r) => r.gs >= b.min && r.gs <= b.max)) })),
     open: rows.filter((r) => r.status === "open").length,
     void: rows.filter((r) => r.status === "void").length,
     unclear: rows.filter((r) => r.status === "unclear").length,
@@ -1601,13 +1617,14 @@ document.getElementById('u35-btn').addEventListener('click', async () => {
     const d = await r.json();
     const s = d.summary;
     let html = '<table><tr><th></th><th>Under 3.5</th><th>Markt</th><th>Linie 3,5</th></tr>' +
-      u35Part('Alle', s.all) + u35Part('ohne Premium', s.nonPremium) + u35Part('Premium', s.premium) + '</table>' +
+      u35Part('Alle', s.all) + u35Part('ohne Premium', s.nonPremium) + u35Part('Premium', s.premium) +
+      (s.byGoalScore || []).map(b => u35Part('Tor-Score ' + b.label + '<br><small>Rückrechnung ' + Math.round(b.backtest * 100) + ' % · lohnt ab ' + (1 / b.backtest).toFixed(2) + '</small>', b)).join('') + '</table>' +
       '<div style="font-size:0.8rem;color:#8891a3;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · unklar (nicht bis Minute 85 gesehen): ' + (s.unclear || 0) + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
     if (d.rows.length) {
       html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Linie</th><th>Ergebnis</th></tr>';
       d.rows.slice(0, 60).forEach(x => {
         const st = x.status === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0a040;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : x.status === 'unclear' ? '<span style="color:#8891a3;">? nicht bis Ende gesehen</span>' : '–';
-        html += '<tr><td>' + hm(new Date(x.at).toISOString()) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + esc(x.minute) + "'" + (x.premium ? ' · Premium' : '') + '</small></td><td>' +
+        html += '<tr><td>' + hm(new Date(x.at).toISOString()) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + esc(x.minute) + "'" + (x.premium ? ' · Premium' : '') + (x.gs != null ? ' · TS ' + (x.gs > 0 ? '+' : '') + esc(x.gs) : '') + '</small></td><td>' +
           (x.line != null ? esc(x.line) + '<br><small>U ' + esc(x.under) + (x.marketU35 != null ? ' · ' + pct(x.marketU35) : '') + '</small>' : '–') + '</td><td>' + st + '</td></tr>';
       });
       html += '</table>';
@@ -1911,14 +1928,14 @@ export default {
       const rows = await u35Rows(env, days);
       if (url.searchParams.get("format") === "csv") {
         const cols = ["time", "home", "away", "minute", "live_minute", "goals", "line", "over", "under",
-          "market_u35", "premium", "proba", "status", "lost_minute", "seen_late"];
+          "market_u35", "premium", "proba", "goal_score", "status", "lost_minute", "seen_late"];
         const cell = (v) => {
           const t = v == null ? "" : String(v);
           return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
         };
         const lines = [cols.join(",")].concat(rows.map((r) => [
           new Date(r.at).toISOString(), r.home, r.away, r.minute, r.liveMinute, r.goals, r.line, r.over, r.under,
-          r.marketU35, r.premium, r.proba, r.status, r.lostMinute, r.seenLate,
+          r.marketU35, r.premium, r.proba, r.gs, r.status, r.lostMinute, r.seenLate,
         ].map(cell).join(",")));
         return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/csv; charset=utf-8" } });
       }

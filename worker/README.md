@@ -117,13 +117,14 @@ recalibrated from the log (`scripts/premium_report.py` prints hit rates by
 market band).
 
 Under 3.5 shadow log: every O2.5 card (2 goals) is logged without a post,
-with the feed's live main line, over/under odds and the market's chance of
-at most one more goal (`u35:YYYY-MM-DD` in KV, one key per day). The cron
+with the feed's live main line, over/under odds, the goal score at the card
+and the market's chance of at most one more goal (`u35:YYYY-MM-DD` in KV, one key per day). The cron
 marks an entry lost when a 4th goal shows up. It counts as won only if the
 feed showed the match at minute 85 or later without one (`seenLate`);
 if the match dropped out of the feed earlier it is "unclear" and left out
 of the hit rate (entries logged before 2026-10-11 keep the old rule). Admin panel → "Under 3.5 (still protokolliert)"
-shows hit rate, market average and, where the live line was exactly 3.5,
+shows hit rate, market average, a split by goal score (backtest: <= -6
+~82 %, >= +1 ~56 %) and, where the live line was exactly 3.5,
 the real Under 3.5 quote and the profit at that quote (`/admin/api/u35`,
 `?format=csv` for the export). Cost: one KV write per O2.5 card plus one
 per minute in which a 4th goal falls or a match first reaches minute 85.
