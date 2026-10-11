@@ -624,10 +624,19 @@ function u35Deadline(e) {
   return e.at + Math.max(15, U35_WATCH_MIN - (e.minute || 60)) * 60 * 1000;
 }
 
+// Minute from which a match counts as watched to the end: an entry is only
+// "won" if the feed showed the match at U35_SEEN_LATE_MIN or later without a
+// 4th goal; otherwise a match that dropped out of the feed early could hide
+// a late goal ("unclear"). Entries logged before this check (no v: 2) keep
+// the old rule.
+const U35_SEEN_LATE_MIN = 85;
+
 function u35Status(e, now) {
   if (e.lostAt) return "lost";
-  if (!e.matchId) return "void";
-  return now >= u35Deadline(e) ? "won" : "open";
+  if (!e.matchId || (e.goals != null && e.goals !== 2)) return "void";
+  if (now < u35Deadline(e)) return "open";
+  if (e.v === 2 && !e.seenLate) return "unclear";
+  return "won";
 }
 
 async function logUnder35(env, parsed, score) {
@@ -660,6 +669,7 @@ async function logUnder35(env, parsed, score) {
     marketU35: lambda != null && goals === 2 ? Math.round(Math.exp(-lambda) * (1 + lambda) * 1000) / 1000 : null,
     premium: !!(score && score.passes),
     proba: score ? Math.round(score.proba * 1000) / 1000 : null,
+    v: 2,
   };
   today.push(entry);
   await env.ACCESS_KV.put(key, JSON.stringify(today), { expirationTtl: U35_TTL_S });
@@ -675,7 +685,10 @@ async function settleU35(env, feed, lists) {
       const m = feed.find((x) => x.id === e.matchId);
       if (!m) continue;
       const goals = (num(m.hg) || 0) + (num(m.ag) || 0);
-      if (goals >= 4) lost[e.id] = { lostAt: now, lostMinute: num(m.minute), finalGoals: goals };
+      const minute = num(m.minute);
+      if (goals >= 4) lost[e.id] = { lostAt: now, lostMinute: minute, finalGoals: goals };
+      // One extra write per card: remember that the match was seen late.
+      else if (!e.seenLate && minute != null && minute >= U35_SEEN_LATE_MIN) lost[e.id] = { seenLate: minute };
     }
     if (!Object.keys(lost).length) continue;
     // Re-read so a card the webhook added meanwhile is not overwritten.
@@ -716,6 +729,7 @@ function u35Summary(rows) {
     premium: part(decided.filter((r) => r.premium)),
     open: rows.filter((r) => r.status === "open").length,
     void: rows.filter((r) => r.status === "void").length,
+    unclear: rows.filter((r) => r.status === "unclear").length,
   };
 }
 
@@ -1588,11 +1602,11 @@ document.getElementById('u35-btn').addEventListener('click', async () => {
     const s = d.summary;
     let html = '<table><tr><th></th><th>Under 3.5</th><th>Markt</th><th>Linie 3,5</th></tr>' +
       u35Part('Alle', s.all) + u35Part('ohne Premium', s.nonPremium) + u35Part('Premium', s.premium) + '</table>' +
-      '<div style="font-size:0.8rem;color:#8891a3;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
+      '<div style="font-size:0.8rem;color:#8891a3;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · unklar (nicht bis Minute 85 gesehen): ' + (s.unclear || 0) + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
     if (d.rows.length) {
       html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Linie</th><th>Ergebnis</th></tr>';
       d.rows.slice(0, 60).forEach(x => {
-        const st = x.status === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0a040;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : '–';
+        const st = x.status === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0a040;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : x.status === 'unclear' ? '<span style="color:#8891a3;">? nicht bis Ende gesehen</span>' : '–';
         html += '<tr><td>' + hm(new Date(x.at).toISOString()) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + esc(x.minute) + "'" + (x.premium ? ' · Premium' : '') + '</small></td><td>' +
           (x.line != null ? esc(x.line) + '<br><small>U ' + esc(x.under) + (x.marketU35 != null ? ' · ' + pct(x.marketU35) : '') + '</small>' : '–') + '</td><td>' + st + '</td></tr>';
       });
@@ -1897,14 +1911,14 @@ export default {
       const rows = await u35Rows(env, days);
       if (url.searchParams.get("format") === "csv") {
         const cols = ["time", "home", "away", "minute", "live_minute", "goals", "line", "over", "under",
-          "market_u35", "premium", "proba", "status", "lost_minute"];
+          "market_u35", "premium", "proba", "status", "lost_minute", "seen_late"];
         const cell = (v) => {
           const t = v == null ? "" : String(v);
           return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
         };
         const lines = [cols.join(",")].concat(rows.map((r) => [
           new Date(r.at).toISOString(), r.home, r.away, r.minute, r.liveMinute, r.goals, r.line, r.over, r.under,
-          r.marketU35, r.premium, r.proba, r.status, r.lostMinute,
+          r.marketU35, r.premium, r.proba, r.status, r.lostMinute, r.seenLate,
         ].map(cell).join(",")));
         return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/csv; charset=utf-8" } });
       }
