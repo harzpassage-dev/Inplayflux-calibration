@@ -1137,6 +1137,9 @@ async function settleTracked(env, feed) {
     if (result) {
       changed = true;
       await saveResult(env, t, result);
+      try {
+        await maybePostFree(env, t, result);
+      } catch (e) {}
     } else {
       keep.push(t);
     }
@@ -1222,10 +1225,11 @@ function weeklyReportText(sum, fromDate, toDate) {
   const lines = [
     `📊 Wochenbilanz Premium (${d(fromDate)}–${d(toDate)})`,
     "",
-    `🔥 High Confidence: ${pctText(sum.premium)}`,
-    `🟠 Half-Risiko: ${pctText(sum.half)}`,
-    `⚠️ Risiko: ${pctText(sum.risk)}`,
-    `🛡️ Under 3.5 (mit Vorsicht): ${pctText(sum.under || { n: 0 })}`,
+    // Tiers without decided tips that week (e.g. the switched-off Risiko) are left out.
+    ...[
+      ["🔥 High Confidence", sum.premium], ["🟠 Half-Risiko", sum.half], ["⚠️ Risiko", sum.risk],
+      ["🛡️ Under 3.5 (mit Vorsicht)", sum.under],
+    ].filter(([, t]) => t && t.n).map(([label, t]) => `${label}: ${pctText(t)}`),
     `Gesamt: ${pctText(sum.all)}`,
   ];
   // The profit line needs enough priced tips to mean anything; a handful
@@ -1244,7 +1248,53 @@ async function sendWeeklyReport(env) {
   const from = new Date(to.getTime() - 7 * DAY_MS);
   const sum = summarize(await listResults(env, from.getTime()));
   if (!sum.all.n) return;
-  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, weeklyReportText(sum, from, to));
+  const text = weeklyReportText(sum, from, to);
+  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+  await sendTelegramMessage(env, freeChannel(env), text + "\n\n" + freeCta(env));
+}
+
+// ---------------------------------------------------------------------
+// Free showcase channel (public, @MoneyBagAnalyst by default): the weekly
+// report plus the first FREE_PER_DAY premium tips of each day that have
+// finished - won or lost, whichever settles first, never picked by result -
+// posted only after the match is decided, so the premium channel keeps its
+// value. Override with FREE_CHANNEL_ID / FREE_CTA_URL in Cloudflare.
+const FREE_PER_DAY = 3;
+const FREE_TIER_LABEL = { premium: "🔥 High Confidence", half: "🟠 Half-Risiko", risk: "⚠️ Risiko", under: "🛡️ Under 3.5" };
+
+function freeChannel(env) {
+  return env.FREE_CHANNEL_ID || "@MoneyBagAnalyst";
+}
+
+function freeCta(env) {
+  const url = env.FREE_CTA_URL || "https://moneybag-signals.com";
+  return `💎 Alle Signale live – vor dem Tor – im Premium-Kanal: ${url}\n18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de`;
+}
+
+function freeSignalText(t, result, env) {
+  const tip = t.under ? `Under ${t.line}` : `Over ${t.line}`;
+  const outcome = t.under
+    ? (result === "won" ? "✅ Treffer – höchstens noch 1 Tor" : `❌ verloren – 2. Tor${t.resultMinute != null ? ` in Minute ${t.resultMinute}` : ""}`)
+    : (result === "won" ? `✅ Treffer – Tor${t.resultMinute != null ? ` in Minute ${t.resultMinute}` : ""}` : "❌ verloren – kein weiteres Tor");
+  return [
+    "📢 Gratis-Einblick: Signal von heute (Spiel bereits entschieden)",
+    "",
+    `${FREE_TIER_LABEL[t.tier] || "🔥 Premium"} · ${tip}`,
+    `⚽ ${t.home || "?"} – ${t.away || "?"}`,
+    `⏱ Signal in Minute ${t.minute != null ? t.minute : "?"}'`,
+    `Ergebnis: ${outcome}`,
+    "",
+    freeCta(env),
+  ].join("\n");
+}
+
+async function maybePostFree(env, t, result) {
+  if (result !== "won" && result !== "lost") return;
+  const key = `free:count:${new Date().toISOString().slice(0, 10)}`;
+  const count = Number(await env.ACCESS_KV.get(key)) || 0;
+  if (count >= FREE_PER_DAY) return;
+  const sent = await sendTelegramMessage(env, freeChannel(env), freeSignalText(t, result, env));
+  if (sent) await env.ACCESS_KV.put(key, String(count + 1), { expirationTtl: 2 * DAY_MS / 1000 });
 }
 
 async function listLog(env, prefix) {
@@ -1457,6 +1507,8 @@ async function handleAdminPage() {
   <div class="out" id="test-out" style="margin-bottom:10px;"></div>
   <button id="test-o05-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 0.5 senden</button>
   <div class="out" id="test-o05-out" style="margin-bottom:10px;"></div>
+  <button id="test-free-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Gratis-Kanal senden</button>
+  <div class="out" id="test-free-out" style="margin-bottom:10px;"></div>
   <button id="test-under-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Under 3.5 senden</button>
   <div class="out" id="test-under-out" style="margin-bottom:10px;"></div>
   <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
@@ -1772,6 +1824,17 @@ document.getElementById('test-o05-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+document.getElementById('test-free-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-free-out');
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?target=free', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = d.sent ? '✅ Im Gratis-Kanal ' + d.channel + ' angekommen.' : '❌ Telegram hat abgelehnt – ist der Bot Admin in ' + d.channel + ' mit dem Recht „Nachrichten senden“?';
+  } catch (e) { out.textContent = e.message; }
+});
+
 let underArmed = false;
 document.getElementById('test-under-btn').addEventListener('click', async () => {
   const out = document.getElementById('test-under-out');
@@ -2056,6 +2119,15 @@ export default {
     // feed (token + cookie), build a post for a running match exactly like the
     // live check does, and send it to the premium channel clearly marked as a
     // test. Not tracked, not logged, not counted in the results.
+    if (url.pathname === "/admin/api/test-post" && request.method === "POST" && url.searchParams.get("target") === "free") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      // Checks that the bot can post in the free channel (must be admin there).
+      const sample = { tier: "premium", line: 2.5, home: "Heimteam", away: "Gastteam", minute: 58, resultMinute: 74 };
+      const sent = await sendTelegramMessage(env, freeChannel(env),
+        "🧪 TEST – so sehen die Gratis-Posts aus (Beispieldaten)\n\n" + freeSignalText(sample, "won", env));
+      return jsonResponse({ sent: !!sent, channel: freeChannel(env) });
+    }
+
     if (url.pathname === "/admin/api/test-post" && request.method === "POST") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       if (!env.PREMIUM_CHANNEL_ID || !env.TELEGRAM_BOT_TOKEN) return jsonResponse({ error: "Premium-Kanal oder Bot-Token fehlt." }, 500);

@@ -26,7 +26,9 @@ Premium tiers (all in `worker/src/index.js`):
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, goal score ≤ −3, live line exactly 3.5, under quote ≥ minimum quote | 0.5 |
 
-Plus: Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
+Plus: free public channel **@MoneyBagAnalyst** (`FREE_CHANNEL_ID`, CTA `FREE_CTA_URL`): weekly report
+and the first 3 settled premium tips per day (won or lost, never picked by result, posted only
+after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
 (cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h), every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100.
@@ -95,6 +97,8 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Change log (latest first)
 
+- 2026-10-13: free channel @MoneyBagAnalyst gets the weekly report + 3 finished tips/day;
+  weekly report hides tiers without tips.
 - 2026-10-13: Risiko tier off; weekly results image in the admin panel; profit line only from
   20 priced tips.
 - 2026-10-13: security fix (access bypass via non-token KV keys), admin brute-force lock,
