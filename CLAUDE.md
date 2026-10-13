@@ -81,6 +81,11 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   Paid since 2026-10-11.
 - Secrets live only in Cloudflare (ADMIN_PASSWORD, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
   PREMIUM_CHANNEL_ID, ADMIN_CHAT_ID). Recovery steps: `RESTORE.md`.
+- Security: access tokens are 32 hex chars and share the KV namespace with everything else;
+  `getAccess` only accepts that format and records with a numeric `expiresAt` (a guessable key
+  like `premium:pending` used to open the tool). `/admin/api/*` locks an IP after 10 wrong
+  passwords for 15 min (`adminfail:<ip>`); passwords are compared in constant time; pages send
+  X-Frame-Options / Referrer-Policy / nosniff.
 - Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`) are
   marked TEST and are never tracked or logged.
 

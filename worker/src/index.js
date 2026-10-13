@@ -9,10 +9,17 @@ function jsonResponse(data, status = 200) {
   });
 }
 
+// No framing (clickjacking), no referrer (access tokens in URLs), no MIME sniffing.
+const SECURITY_HEADERS = {
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+};
+
 function htmlResponse(html, status = 200) {
   return new Response(html, {
     status,
-    headers: { "content-type": "text/html; charset=utf-8" },
+    headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS },
   });
 }
 
@@ -32,18 +39,58 @@ function parseCookies(request) {
   return out;
 }
 
-function isAdminAuthed(request, env) {
-  const auth = request.headers.get("Authorization") || "";
-  const m = auth.match(/^Bearer\s+(.+)$/);
-  return !!m && m[1] === env.ADMIN_PASSWORD;
+// Constant-time string comparison, so response timing does not leak how much
+// of a guessed password was right.
+function safeEqual(a, b) {
+  a = String(a);
+  b = String(b);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  }
+  return diff === 0;
 }
 
+function isAdminAuthed(request, env) {
+  if (!env.ADMIN_PASSWORD) return false;
+  const auth = request.headers.get("Authorization") || "";
+  const m = auth.match(/^Bearer\s+(.+)$/);
+  return !!m && safeEqual(m[1], env.ADMIN_PASSWORD);
+}
+
+// Brute-force guard for /admin/api/*: after ADMIN_MAX_FAILS wrong passwords
+// from one IP within ADMIN_LOCK_S, that IP is locked out until the window
+// ends. Only failed attempts cost a KV write.
+const ADMIN_MAX_FAILS = 10;
+const ADMIN_LOCK_S = 15 * 60;
+
+async function adminGate(request, env) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const key = `adminfail:${ip}`;
+  const fails = Number(await env.ACCESS_KV.get(key)) || 0;
+  if (fails >= ADMIN_MAX_FAILS) {
+    return jsonResponse({ error: "Zu viele Fehlversuche. Bitte 15 Minuten warten." }, 429);
+  }
+  if (isAdminAuthed(request, env)) return null;
+  await env.ACCESS_KV.put(key, String(fails + 1), { expirationTtl: ADMIN_LOCK_S });
+  return jsonResponse({ error: "unauthorized" }, 401);
+}
+
+// Access tokens are 32 hex chars (randomToken). Everything else in KV
+// (logs, queues, "u35:<date>", "telegram:latest_signal", ...) shares the
+// namespace, so a token from a URL or cookie must look like a token and the
+// record like an access record; otherwise any guessable KV key would open
+// the tool.
+const TOKEN_RE = /^[0-9a-f]{32}$/;
+
 async function getAccess(env, token) {
-  if (!token) return null;
+  if (!token || !TOKEN_RE.test(token)) return null;
   const raw = await env.ACCESS_KV.get(token);
   if (!raw) return null;
   try {
-    return JSON.parse(raw);
+    const rec = JSON.parse(raw);
+    if (!rec || typeof rec !== "object" || typeof rec.expiresAt !== "number") return null;
+    return rec;
   } catch (e) {
     return null;
   }
@@ -1760,6 +1807,10 @@ export default {
     if (url.pathname === "/admin") {
       return handleAdminPage();
     }
+    if (url.pathname.startsWith("/admin/api/")) {
+      const blocked = await adminGate(request, env);
+      if (blocked) return blocked;
+    }
 
     if (url.pathname === "/admin/api/create" && request.method === "POST") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
@@ -1780,9 +1831,12 @@ export default {
     if (url.pathname === "/admin/api/extend" && request.method === "POST") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const body = await request.json().catch(() => ({}));
-      const token = String(body.token || "").trim();
+      // Accept the bare token or the whole access link.
+      const rawToken = String(body.token || "").trim();
+      const token = (rawToken.match(/[0-9a-f]{32}/) || [rawToken])[0];
       const days = Number(body.days) > 0 ? Number(body.days) : 30;
       if (!token) return jsonResponse({ error: "token fehlt" }, 400);
+      if (!TOKEN_RE.test(token)) return jsonResponse({ error: "Ungültiger Token (32 Zeichen 0-9/a-f erwartet)." }, 400);
       const existing = (await getAccess(env, token)) || {
         token,
         status: "trial",
@@ -2268,7 +2322,10 @@ export default {
     // Fetch "/" rather than "/index.html" directly - the asset server
     // 307-redirects the latter to the former (canonical URL), which would
     // just bounce the client instead of serving the page.
-    return env.ASSETS.fetch(request);
+    const page = await env.ASSETS.fetch(request);
+    const res = new Response(page.body, page);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.headers.set(k, v);
+    return res;
   },
 
   // Cron triggers (wrangler.toml [triggers]): every minute live-confirms
