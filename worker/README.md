@@ -137,7 +137,7 @@ the real Under 3.5 quote and the profit at that quote (`/admin/api/u35`,
 `?format=csv` for the export). Cost: one KV write per O2.5 card plus one
 per minute in which a 4th goal falls or a match first reaches minute 85.
 
-Late "Risiko" cards are still forwarded right away, but only from minute 72
+Late "Risiko" cards (switched off since 2026-10-13, `RISK_ENABLED = false`) were forwarded right away, but only from minute 72
 or with Radar ≥ 410 (see reports/2026-10-06-premium-channel.md).
 
 "Half-Risiko" cards (minute 68–69, under the confidence threshold) are

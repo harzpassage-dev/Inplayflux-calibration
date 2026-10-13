@@ -23,7 +23,7 @@ Premium tiers (all in `worker/src/index.js`):
 |---|---|---|
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O1.5 0.80, O0.5 0.75); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
-| ⚠️ Risiko | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
+| ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, goal score ≤ −3, live line exactly 3.5, under quote ≥ minimum quote | 0.5 |
 
 Plus: Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
@@ -95,6 +95,8 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Change log (latest first)
 
+- 2026-10-13: Risiko tier off; weekly results image in the admin panel; profit line only from
+  20 priced tips.
 - 2026-10-13: security fix (access bypass via non-token KV keys), admin brute-force lock,
   security headers; CLAUDE.md added. Plugin review: nothing needed; `claude-md-management`
   would only automate keeping this file current (not installed).
@@ -111,6 +113,7 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   12 games measured with the "seen at 85'+" rule. Re-evaluate with ≥ 100 strict games.
 - Market cut (60 %) is provisional: recalibrate from `market_proba` in the premium CSV export
   (`scripts/premium_report.py` prints hit rate by market band).
-- Risiko tier weakened on 06–10.10 (8/20); pause it if the next 30–40 signals stay < 55 %.
+- Risiko tier switched off 2026-10-13 (8/20, then 4/9 live). Re-enable only after a new export
+  shows it back above ~60 % on unseen days.
 - High Confidence was 76 % out-of-sample on 06–10.10 (expected ~81 %); watch games with
   pre-match line ≥ 3.5.

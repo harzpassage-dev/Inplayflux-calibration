@@ -331,6 +331,10 @@ const RISK_MINUTE = 70;
 const CONFIRM_TOLERANCE = 0.05;
 // Risk tier: only late cards that historically hold up (reports/2026-10-06-premium-channel.md):
 // minute >= 72 or Radar >= 410 -> 64.8% vs 55.9% for the rest.
+// Risiko tier switched off 2026-10-13 at the owner's request: 8/20 on
+// 06-10.10 and 4/9 in the week to 13.10 (backtest 62.8%). Set to true to
+// post Risiko cards again.
+const RISK_ENABLED = false;
 const RISK_MIN_MINUTE = 72;
 const RISK_MIN_RADAR = 410;
 // Risk tier hit rate after the minute/radar filter (backtest 2026-10-06), used
@@ -2260,6 +2264,7 @@ export default {
               await queuePremium(env, channelMsg.text, parsed, score, await signalOddsFor(parsed));
             }
           } else if (
+            RISK_ENABLED &&
             [0.5, 1.5, 2.5, 3.5].includes(parsed.targetLine) &&
             parsed.minute != null &&
             parsed.minute >= RISK_MINUTE &&
