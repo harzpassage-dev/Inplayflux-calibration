@@ -1450,6 +1450,8 @@ async function handleAdminPage() {
   <div class="out" id="test-under-out" style="margin-bottom:10px;"></div>
   <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
   <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
+  <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
+  <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
   <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
   <div id="res-out" style="margin-top:10px;"></div>
@@ -1607,6 +1609,81 @@ document.getElementById('restore-btn').addEventListener('click', async () => {
     const res = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(res.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
     out.textContent = res.restored + ' Einträge wiederhergestellt' + (res.expired ? ', ' + res.expired + ' bereits abgelaufene übersprungen.' : '.');
+  } catch (e) { out.textContent = e.message; }
+});
+
+// Weekly results as a 1080x1350 image to post (Telegram / Instagram 4:5),
+// drawn from the same numbers as the weekly report.
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y) / 86400000 + 1) / 7);
+}
+function drawBilanz(s, from, to) {
+  const W = 1080, H = 1350, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const font = (w, px) => w + ' ' + px + 'px -apple-system, system-ui, Segoe UI, sans-serif';
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#12151c'); bg.addColorStop(1, '#1c2333');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const gold = '#d4a72c', text = '#e6e9f0', muted = '#8891a3', green = '#4caf7a', red = '#e06a5a';
+  const d2 = d => String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
+  const pct = t => t.n ? Math.round(t.won / t.n * 1000) / 10 : null;
+  const de = v => String(v).replace('.', ',');
+  g.textAlign = 'left';
+  g.fillStyle = gold; g.font = font('700', 40); g.fillText('💰 MONEYBAG', 80, 120);
+  g.fillStyle = text; g.font = font('800', 88); g.fillText('Wochenbilanz', 80, 230);
+  g.fillStyle = muted; g.font = font('500', 40);
+  g.fillText('KW ' + isoWeek(to) + ' · ' + d2(from) + '–' + d2(to) + to.getFullYear(), 80, 295);
+  const total = pct(s.all);
+  g.fillStyle = gold; g.font = font('800', 200);
+  g.fillText(total == null ? '–' : de(total) + ' %', 70, 520);
+  g.fillStyle = text; g.font = font('500', 42);
+  g.fillText(s.all.n ? s.all.won + ' von ' + s.all.n + ' Tipps getroffen' : 'Noch keine abgeschlossenen Tipps', 80, 590);
+  const rows = [
+    ['🔥', 'High Confidence', s.premium], ['🟠', 'Half-Risiko', s.half || { n: 0, won: 0 }],
+    ['⚠️', 'Risiko', s.risk], ['🛡️', 'Under 3.5', s.under || { n: 0, won: 0 }],
+  ].filter(r => r[2] && r[2].n);
+  let y = 700;
+  rows.forEach(([icon, label, t]) => {
+    const p = pct(t);
+    g.fillStyle = text; g.font = font('600', 44); g.fillText(icon + '  ' + label, 80, y);
+    g.textAlign = 'right'; g.font = font('700', 42); g.fillText(de(p) + ' %', 1000, y);
+    g.fillStyle = muted; g.font = font('500', 34); g.fillText(t.won + '/' + t.n + '   ', 1000 - g.measureText(de(p) + ' %').width - 70, y);
+    g.textAlign = 'left';
+    g.fillStyle = '#2c3444'; g.fillRect(80, y + 24, 920, 16);
+    g.fillStyle = p >= 70 ? green : p >= 55 ? gold : red; g.fillRect(80, y + 24, 920 * p / 100, 16);
+    y += 112;
+  });
+  if (s.priced) {
+    const roi = s.staked ? Math.round(s.profit / s.staked * 1000) / 10 : 0;
+    const sign = s.profit >= 0 ? '+' : '';
+    g.fillStyle = s.profit >= 0 ? green : red; g.font = font('700', 42);
+    g.fillText('💶 ' + sign + de(s.profit) + ' Einheiten (Rendite ' + sign + de(roi) + ' %)', 80, y + 30);
+    g.fillStyle = muted; g.font = font('500', 30);
+    g.fillText('bei ' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + ' mit Quote ab Mindestquote', 80, y + 75);
+  }
+  g.fillStyle = '#2c3444'; g.fillRect(80, 1232, 920, 2);
+  g.fillStyle = muted; g.font = font('500', 28);
+  g.fillText('Automatisch aus dem Live-Spielstand erfasst – Treffer und Verluste.', 80, 1278);
+  g.fillText('18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de', 80, 1316);
+  return c;
+}
+document.getElementById('img-btn').addEventListener('click', async () => {
+  const out = document.getElementById('img-out');
+  out.textContent = 'Erstelle Grafik …';
+  try {
+    const r = await fetch('/admin/api/results?days=7', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
+    const d = await r.json();
+    const to = new Date(), from = new Date(to.getTime() - 7 * 86400000);
+    const url = drawBilanz(d.summary, from, to).toDataURL('image/png');
+    const name = 'moneybag_bilanz_' + to.toISOString().slice(0, 10) + '.png';
+    out.innerHTML = '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:6px;">Auf dem iPad: Bild lange gedrückt halten → „Zu Fotos hinzufügen“. Oder <a href="' + url + '" download="' + name + '" style="color:#d4a72c;">herunterladen</a>.</div>' +
+      '<img src="' + url + '" style="width:100%;border-radius:6px;">';
   } catch (e) { out.textContent = e.message; }
 });
 
