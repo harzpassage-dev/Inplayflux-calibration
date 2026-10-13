@@ -92,11 +92,18 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   "https://moneybag-signals.com/?t=premium:pending"` must give 403; `curl -sI .../admin` must
   show `x-frame-options: DENY`. If the owner gets "Zu viele Fehlversuche", they just wait
   15 min (or delete `adminfail:<ip>` in KV). Recommended to them: admin password ≥ 16 chars.
-- Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`) are
-  marked TEST and are never tracked or logged.
+- Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`,
+  `?target=free`) are marked TEST and are never tracked or logged. Admin "Bilanz-Grafik
+  erstellen" draws the 7-day results as a 1080×1350 PNG in the browser.
+- Marketing rules: only verifiable numbers, backtests labelled, no gain promises, always
+  "18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de"; free channel shows wins *and*
+  losses (never cherry-pick); no spam DMs or hidden advertising.
 
 ## Change log (latest first)
 
+- 2026-10-13: marketing assets in `marketing/`: German ad texts (`werbetexte.md`), channel logos
+  `moneybag-free-logo.png` / `moneybag-premium-logo.png` (1024², source `*.svg.html`, render
+  with Playwright). Free channel listed for TGStat/Telemetr. No covert advertising (UWG §5a).
 - 2026-10-13: free channel @MoneyBagAnalyst gets the weekly report + 3 finished tips/day;
   weekly report hides tiers without tips.
 - 2026-10-13: Risiko tier off; weekly results image in the admin panel; profit line only from
@@ -112,6 +119,10 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
 ## Open items (as of 2026-10-13)
+
+- Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
+  `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
+  links (extra days per paying referral), public results page, Tipstrr listing, Telega.io test.
 
 - Under 3.5: live hit rate so far 71 % (111 games), at live line 3.5 76.6 % at Ø 1.89; only
   12 games measured with the "seen at 85'+" rule. Re-evaluate with ≥ 100 strict games.
