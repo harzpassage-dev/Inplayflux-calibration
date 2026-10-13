@@ -1208,6 +1208,11 @@ function pctText(t) {
   return t.n ? `${t.won}/${t.n} = ${(Math.round((t.won / t.n) * 1000) / 10).toString().replace(".", ",")} %` : "–";
 }
 
+// Profit/return is only shown from this many priced tips on. Tips count as
+// priced only when the feed's live quote was for the tip's own line, which
+// is rare (the market's main line is usually higher than the target line).
+const MIN_PRICED_FOR_PROFIT = 20;
+
 function weeklyReportText(sum, fromDate, toDate) {
   const d = (x) => x.toISOString().slice(8, 10) + "." + x.toISOString().slice(5, 7) + ".";
   const lines = [
@@ -1219,7 +1224,9 @@ function weeklyReportText(sum, fromDate, toDate) {
     `🛡️ Under 3.5 (mit Vorsicht): ${pctText(sum.under || { n: 0 })}`,
     `Gesamt: ${pctText(sum.all)}`,
   ];
-  if (sum.priced) {
+  // The profit line needs enough priced tips to mean anything; a handful
+  // (often only Risiko tips at 0.5 units) gives figures like -100 %.
+  if (sum.priced >= MIN_PRICED_FOR_PROFIT) {
     const sign = sum.profit >= 0 ? "+" : "";
     const roi = sum.staked ? Math.round((sum.profit / sum.staked) * 1000) / 10 : 0;
     lines.push("", `💶 Mit Quote ab Mindestquote gesetzt (${sum.priced} ${sum.priced === 1 ? "Tipp" : "Tipps"}): ${sign}${String(sum.profit).replace(".", ",")} Einheiten (Rendite ${sign}${String(roi).replace(".", ",")} %)`);
@@ -1658,7 +1665,7 @@ function drawBilanz(s, from, to) {
     g.fillStyle = p >= 70 ? green : p >= 55 ? gold : red; g.fillRect(80, y + 24, 920 * p / 100, 16);
     y += 112;
   });
-  if (s.priced) {
+  if (s.priced >= 20) {
     const roi = s.staked ? Math.round(s.profit / s.staked * 1000) / 10 : 0;
     const sign = s.profit >= 0 ? '+' : '';
     g.fillStyle = s.profit >= 0 ? green : red; g.font = font('700', 42);
