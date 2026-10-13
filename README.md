@@ -23,7 +23,8 @@ Tools and reports for calibrating InPlayFlux live-betting signal strategies
   `ODDS_API_KEY` as an environment variable (never hardcode it).
 - `scripts/live_radar.py` – live radar: pulls the scanner feed that
   inplayflux.com's live table loads (`maclarv8/GETAllMatches.php`, plain
-  JSON, no login needed), checks every running match against the strategy
+  JSON; since 2026-10-07 it needs the `X-IR-Token` header and session
+  cookie from the scanner page, see CLAUDE.md), checks every running match against the strategy
   rules and scores each hit with the same confidence models the worker
   uses (`live_confidence_models`) plus the minute buckets
   (`tool_calibration`). Verdict per signal: PREMIUM / OK / RISIKO, with
