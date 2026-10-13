@@ -86,8 +86,24 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   like `premium:pending` used to open the tool). `/admin/api/*` locks an IP after 10 wrong
   passwords for 15 min (`adminfail:<ip>`); passwords are compared in constant time; pages send
   X-Frame-Options / Referrer-Policy / nosniff.
+- After a deploy, verify from the container: `curl -s -o /dev/null -w "%{http_code}"
+  "https://moneybag-signals.com/?t=premium:pending"` must give 403; `curl -sI .../admin` must
+  show `x-frame-options: DENY`. If the owner gets "Zu viele Fehlversuche", they just wait
+  15 min (or delete `adminfail:<ip>` in KV). Recommended to them: admin password ≥ 16 chars.
 - Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`) are
   marked TEST and are never tracked or logged.
+
+## Change log (latest first)
+
+- 2026-10-13: security fix (access bypass via non-token KV keys), admin brute-force lock,
+  security headers; CLAUDE.md added. Plugin review: nothing needed; `claude-md-management`
+  would only automate keeping this file current (not installed).
+- 2026-10-11: Under 3.5 premium tip, shadow log with goal score and the 85'+ rule; Workers Paid.
+- 2026-10-10: recalibration with the 10-10 export (`scripts/recalibrate.py`), O0.5 threshold
+  0.75, market probability in the 2-min check (cut 60 %).
+- 2026-10-08: MoneyBag 0-0 → Goal cards parsed (were silently ignored), dedup per match/line,
+  analyst tool step 3b uses the live line.
+- 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
 ## Open items (as of 2026-10-13)
 
