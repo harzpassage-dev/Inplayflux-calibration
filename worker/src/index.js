@@ -534,14 +534,11 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   if (!(await claimSignal(env, parsed))) return false; // already posted for this match and line
   const mq = minQuote(HALF_WR);
   const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
-  await sendTelegramMessage(
-    env,
-    env.PREMIUM_CHANNEL_ID,
-    buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
+  const post = await postPremium(env, buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
       (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
-      stakeAdvice(parsed.targetLine, mq, UNITS_HALF, odds)
-  );
+      stakeAdvice(parsed.targetLine, mq, UNITS_HALF, odds));
   await trackSignal(env, {
+    ...post,
     tier: "half", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
     line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds,
   });
@@ -577,8 +574,9 @@ async function maybePostUnder35(env, text, parsed, score) {
     "",
     `💶 Nur setzen ab Quote ${fmtQuote(mq)} (Under 3.5) · Einsatz: ${String(UNITS_UNDER).replace(".", ",")} Einheiten`,
   ].join("\n");
-  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, msg);
+  const post = await postPremium(env, msg);
   await trackSignal(env, {
+    ...post,
     tier: "under", under: true, home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
     line: 3.5, minute: parsed.minute, minQuote: mq, units: UNITS_UNDER, odds,
   });
@@ -991,18 +989,15 @@ const RUN_LOCK_MS = 110 * 1000;
 async function postUnchecked(env, item, reason) {
   const mq = minQuote(item.proba);
   const label = `🔥 High Confidence (${Math.round(item.proba * 100)}%) · ohne Live-Prüfung`;
-  await sendTelegramMessage(
-    env,
-    env.PREMIUM_CHANNEL_ID,
-    buildPremiumMessage(item.text, label) + "\n\n" +
-      stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds)
-  );
+  const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n\n" +
+      stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds));
   await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
     signalOdds: item.signalOdds || null,
     unchecked: reason,
   });
   await logConfirmation(env, item, { reason: `ohne Prüfung gepostet: ${reason}` }, "premium:ok");
   await trackSignal(env, {
+    ...post,
     tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
     line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units: UNITS_NORMAL, odds: item.signalOdds || null,
   });
@@ -1037,13 +1032,10 @@ async function processPendingPremium(env, due, feed) {
       const expected = Math.min(res.score.proba, res.goal.wr || res.score.proba);
       const mq = minQuote(expected);
       const units = res.goal.points >= 1 ? UNITS_STRONG : UNITS_NORMAL;
-      await sendTelegramMessage(
-        env,
-        env.PREMIUM_CHANNEL_ID,
-        buildPremiumMessage(item.text, label) + "\n" + confirmationBlock(res) + "\n\n" +
-          stakeAdvice(item.parsed.targetLine, mq, units, res.postOdds)
-      );
+      const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n" + confirmationBlock(res) + "\n\n" +
+          stakeAdvice(item.parsed.targetLine, mq, units, res.postOdds));
       await trackSignal(env, {
+        ...post,
         tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: match.id || null,
         line: item.parsed.targetLine, minute: res.live.minute, minQuote: mq, units, odds: res.postOdds,
       });
@@ -1156,6 +1148,9 @@ async function settleTracked(env, feed) {
       changed = true;
       await saveResult(env, t, result);
       try {
+        await markPremiumPost(env, t, result);
+      } catch (e) {}
+      try {
         await maybePostFree(env, t, result);
       } catch (e) {}
     } else {
@@ -1170,6 +1165,31 @@ async function settleTracked(env, feed) {
   const merged = keep.concat(latest.filter((t) => !openIds.has(t.id) && !keepIds.has(t.id)));
   if (merged.length) await env.ACCESS_KV.put(TRACK_KEY, JSON.stringify(merged), { expirationTtl: 2 * 24 * 60 * 60 });
   else await env.ACCESS_KV.delete(TRACK_KEY);
+}
+
+// Posts a tip to the premium channel and returns what is needed to mark it
+// later: the message id and the exact text (editMessageText needs the whole text).
+async function postPremium(env, text) {
+  const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+  return sent && sent.message_id ? { msgId: sent.message_id, msgText: text } : {};
+}
+
+// When a tip is decided, put the result on top of its premium post, wins and
+// losses alike, so nobody has to mark them by hand.
+function resultBanner(t, result) {
+  const at = t.resultMinute != null ? ` in Minute ${t.resultMinute}'` : "";
+  if (t.under) return result === "won" ? "✅ WIN – höchstens noch 1 Tor" : `❌ LOST – 2. Tor${at}`;
+  return result === "won" ? `✅ WIN – Tor${at}` : "❌ LOST – kein weiteres Tor";
+}
+
+async function markPremiumPost(env, t, result) {
+  if (!t.msgId || !t.msgText || (result !== "won" && result !== "lost")) return;
+  const text = `${resultBanner(t, result)}\n\n${t.msgText}`.slice(0, 4096);
+  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ chat_id: env.PREMIUM_CHANNEL_ID, message_id: t.msgId, text }),
+  }).catch(() => null);
 }
 
 async function saveResult(env, t, result) {
@@ -2556,14 +2576,11 @@ export default {
             const odds = snap.odds;
             const market = marketProb(snap.match, parsed.targetLine);
             const mq = minQuote(RISK_WR);
-            await sendTelegramMessage(
-              env,
-              env.PREMIUM_CHANNEL_ID,
-              buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
+            const post = await postPremium(env, buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
                 (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
-                stakeAdvice(parsed.targetLine, mq, UNITS_RISK, odds)
-            );
+                stakeAdvice(parsed.targetLine, mq, UNITS_RISK, odds));
             await trackSignal(env, {
+              ...post,
               tier: "risk", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
               line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_RISK, odds,
             });

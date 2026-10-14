@@ -31,7 +31,10 @@ and the first 3 settled premium tips per day (won or lost, never picked by resul
 after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
 (cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
-overlapping runs never post or settle a tip twice, every post shows a
+overlapping runs never post or settle a tip twice, when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
+"❌ LOST …" (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
+calls `editMessageText`; posts from before 2026-10-14 evening have no id and stay unmarked),
+every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
 `/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
 total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
@@ -142,6 +145,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   with a question.
 
 ## Change log (latest first)
+
+- 2026-10-14: premium posts are marked automatically when decided (✅ WIN / ❌ LOST banner on
+  top via editMessageText), so the owner no longer marks them by hand.
 
 - 2026-10-14: double-post fix: the minute cron takes a run lock (`lock:minute`, 110 s) only when
   it has work, because overlapping runs posted Aston Villa U19 twice (premium, results, free
