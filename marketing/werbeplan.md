@@ -57,7 +57,7 @@ Kunden kommen über Telegram-Wege (Stufe 2).
 
 | Idee | Nutzen | Stand |
 |---|---|---|
-| **Öffentliche Ergebnisseite** auf moneybag-signals.com (alle Tipps, automatisch) | stärkstes Vertrauens-Argument, verlinkbar aus Telegram und Artikeln | noch nicht gebaut |
+| **Öffentliche Ergebnisseite** moneybag-signals.com/ergebnisse | stärkstes Vertrauens-Argument, verlinkbar aus Telegram und Artikeln | ✅ seit 14.10. |
 | **Freunde-werben** (Premium-Tage pro zahlendem geworbenen Kunden) | Kunden werben Kunden, kostet nichts vorab | noch nicht gebaut |
 | Eintrag bei **Tipstrr** o. ä. (unabhängig geprüfte Tipps) | Glaubwürdigkeit von außen | Konto nötig |
 | **X (Twitter)**: tägliches Ergebnis-Bild aus dem Gratis-Kanal, Hashtags #Fußball #Statistik | weitere Reichweite; Wett-Inhalte dort erlaubt, aber keine bezahlten Wett-Anzeigen ohne Freigabe | frei |

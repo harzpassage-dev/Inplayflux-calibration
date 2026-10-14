@@ -31,7 +31,11 @@ and the first 3 settled premium tips per day (won or lost, never picked by resul
 after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
 (cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h), every post shows a
-**Mindestquote** = ceil(100 / win rate) / 100.
+**Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
+`/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
+total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
+also stored as KV **metadata** so listing needs no per-key `get` (old keys get metadata
+lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Data and feed facts (learned the hard way)
 
@@ -138,6 +142,9 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Change log (latest first)
 
+- 2026-10-14: public results page https://moneybag-signals.com/ergebnisse; result metadata
+  for cheap listing; link in free-channel CTA and weekly report.
+
 - 2026-10-14: TikTok video 2 `marketing/tiktok-mythen.mp4` (31 s, "3 Mythen über Tore": corners no
   effect 73/72/73 %, <5 min after a goal 69 % vs 75 %, SoT 72→76 %; numbers from
   `scripts/myth_stats.py`, stable in both halves of the data).
@@ -172,7 +179,7 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
-  links (extra days per paying referral), public results page, Tipstrr listing, Telega.io test.
+  links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
 - Under 3.5: live hit rate so far 71 % (111 games), at live line 3.5 76.6 % at Ø 1.89; only
   12 games measured with the "seen at 85'+" rule. Re-evaluate with ≥ 100 strict games.

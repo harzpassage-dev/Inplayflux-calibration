@@ -1169,23 +1169,41 @@ async function saveResult(env, t, result) {
     units: t.units, minQuote: t.minQuote, quote: priced, betPlaced,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
   };
+  // The record is also stored as key metadata, so listing results (public
+  // results page, reports) needs one KV list call per 1000 tips, not one get each.
   await env.ACCESS_KV.put(`result:${now.getTime()}:${t.id}`, JSON.stringify(record), {
     expirationTtl: 365 * 24 * 60 * 60,
+    metadata: resultMeta(record),
   });
+}
+
+// KV metadata is limited to 1024 bytes; team names are cut to stay well below.
+function resultMeta(record) {
+  return { ...record, home: String(record.home || "").slice(0, 40), away: String(record.away || "").slice(0, 40) };
 }
 
 async function listResults(env, sinceMs) {
   const rows = [];
+  let backfillLeft = 100; // metadata backfill writes per call, keeps KV ops bounded
   let cursor;
   do {
     const list = await env.ACCESS_KV.list({ prefix: "result:", cursor });
     for (const key of list.keys) {
       const ts = Number(key.name.split(":")[1]);
       if (sinceMs && ts < sinceMs) continue;
+      if (key.metadata && key.metadata.result) {
+        rows.push(key.metadata);
+        continue;
+      }
+      // Older results were saved without metadata: read them and add it once.
       const raw = await env.ACCESS_KV.get(key.name);
       if (raw) {
         try {
-          rows.push(JSON.parse(raw));
+          const record = JSON.parse(raw);
+          rows.push(record);
+          if (backfillLeft-- > 0 && key.expiration) {
+            await env.ACCESS_KV.put(key.name, raw, { expiration: key.expiration, metadata: resultMeta(record) });
+          }
         } catch (e) {}
       }
     }
@@ -1249,7 +1267,7 @@ async function sendWeeklyReport(env) {
   const sum = summarize(await listResults(env, from.getTime()));
   if (!sum.all.n) return;
   const text = weeklyReportText(sum, from, to);
-  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+  await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text + `\n📋 Alle Ergebnisse: ${RESULTS_PAGE_URL}`);
   await sendTelegramMessage(env, freeChannel(env), text + "\n\n" + freeCta(env));
 }
 
@@ -1268,7 +1286,7 @@ function freeChannel(env) {
 
 function freeCta(env) {
   const url = env.FREE_CTA_URL || "https://moneybag-signals.com";
-  return `💎 Alle Signale live – vor dem Tor – im Premium-Kanal: ${url}\n18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de`;
+  return `💎 Alle Signale live – vor dem Tor – im Premium-Kanal: ${url}\n📋 Alle Ergebnisse (nichts gelöscht): ${RESULTS_PAGE_URL}\n18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de`;
 }
 
 function freeSignalText(t, result, env, when = "von heute") {
@@ -1297,6 +1315,117 @@ async function maybePostFree(env, t, result) {
   if (sent) await env.ACCESS_KV.put(key, String(count + 1), { expirationTtl: 2 * DAY_MS / 1000 });
 }
 
+// ---------------------------------------------------------------------
+// Public results page /ergebnisse: every settled premium tip, newest first,
+// straight from result:* (nothing hidden or picked). Only decided matches
+// appear, so it never gives away a live signal. Cached at the edge for
+// RESULTS_CACHE_S so page views cost no KV reads.
+const RESULTS_PAGE_URL = "https://moneybag-signals.com/ergebnisse";
+const RESULTS_CACHE_S = 300;
+const RESULTS_PAGE_ROWS = 150;
+const RESULT_TIERS = [
+  ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko"], ["under", "🛡️ Under 3.5 (mit Vorsicht)"],
+];
+
+function htmlEsc(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function berlin(iso, opts) {
+  return new Date(iso).toLocaleString("de-DE", { timeZone: "Europe/Berlin", ...opts });
+}
+
+function rateCell(t) {
+  if (!t.n) return "–";
+  return `<b>${(Math.round((t.won / t.n) * 1000) / 10).toString().replace(".", ",")} %</b><small>${t.won} von ${t.n}</small>`;
+}
+
+function resultsPageHtml(rows, env, nowMs) {
+  const since = (days) => rows.filter((r) => Date.parse(r.settledAt) >= nowMs - days * DAY_MS);
+  const periods = [["7 Tage", summarize(since(7))], ["30 Tage", summarize(since(30))], ["Gesamt", summarize(rows)]];
+  const tiers = RESULT_TIERS.filter(([key]) => periods[2][1][key].n);
+  const head = `<tr><th></th>${periods.map(([l]) => `<th>${l}</th>`).join("")}</tr>`;
+  const body = tiers.map(([key, label]) => `<tr><td>${label}</td>${periods.map(([, s]) => `<td>${rateCell(s[key])}</td>`).join("")}</tr>`).join("")
+    + `<tr class="total"><td>Alle Stufen</td>${periods.map(([, s]) => `<td>${rateCell(s.all)}</td>`).join("")}</tr>`;
+  const all = periods[2][1];
+  let profit = "";
+  if (all.priced >= MIN_PRICED_FOR_PROFIT) {
+    const sign = all.profit >= 0 ? "+" : "";
+    const roi = all.staked ? Math.round((all.profit / all.staked) * 1000) / 10 : 0;
+    profit = `<p class="note">Tipps mit erfasster Live-Quote ab Mindestquote (${all.priced}): <b>${sign}${String(all.profit).replace(".", ",")} Einheiten</b> (Rendite ${sign}${String(roi).replace(".", ",")} %).</p>`;
+  }
+  // Last 14 days as small won/lost bars.
+  const dayKey = (iso) => berlin(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const iso = new Date(nowMs - i * DAY_MS).toISOString();
+    const list = rows.filter((r) => dayKey(r.settledAt) === dayKey(iso));
+    days.push({ label: berlin(iso, { day: "2-digit", month: "2-digit" }), won: list.filter((r) => r.result === "won").length, lost: list.filter((r) => r.result === "lost").length });
+  }
+  const maxDay = Math.max(1, ...days.map((d) => d.won + d.lost));
+  const bars = days.map((d) => `<div class="day"><div class="stack"><span class="l" style="height:${(d.lost / maxDay) * 100}%"></span><span class="w" style="height:${(d.won / maxDay) * 100}%"></span></div><small>${d.won}/${d.won + d.lost}</small><small>${d.label}</small></div>`).join("");
+  const label = Object.fromEntries(RESULT_TIERS);
+  const list = rows.slice(0, RESULTS_PAGE_ROWS).map((r) => {
+    const tip = `${r.tier === "under" ? "Under" : "Over"} ${String(r.line).replace(".", ",")}`;
+    const res = r.result === "won" ? '<span class="ok">✅ Treffer</span>' : r.result === "lost" ? '<span class="no">❌ verloren</span>' : '<span class="void">– ungewertet</span>';
+    const goal = r.resultMinute != null && r.tier !== "under" && r.result === "won" ? ` <small>Tor ${r.resultMinute}'</small>` : "";
+    return `<tr><td>${berlin(r.postedAt, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${htmlEsc(r.home)} – ${htmlEsc(r.away)}<small>${label[r.tier] || r.tier} · ${tip} · Signal ${r.minute != null ? r.minute + "'" : "?"}</small></td><td>${res}${goal}</td></tr>`;
+  }).join("");
+  const free = String(freeChannel(env)).replace(/^@/, "");
+  const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
+  const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – Alle Ergebnisse</title><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
+<style>
+:root{--bg:#0b1630;--card:#13234a;--line:#24396b;--text:#eef2fb;--muted:#a9b6d3;--gold:#f5c542;--ok:#2ecc71;--no:#ff6b5b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 48px}h1{font-size:28px;margin:0 0 4px}h1 span{color:var(--gold)}h2{font-size:19px;margin:32px 0 10px}
+.sub{color:var(--muted);margin:0 0 20px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}
+th{color:var(--muted);font-weight:600;font-size:14px}td small{display:block;color:var(--muted);font-size:13px}td b{font-size:17px}
+.rates td:not(:first-child),.rates th:not(:first-child){text-align:right}.total td{background:rgba(245,197,66,.08)}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--no);font-weight:600}.void{color:var(--muted)}
+.days{display:flex;gap:6px;align-items:flex-end;padding:14px 12px}.day{flex:1;text-align:center;min-width:0}.day small{display:block;color:var(--muted);font-size:11px;white-space:nowrap}
+.stack{height:90px;display:flex;flex-direction:column-reverse;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.04)}.stack .w{background:var(--ok)}.stack .l{background:var(--no)}
+.note{color:var(--muted);font-size:14px}.cta{display:inline-block;margin-top:8px;background:var(--gold);color:#1a1300;font-weight:700;padding:12px 18px;border-radius:12px;text-decoration:none}
+footer{margin-top:36px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}footer a{color:var(--muted)}
+@media(max-width:520px){h1{font-size:23px}th,td{padding:9px 6px;font-size:14px}td b{font-size:15px}.rates b,.rates small{white-space:nowrap}.day small:first-of-type{display:none}}
+</style></head><body><main>
+<h1>💰 MoneyBag <span>Ergebnisse</span></h1>
+<p class="sub">Jedes Premium-Signal mit Ergebnis – automatisch aus dem Live-Spielstand erfasst. Nichts gelöscht, nichts ausgewählt. Stand: ${updated}</p>
+<h2>Trefferquote</h2><div class="card"><table class="rates">${head}${body}</table></div>
+${profit}
+<p class="note">Treffer = das gesuchte Tor fiel (bei „Under 3.5“: kein weiteres Tor). Ungewertete Spiele (Abbruch, Daten fehlen) zählen nicht mit.</p>
+<h2>Letzte 14 Tage</h2><div class="card"><div class="days">${bars}</div></div>
+<p class="note">Grün = Treffer, Rot = verloren. Zahl = Treffer/Signale.</p>
+<h2>Alle Signale${rows.length > RESULTS_PAGE_ROWS ? ` (neueste ${RESULTS_PAGE_ROWS} von ${rows.length})` : ""}</h2>
+<div class="card"><table><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th></tr>${list || '<tr><td colspan="3">Noch keine abgeschlossenen Signale.</td></tr>'}</table></div>
+<h2>Selbst verfolgen</h2>
+<p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal:</p>
+<a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00</footer>
+</main></body></html>`;
+}
+
+async function resultsPage(request, env, ctx) {
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const cacheKey = new Request(new URL("/ergebnisse", request.url).toString());
+  if (cache) {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+  }
+  const rows = await listResults(env);
+  const res = new Response(resultsPageHtml(rows, env, Date.now()), {
+    headers: { "content-type": "text/html; charset=utf-8", "Cache-Control": `public, max-age=${RESULTS_CACHE_S}`, ...SECURITY_HEADERS },
+  });
+  if (cache) {
+    const put = cache.put(cacheKey, res.clone());
+    if (ctx && ctx.waitUntil) ctx.waitUntil(put);
+    else await put;
+  }
+  return res;
+}
+
 async function listLog(env, prefix) {
   const rows = [];
   let cursor;
@@ -1306,7 +1435,11 @@ async function listLog(env, prefix) {
       const raw = await env.ACCESS_KV.get(key.name);
       if (raw) {
         try {
-          rows.push(JSON.parse(raw));
+          const record = JSON.parse(raw);
+          rows.push(record);
+          if (backfillLeft-- > 0 && key.expiration) {
+            await env.ACCESS_KV.put(key.name, raw, { expiration: key.expiration, metadata: resultMeta(record) });
+          }
         } catch (e) {}
       }
     }
@@ -1964,8 +2097,14 @@ document.getElementById('list-btn').addEventListener('click', async () => {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // --- Public results page (no access token needed) ---
+    if (url.pathname === "/ergebnisse" || url.pathname === "/ergebnisse/") {
+      if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
+      return resultsPage(request, env, ctx);
+    }
 
     // --- Admin ---
     if (url.pathname === "/admin") {
