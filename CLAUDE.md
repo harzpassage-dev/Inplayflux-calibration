@@ -148,12 +148,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 - 2026-10-14: premium posts are marked automatically when decided (✅ WIN / ❌ LOST banner on
   top via editMessageText), so the owner no longer marks them by hand.
-
 - 2026-10-14: double-post fix: the minute cron takes a run lock (`lock:minute`, 110 s) only when
   it has work, because overlapping runs posted Aston Villa U19 twice (premium, results, free
   channel); `trackSignal` skips an open tip with the same match/line/tier; `listResults`
   drops duplicate results (tier+match+line+posting day), also for old records.
-
 - 2026-10-14: public results page https://moneybag-signals.com/ergebnisse; result metadata
   for cheap listing; link in free-channel CTA and weekly report. Live check 14.10.: 147 decided
   tips since 07.10., High Confidence 111/135 = 82.2 %, all tiers 118/147 = 80.3 %.
@@ -187,6 +185,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
   channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
   under the article (never on TikTok).
+- Check the first auto-marked premium posts (WIN/LOST edit, 17291bb). If a post stays
+  unmarked: the tracked entry has no `msgId` (posted before the change) or Telegram refused the
+  edit (bot must stay admin with "edit messages" right in the premium channel). Older posts
+  are still marked by hand.
 - Watch for double posts after the run-lock fix (c16ea4f); if one appears, check whether two
   cron invocations started at the same moment (KV has no atomic lock).
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
