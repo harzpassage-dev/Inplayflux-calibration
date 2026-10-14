@@ -101,9 +101,10 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Change log (latest first)
 
-- 2026-10-14: TikTok video `marketing/tiktok-tore.mp4` (30 s, 1080×1920, silent; source
+- 2026-10-14: TikTok video `marketing/tiktok-tore.mp4` (30 s, 1080×1920, silent, brand "⚽ TORMINUTE"; source
   `tiktok-tore.video.html`, frames via `tiktok-tore.render.mjs` + ffmpeg). Pure football stats:
-  no betting words, odds, links or money images (TikTok bans organic gambling promotion).
+  no betting words, odds, links or money images (TikTok bans organic gambling promotion). TikTok account "Torminute", profile picture
+  `marketing/torminute-profilbild.png` (stopwatch, gold 75–90 wedge, 90').
 - 2026-10-13: marketing assets in `marketing/`: German ad texts (`werbetexte.md`), channel logos
   `moneybag-free-logo.png` / `moneybag-premium-logo.png` (1024², source `*.svg.html`, render
   with Playwright). Free channel listed for TGStat/Telemetr. No covert advertising (UWG §5a).
