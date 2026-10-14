@@ -164,6 +164,9 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Open items (as of 2026-10-14)
 
+- Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
+  channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
+  test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
 - TikTok @torminute: owner uploads video 1 and 2 (with sound in the app), sets lamp videos
   private; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
