@@ -99,6 +99,43 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   "18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de"; free channel shows wins *and*
   losses (never cherry-pick); no spam DMs or hidden advertising.
 
+## TikTok campaign (@torminute, since 2026-10-14)
+
+- Account: display name **Torminute**, handle **@torminute** (owner's old lamp account
+  @harzpassage2 renamed; ~40 lamp followers; old lamp videos to be set to private). Profile
+  picture `marketing/torminute-profilbild.png` (source `torminute-profilbild.svg.html`). Bio:
+  "⚽ Fußball-Statistik aus 11.000+ Live-Spielszenen / 📊 Wann fallen Tore – und warum? /
+  🔔 Neue Daten jede Woche" (no hashtags in the bio, pronouns empty).
+- **Hard rules** (TikTok bans organic gambling promotion; a strike kills reach): pure football
+  statistics only. Never: bet/Wette/Tipp/Quote/odds/Signal/MoneyBag/Gewinn, money images, the
+  money-bag logo, Telegram or site links (not in videos, captions, bio or comments, also not
+  in DMs). The channel builds an audience; no conversion path to premium on TikTok.
+- Numbers must come from `data/*.csv` (dedup key as above, 11,610 decided scenes 05.09.–
+  10.10.2026), be stable in both halves of the period (split 2026-09-27) and be phrased as
+  "share of scenes in which another goal fell before full time". Show the data basis on the
+  last card. Do not show tiny samples (e.g. SoT 13+, n=173, was left out).
+- Production: one HTML page per video with a `render(t)` timeline (navy/gold look, brand
+  "⚽ TORMINUTE" at the top, captions burned in at `bottom:430px`, content kept out of the
+  TikTok UI zones: top ≥ 260 px, right ≥ 150 px, bottom ≥ 600 px). `marketing/tiktok-*.render.mjs`
+  screenshots 30 fps frames with Playwright, then
+  `ffmpeg -framerate 30 -i f/%04d.jpg -f lavfi -i anullsrc=r=44100:cl=stereo -c:v libx264
+  -pix_fmt yuv420p -crf 20 -c:a aac -shortest -movflags +faststart out.mp4`. Preview a
+  contact sheet of single frames first (`node render.mjs 2,7,13`). Videos are silent; the
+  owner adds a TikTok sound or text-to-speech in the app.
+- Videos so far (see `marketing/tiktok.md` for captions):
+
+| # | File | Topic | Key numbers |
+|---|---|---|---|
+| 1 | `tiktok-tore.mp4` (30 s) | "Das späte Tor ist kein Zufall" | 77/72/61/58 % by minute, median 15 min to goal, 7.7 % in stoppage time, goal rate per minute rises late |
+| 2 | `tiktok-mythen.mp4` (31 s) | "3 Mythen über Tore im Daten-Check" | corners 73/72/73 % (no effect), < 5 min after a goal 69 % vs 75 %, SoT 72→73→76 % |
+
+- Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
+  myths suggested in comments; favourite leading by one (raw effect small: 69 % vs 73 %
+  level, confounded by minute, only use with care); red cards (no clear effect: 72.8 vs
+  72.3 %); "what the pre-match goal expectation tells you" (careful: no bookmaker wording).
+- Posting: max. 1 video/day, evenings 18–21 h, owner answers every comment, ends each video
+  with a question.
+
 ## Change log (latest first)
 
 - 2026-10-14: TikTok video 2 `marketing/tiktok-mythen.mp4` (31 s, "3 Mythen über Tore": corners no
@@ -125,8 +162,11 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-13)
+## Open items (as of 2026-10-14)
 
+- TikTok @torminute: owner uploads video 1 and 2 (with sound in the app), sets lamp videos
+  private; next video from comment suggestions. Track followers/views per video in
+  `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), public results page, Tipstrr listing, Telega.io test.
