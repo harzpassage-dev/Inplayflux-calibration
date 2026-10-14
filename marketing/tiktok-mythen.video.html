@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+.bars{display:flex;align-items:flex-end;gap:30px;height:560px;margin-top:30px}
+.bar{width:170px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:56px;font-weight:700;margin-bottom:12px}
+.bar .b{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(#f5c542,#c98a12)}
+.bar .l{font-size:38px;color:#c9d3ea;margin-top:16px}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:30px;font-size:58px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0}
+.no{background:#c0392b}.yes{background:#1e8e5a}.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.bar .l{font-size:40px;line-height:1.15;min-height:80px}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+
+<div class="scene" id="s1"><div style="font-size:200px" id="ball">🔍</div><div class="big" style="margin-top:30px">3 Mythen<br>über Tore im<br><span class="gold">Daten-Check</span></div></div>
+<div class="scene" id="s2"><div class="small">Die Frage war immer:</div><div class="mid" style="margin:24px 0">Fällt bis zum Abpfiff<br><span class="gold">noch ein Tor?</span></div><div style="font-size:150px;font-weight:700" class="gold" id="cnt">0</div><div class="mid">Spielszenen<br>ausgewertet</div></div>
+<div class="scene" id="s3"><div class="tag">MYTHOS 1</div><div class="mid">„Viele Ecken –<br>das Tor liegt in der Luft“</div><div class="bars" id="bars3"></div><div class="small">Ecken im Spiel</div><div class="verdict no" id="v3">❌ Falsch: kein Unterschied</div></div>
+<div class="scene" id="s4"><div class="tag">MYTHOS 2</div><div class="mid">„Nach einem Tor<br>fällt gleich das nächste“</div><div class="bars" id="bars4"></div><div class="small">Zeit seit dem letzten Tor</div><div class="verdict no" id="v4">❌ Falsch: erst mal Ruhe</div></div>
+<div class="scene" id="s5"><div class="tag">MYTHOS 3</div><div class="mid">„Mehr Schüsse aufs Tor<br>= mehr Tore“</div><div class="bars" id="bars5"></div><div class="small">Schüsse aufs Tor (beide Teams)</div><div class="verdict yes" id="v5">✅ Stimmt – aber nur leicht</div></div>
+<div class="scene" id="s6"><div class="big">Welchen Mythos<br>prüfen wir<br>als Nächstes?</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:32px">Prozent = Anteil der Szenen, in denen bis zum<br>Abpfiff noch ein Tor fiel. Datenbasis: 11.610<br>Live-Spielszenen ab ca. Minute 55,<br>5.9.–10.10.2026, eigene Auswertung</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,7],["s3",7,13.5],["s4",13.5,20],["s5",20,26],["s6",26,31]];
+const CAP=[[0,3.5,"Stimmen diese 3 Fußball-Weisheiten wirklich?"],[3.5,7,"Wir haben über 11.000 Live-Spielszenen geprüft."],[7,13.5,"Viele Ecken? Macht praktisch keinen Unterschied."],[13.5,20,"Direkt nach einem Tor fällt seltener noch eins. Erst mal kehrt Ruhe ein."],[20,26,"Schüsse aufs Tor helfen – aber nur ein bisschen."],[26,31,"Welchen Mythos sollen wir als Nächstes prüfen? Schreib es in die Kommentare!"]];
+const B={bars3:[["0–6",73],["7–10",72],["11+",73]],bars4:[["unter<br>5 Min.",69],["5–15<br>Min.",75],["15–30<br>Min.",75],["über<br>30 Min.",73]],bars5:[["0–4",72],["5–8",73],["9–12",76]]};
+const START={bars3:7.6,bars4:14.1,bars5:20.6},VERD={v3:10.6,v4:17.2,v5:23.2};
+for(const id in B){const el=document.getElementById(id);B[id].forEach(([l,v],i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><div class="v" id="${id}v${i}">0 %</div><div class="b" id="${id}b${i}"></div><div class="l">${l}</div></div>`))}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ document.getElementById("ball").style.transform=`rotate(${Math.sin(t*3)*15}deg) scale(${1+.05*Math.sin(t*5)})`;
+ document.getElementById("cnt").textContent=Math.round(11610*ease((t-4)/2)).toLocaleString("de-DE");
+ for(const id in B)B[id].forEach(([l,v],i)=>{const k=ease((t-START[id]-i*.4)/1.0);document.getElementById(id+"b"+i).style.height=(v/80*380*k)+"px";const e=document.getElementById(id+"v"+i);e.textContent=Math.round(v*k)+" %";e.style.opacity=k>0?1:0});
+ for(const id in VERD){const k=ease((t-VERD[id])/.35);const e=document.getElementById(id);e.style.opacity=k;e.style.transform=`scale(${1.3-.3*k})`}
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>

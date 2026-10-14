@@ -101,6 +101,9 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 
 ## Change log (latest first)
 
+- 2026-10-14: TikTok video 2 `marketing/tiktok-mythen.mp4` (31 s, "3 Mythen über Tore": corners no
+  effect 73/72/73 %, <5 min after a goal 69 % vs 75 %, SoT 72→76 %; numbers from
+  `scripts/myth_stats.py`, stable in both halves of the data).
 - 2026-10-14: TikTok video `marketing/tiktok-tore.mp4` (30 s, 1080×1920, silent, brand "⚽ TORMINUTE"; source
   `tiktok-tore.video.html`, frames via `tiktok-tore.render.mjs` + ffmpeg). Pure football stats:
   no betting words, odds, links or money images (TikTok bans organic gambling promotion). TikTok account "Torminute", profile picture
