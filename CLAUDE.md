@@ -30,7 +30,8 @@ Plus: free public channel **@MoneyBagAnalyst** (`FREE_CHANNEL_ID`, CTA `FREE_CTA
 and the first 3 settled premium tips per day (won or lost, never picked by result, posted only
 after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
-(cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h), every post shows a
+(cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
+overlapping runs never post or settle a tip twice, every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
 `/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
 total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
@@ -148,8 +149,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   drops duplicate results (tier+match+line+posting day), also for old records.
 
 - 2026-10-14: public results page https://moneybag-signals.com/ergebnisse; result metadata
-  for cheap listing; link in free-channel CTA and weekly report.
-
+  for cheap listing; link in free-channel CTA and weekly report. Live check 14.10.: 147 decided
+  tips since 07.10., High Confidence 111/135 = 82.2 %, all tiers 118/147 = 80.3 %.
+- 2026-10-14: marketing plan `marketing/werbeplan.md`, campaign sheet `marketing/tiktok.md`.
 - 2026-10-14: TikTok video 2 `marketing/tiktok-mythen.mp4` (31 s, "3 Mythen über Tore": corners no
   effect 73/72/73 %, <5 min after a goal 69 % vs 75 %, SoT 72→76 %; numbers from
   `scripts/myth_stats.py`, stable in both halves of the data).
@@ -176,6 +178,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Open items (as of 2026-10-14)
 
+- Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
+  channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
+  under the article (never on TikTok).
+- Watch for double posts after the run-lock fix (c16ea4f); if one appears, check whether two
+  cron invocations started at the same moment (KV has no atomic lock).
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
