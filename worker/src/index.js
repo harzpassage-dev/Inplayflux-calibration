@@ -1324,7 +1324,7 @@ const RESULTS_PAGE_URL = "https://moneybag-signals.com/ergebnisse";
 const RESULTS_CACHE_S = 300;
 const RESULTS_PAGE_ROWS = 150;
 const RESULT_TIERS = [
-  ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko"], ["under", "🛡️ Under 3.5 (mit Vorsicht)"],
+  ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko (seit 13.10. abgeschaltet)"], ["under", "🛡️ Under 3.5 (mit Vorsicht)"],
 ];
 
 function htmlEsc(v) {
