@@ -142,6 +142,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-14: double-post fix: the minute cron takes a run lock (`lock:minute`, 110 s) only when
+  it has work, because overlapping runs posted Aston Villa U19 twice (premium, results, free
+  channel); `trackSignal` skips an open tip with the same match/line/tier; `listResults`
+  drops duplicate results (tier+match+line+posting day), also for old records.
+
 - 2026-10-14: public results page https://moneybag-signals.com/ergebnisse; result metadata
   for cheap listing; link in free-channel CTA and weekly report.
 

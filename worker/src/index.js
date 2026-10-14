@@ -968,11 +968,25 @@ async function runMinuteJobs(env) {
   const due = pending.filter((p) => now - p.receivedAt >= CONFIRM_DELAY_MS);
   const u35Open = u35Lists.some((l) => l.some((e) => u35Status(e, now) === "open"));
   if (!due.length && !tracked.length && !u35Open) return; // the common case: KV reads only, no fetch, no writes
-  const feed = await fetchFeed();
-  if (due.length) await processPendingPremium(env, due, feed);
-  if (tracked.length) await settleTracked(env, feed);
-  if (u35Open) await settleU35(env, feed, u35Keys.map((k, i) => [k, u35Lists[i]]));
+  // A slow feed can make one minute's run overlap the next. Both would then
+  // post the same queued card and settle the same tip twice (seen 14.10.:
+  // Aston Villa U19 twice in premium, results and the free channel). Only one
+  // run at a time does the work; the lock expires on its own if a run dies.
+  const lock = await env.ACCESS_KV.get(RUN_LOCK_KEY);
+  if (lock && now - Number(lock) < RUN_LOCK_MS) return;
+  await env.ACCESS_KV.put(RUN_LOCK_KEY, String(now), { expirationTtl: 120 });
+  try {
+    const feed = await fetchFeed();
+    if (due.length) await processPendingPremium(env, due, feed);
+    if (tracked.length) await settleTracked(env, feed);
+    if (u35Open) await settleU35(env, feed, u35Keys.map((k, i) => [k, u35Lists[i]]));
+  } finally {
+    await env.ACCESS_KV.delete(RUN_LOCK_KEY);
+  }
 }
+
+const RUN_LOCK_KEY = "lock:minute";
+const RUN_LOCK_MS = 110 * 1000;
 
 async function postUnchecked(env, item, reason) {
   const mq = minQuote(item.proba);
@@ -1091,6 +1105,10 @@ async function readTracked(env) {
 // Remember a posted signal so the cron can settle it from the live feed.
 async function trackSignal(env, entry) {
   const open = await readTracked(env);
+  // Second line of defence against double posts: one open tip per match, line and tier.
+  const same = (t) => t.tier === entry.tier && t.line === entry.line &&
+    normTeam(t.home) === normTeam(entry.home) && normTeam(t.away) === normTeam(entry.away);
+  if (open.some(same)) return;
   open.push({ id: randomToken().slice(0, 12), postedAt: Date.now(), ...entry });
   await env.ACCESS_KV.put(TRACK_KEY, JSON.stringify(open), { expirationTtl: 2 * 24 * 60 * 60 });
 }
@@ -1210,7 +1228,16 @@ async function listResults(env, sinceMs) {
     cursor = list.list_complete ? undefined : list.cursor;
   } while (cursor);
   rows.sort((a, b) => b.settledAt.localeCompare(a.settledAt));
-  return rows;
+  // The same posted tip settled twice (overlapping runs before 14.10.) keeps only its first result.
+  const seen = new Set();
+  const unique = [];
+  for (const r of rows.slice().reverse()) {
+    const k = [r.tier, normTeam(r.home), normTeam(r.away), r.line, String(r.postedAt).slice(0, 10)].join("|");
+    if (seen.has(k)) continue;
+    seen.add(k);
+    unique.push(r);
+  }
+  return unique.reverse();
 }
 
 function summarize(rows) {
