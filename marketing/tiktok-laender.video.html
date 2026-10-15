@@ -1,0 +1,62 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+.bars{display:flex;align-items:flex-end;gap:30px;height:560px;margin-top:30px}
+.bar{width:170px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:56px;font-weight:700;margin-bottom:12px}
+.bar .b{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(#f5c542,#c98a12)}
+.bar .l{font-size:38px;color:#c9d3ea;margin-top:16px}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:30px;font-size:58px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0}
+.no{background:#c0392b}.yes{background:#1e8e5a}.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.bar .l{font-size:40px;line-height:1.15;min-height:80px}
+.rows{display:flex;flex-direction:column;gap:26px;width:100%;margin-top:40px}
+.row{display:flex;align-items:center;gap:18px;font-size:48px;font-weight:700}.row .fl{font-size:70px;width:90px}.row .nm{width:260px;text-align:left}
+.row .track{flex:1;height:70px;background:rgba(255,255,255,.06);border-radius:14px;position:relative;overflow:hidden}.row .fill{height:100%;border-radius:14px;background:linear-gradient(90deg,#c98a12,#f5c542)}
+.row .fill.low{background:linear-gradient(90deg,#5a6f9c,#8fa4d1)}.row .val{width:130px;text-align:right}
+.avg{font-size:38px;color:#c9d3ea;margin-top:26px}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+
+
+<div class="scene" id="s1"><div style="font-size:200px" id="ball">🌍</div><div class="big" style="margin-top:30px;font-size:96px">In welchem Land<br>fällt am häufigsten<br><span class="gold">noch ein Tor?</span></div></div>
+<div class="scene" id="s2"><div style="font-size:180px;font-weight:700" class="gold" id="cnt">0</div><div class="mid">Live-Spielszenen<br>aus aller Welt</div><div class="small" style="margin-top:30px">Frage: Fällt bis zum Abpfiff<br>noch ein Tor?</div><div class="avg" style="font-size:46px">Schnitt aller Länder: <b style="color:#fff">73 %</b></div></div>
+<div class="scene" id="s3"><div class="tag">🔥 TOR-LÄNDER</div><div class="mid">Hier fällt am<br>häufigsten noch was</div><div class="rows" id="top"></div><div class="avg">Schnitt: 73 %</div></div>
+<div class="scene" id="s4"><div class="tag">🧱 ABWEHR-LÄNDER</div><div class="mid">Hier bleibt es<br>öfter dabei</div><div class="rows" id="low"></div><div class="avg">Schnitt: 73 %</div></div>
+<div class="scene" id="s5"><div class="mid">Und Frauen, Jugend,<br>Herren?</div><div class="rows" id="cat"></div><div class="verdict yes" id="v5" style="background:#1d3d75">Kaum ein Unterschied!</div></div>
+<div class="scene" id="s6"><div class="big">Welches Land<br>fehlt dir? 👇</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:31px">Prozent = Anteil der Szenen, in denen bis zum Abpfiff<br>noch ein Tor fiel. Nur Länder mit mind. 250 Szenen,<br>meist untere Ligen. 11.610 Live-Spielszenen,<br>5.9.–10.10.2026, eigene Auswertung</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,7.5],["s3",7.5,14],["s4",14,20],["s5",20,26],["s6",26,31]];
+const CAP=[[0,3.5,"Wo auf der Welt fällt am häufigsten noch ein spätes Tor?"],[3.5,7.5,"Wir haben über 11.000 Live-Spielszenen nach Ländern sortiert."],[7.5,14,"Finnland vorne: In 81 % der Szenen fiel noch ein Tor!"],[14,20,"Italien, Mexiko und Brasilien liegen unter dem Schnitt."],[20,26,"Frauen, Jugend oder Herren? Macht kaum einen Unterschied."],[26,31,"Welches Land sollen wir als Nächstes prüfen? Schreib es in die Kommentare!"]];
+const R={top:[["🇫🇮","Finnland",81],["🇵🇱","Polen",79],["🇳🇴","Norwegen",76]],low:[["🇮🇹","Italien",70],["🇲🇽","Mexiko",71],["🇧🇷","Brasilien",68]],cat:[["👩","Frauen",74],["🧒","Jugend",74],["👨","Herren",72]]};
+const START={top:8.1,low:14.6,cat:20.6};
+for(const id in R){const el=document.getElementById(id);R[id].forEach(([f,n,v],i)=>el.insertAdjacentHTML("beforeend",`<div class="row"><span class="fl">${f}</span><span class="nm">${n}</span><span class="track"><span class="fill${id==="low"?" low":""}" id="${id}f${i}" style="display:block;width:0"></span></span><span class="val" id="${id}v${i}">0 %</span></div>`))}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ document.getElementById("ball").style.transform=`rotate(${t*40}deg)`;
+ document.getElementById("cnt").textContent=Math.round(11610*ease((t-3.9)/2)).toLocaleString("de-DE");
+ for(const id in R)R[id].forEach(([f,n,v],i)=>{const k=ease((t-START[id]-i*.5)/1.0);document.getElementById(id+"f"+i).style.width=((v-50)/35*100*k)+"%";document.getElementById(id+"v"+i).textContent=Math.round(v*k)+" %"});
+ const v=ease((t-22.8)/.35);const e=document.getElementById("v5");e.style.opacity=v;e.style.transform=`scale(${1.3-.3*v})`;
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>
