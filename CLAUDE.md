@@ -121,7 +121,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Numbers must come from `data/*.csv` (dedup key as above, 11,610 decided scenes 05.09.–
   10.10.2026), be stable in both halves of the period (split 2026-09-27) and be phrased as
   "share of scenes in which another goal fell before full time". Show the data basis on the
-  last card. Do not show tiny samples (e.g. SoT 13+, n=173, was left out).
+  last card. Do not show tiny samples (e.g. SoT 13+, n=173, was left out). When several cards
+  can describe the same match (e.g. 0:0 cards from two strategies), count unique matches
+  (day + match name).
 - Production: one HTML page per video with a `render(t)` timeline (navy/gold look, brand
   "⚽ TORMINUTE" at the top, captions burned in at `bottom:430px`, content kept out of the
   TikTok UI zones: top ≥ 260 px, right ≥ 150 px, bottom ≥ 600 px). `marketing/tiktok-*.render.mjs`
@@ -139,7 +141,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 | 3 | `tiktok-nullnull.mp4` (31 s) | "0:0 nach 60 Minuten – fällt noch ein Tor?" | 748 unique matches 0:0 at ~61' (`scripts/nullnull_stats.py`): 68 % another goal, 32 % stay 0:0; first goal 61–70' 18 %, 71–80' 22 %, 81–90' 21 %, 90+' 7 % (both halves within ±3 pp) |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
-  myths suggested in comments; favourite leading by one (raw effect small: 69 % vs 73 %
+  myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
+  vs 69 %), leave out; favourite leading by one (raw effect small: 69 % vs 73 %
   level, confounded by minute, only use with care); red cards (no clear effect: 72.8 vs
   72.3 %); "what the pre-match goal expectation tells you" (careful: no bookmaker wording).
 - Posting: max. 1 video/day, evenings 18–21 h, owner answers every comment, ends each video
@@ -147,8 +150,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
-- 2026-10-15: TikTok video 3 `marketing/tiktok-nullnull.mp4` (0:0 after 60 minutes).
-
+- 2026-10-15: TikTok video 3 `marketing/tiktok-nullnull.mp4` (0:0 after 60 minutes; counted per
+  unique match, not per scene, since 0:0 cards often come twice from two strategies).
 - 2026-10-14: premium posts are marked automatically when decided (✅ WIN / ❌ LOST banner on
   top via editMessageText), so the owner no longer marks them by hand.
 - 2026-10-14: double-post fix: the minute cron takes a run lock (`lock:minute`, 110 s) only when
@@ -183,7 +186,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-14)
+## Open items (as of 2026-10-15)
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
   channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
@@ -197,8 +200,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute: owner uploads video 1 and 2 (with sound in the app), sets lamp videos
-  private; next video from comment suggestions. Track followers/views per video in
+- TikTok @torminute: owner uploads videos 1–3 (one per evening, with sound in the app), sets
+  lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
