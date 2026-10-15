@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+.bars{display:flex;align-items:flex-end;gap:30px;height:560px;margin-top:30px}
+.bar{width:170px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:56px;font-weight:700;margin-bottom:12px}
+.bar .b{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(#f5c542,#c98a12)}
+.bar .l{font-size:38px;color:#c9d3ea;margin-top:16px}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:30px;font-size:58px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0}
+.no{background:#c0392b}.yes{background:#1e8e5a}.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.bar .l{font-size:40px;line-height:1.15;min-height:80px}
+.score{display:flex;align-items:center;gap:26px;background:#0e1f42;border:6px solid #f5c542;border-radius:28px;padding:24px 44px;font-size:170px;font-weight:700;letter-spacing:4px}
+.score .min{font-size:70px;color:#f5c542;background:#1d3d75;border-radius:16px;padding:8px 20px;letter-spacing:0}
+.legend{display:flex;flex-direction:column;gap:14px;margin-top:30px;font-size:46px;font-weight:700;text-align:left}.legend i{display:inline-block;width:34px;height:34px;border-radius:8px;margin-right:16px;vertical-align:-4px}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+
+
+<div class="scene" id="s1"><div class="score"><span>0:0</span><span class="min" id="clock">60'</span></div><div class="big" style="margin-top:70px">Fällt hier<br><span class="gold">noch ein Tor?</span></div></div>
+<div class="scene" id="s2"><div class="small">Wir haben</div><div style="font-size:200px;font-weight:700" class="gold" id="cnt">0</div><div class="mid">Spiele geprüft,<br>die nach rund<br>60 Minuten 0:0 standen</div></div>
+<div class="scene" id="s3"><div class="mid">Was passierte danach?</div>
+<svg width="560" height="560" viewBox="0 0 560 560" style="margin-top:30px"><circle cx="280" cy="280" r="210" fill="none" stroke="#2b3f6b" stroke-width="90"/><circle id="arc" cx="280" cy="280" r="210" fill="none" stroke="#f5c542" stroke-width="90" stroke-dasharray="0 1320" transform="rotate(-90 280 280)"/><text x="280" y="310" text-anchor="middle" font-size="120" font-weight="700" fill="#fff" font-family="Liberation Sans" id="pct">0 %</text></svg>
+<div class="legend"><div><i style="background:#f5c542"></i>68 % – es fiel noch ein Tor</div><div><i style="background:#2b3f6b"></i>32 % – es blieb 0:0</div></div>
+<div class="verdict no" id="v3" style="background:#1d3d75">Jedes 3. Spiel bleibt torlos</div></div>
+<div class="scene" id="s4"><div class="mid">Wann fiel das<br><span class="gold">erste Tor?</span></div><div class="bars" id="bars4"></div><div class="small">Anteil aller 0:0-Spiele</div></div>
+<div class="scene" id="s5"><div style="font-size:180px">⏱️</div><div class="mid">In <span class="gold">7 %</span> der Spiele<br>fiel das erste Tor<br>erst in der Nachspielzeit</div><div class="mid" id="s5b" style="margin-top:60px">Mehr als jedes 4. Spiel:<br>erstes Tor <span class="gold">nach Minute 80</span></div></div>
+<div class="scene" id="s6"><div class="big">Bleibst du<br>bei 0:0 dran? 👀</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:32px">Datenbasis: 748 Spiele, die um Minute 60<br>0:0 standen (Live-Szenen 5.9.–10.10.2026),<br>eigene Auswertung</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,7.5],["s3",7.5,13.5],["s4",13.5,20.5],["s5",20.5,26],["s6",26,31]];
+const CAP=[[0,3.5,"0:0 nach einer Stunde. Kommt da noch was?"],[3.5,7.5,"Wir haben 748 solcher Spiele ausgewertet."],[7.5,13.5,"In gut zwei von drei Spielen fiel noch ein Tor."],[13.5,20.5,"Und oft erst spät: Die meisten Tore fielen ab Minute 71."],[20.5,26,"Fast jedes 14. Spiel: das erste Tor erst in der Nachspielzeit!"],[26,31,"Bleibst du bei 0:0 dran – oder schaltest du ab? Schreib es in die Kommentare!"]];
+const B={bars4:[["61–70'",18],["71–80'",22],["81–90'",21],["90+'",7]]};
+const START={bars4:14.1};
+for(const id in B){const el=document.getElementById(id);B[id].forEach(([l,v],i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><div class="v" id="${id}v${i}">0 %</div><div class="b" id="${id}b${i}"></div><div class="l">${l}</div></div>`))}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ document.getElementById("clock").textContent=Math.min(61,58+Math.floor(t))+"'";
+ document.getElementById("cnt").textContent=Math.round(748*ease((t-3.9)/2));
+ const k=ease((t-8.2)/1.6);document.getElementById("arc").setAttribute("stroke-dasharray",`${1319.5*0.68*k} 1320`);document.getElementById("pct").textContent=Math.round(68*k)+" %";
+ const v=ease((t-10.8)/.35);const e=document.getElementById("v3");e.style.opacity=v;e.style.transform=`scale(${1.3-.3*v})`;
+ for(const id in B)B[id].forEach(([l,val],i)=>{const kk=ease((t-START[id]-i*.45)/1.0);document.getElementById(id+"b"+i).style.height=(val/25*400*kk)+"px";const ee=document.getElementById(id+"v"+i);ee.textContent=Math.round(val*kk)+" %";ee.style.opacity=kk>0?1:0});
+ document.getElementById("s5b").style.opacity=clamp((t-22.8)/.4);
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>
