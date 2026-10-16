@@ -1309,7 +1309,7 @@ function weeklyReportText(sum, fromDate, toDate) {
     "",
     // Tiers without decided tips that week (e.g. the switched-off Risiko) are left out.
     ...[
-      ["🔥 High Confidence", sum.premium], ["🟠 Half-Risiko", sum.half], ["⚠️ Risiko", sum.risk],
+      ["🔥 High Confidence", sum.premium], ["🟠 Half-Risiko", sum.half], ["⚠️ Risiko (seit 13.10. abgeschaltet)", sum.risk],
       ["🛡️ Under 3.5 (mit Vorsicht)", sum.under],
     ].filter(([, t]) => t && t.n).map(([label, t]) => `${label}: ${pctText(t)}`),
     `Gesamt: ${pctText(sum.all)}`,
@@ -1907,12 +1907,17 @@ function drawBilanz(s, from, to) {
   g.fillText(s.all.n ? s.all.won + ' von ' + s.all.n + ' Tipps getroffen' : 'Noch keine abgeschlossenen Tipps', 80, 590);
   const rows = [
     ['🔥', 'High Confidence', s.premium], ['🟠', 'Half-Risiko', s.half || { n: 0, won: 0 }],
-    ['⚠️', 'Risiko', s.risk], ['🛡️', 'Under 3.5', s.under || { n: 0, won: 0 }],
+    ['⚠️', 'Risiko', s.risk, 'seit 13.10. abgeschaltet'], ['🛡️', 'Under 3.5', s.under || { n: 0, won: 0 }],
   ].filter(r => r[2] && r[2].n);
   let y = 700;
-  rows.forEach(([icon, label, t]) => {
+  rows.forEach(([icon, label, t, note]) => {
     const p = pct(t);
     g.fillStyle = text; g.font = font('600', 44); g.fillText(icon + '  ' + label, 80, y);
+    if (note) {
+      const x = 80 + g.measureText(icon + '  ' + label).width + 20;
+      g.fillStyle = muted; g.font = font('500', 30); g.fillText(note, x, y);
+      g.fillStyle = text;
+    }
     g.textAlign = 'right'; g.font = font('700', 42); g.fillText(de(p) + ' %', 1000, y);
     g.fillStyle = muted; g.font = font('500', 34); g.fillText(t.won + '/' + t.n + '   ', 1000 - g.measureText(de(p) + ' %').width - 70, y);
     g.textAlign = 'left';
