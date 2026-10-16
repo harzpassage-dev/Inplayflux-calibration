@@ -24,7 +24,7 @@ Premium tiers (all in `worker/src/index.js`):
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O1.5 0.80, O0.5 0.75); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
-| 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, goal score ≤ −3, live line exactly 3.5, under quote ≥ minimum quote | 0.5 |
+| 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
 
 Plus: free public channel **@MoneyBagAnalyst** (`FREE_CHANNEL_ID`, CTA `FREE_CTA_URL`): weekly report
 and the first 3 settled premium tips per day (won or lost, never picked by result, posted only
@@ -151,6 +151,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-16: Under 3.5 rule changed from the strict shadow log (81 games 11.–16.10.): goal score
+  ≤ 0 + live line ≤ 3.5 → 18/25 = 72 % (non-premium 15/22 = 68 %, used as `UNDER_WR`);
+  goal score ≥ +1 only 47 %; all 81 games 54 %; old rule (≤ −3, line 3.5) never fired.
+
 - 2026-10-15: TikTok video 4 `marketing/tiktok-laender.mp4` (countries). Spain (68.5/74) and
   Argentina (66.5/77) were left out: not stable across the two halves.
 
@@ -190,7 +194,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-15)
+## Open items (as of 2026-10-16)
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
   channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
@@ -211,8 +215,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
-- Under 3.5: live hit rate so far 71 % (111 games), at live line 3.5 76.6 % at Ø 1.89; only
-  12 games measured with the "seen at 85'+" rule. Re-evaluate with ≥ 100 strict games.
+- Under 3.5: new rule since 16.10. rests on only 22–25 strict log games (± ~15 pp). Re-check
+  at ≥ 100 strict games (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
+  lines below 3.5: the feed has no Under 3.5 quote there (it is lower than the main-line under,
+  roughly 1.40–1.50 at line 3.0).
 - Market cut (60 %) is provisional: recalibrate from `market_proba` in the premium CSV export
   (`scripts/premium_report.py` prints hit rate by market band).
 - Risiko tier switched off 2026-10-13 (8/20, then 4/9 live). Re-enable only after a new export

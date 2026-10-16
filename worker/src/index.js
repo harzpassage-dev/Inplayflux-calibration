@@ -355,15 +355,16 @@ const HALF_MIN_GOAL_POINTS = -7;
 const HALF_WR = 0.65;
 const UNITS_HALF = 0.5;
 // "Under 3.5 – mit Vorsicht setzen": O2.5 cards (2 goals) that are not
-// premium and whose live goal score is low. Backtest on 5,985 O2.5 signals
-// (Under 3.5 = at most one more goal): goal score <= -6 82%, -5..-3 68.7%,
-// stable in both time halves. Posted only when the live main line is 3.5,
-// so the feed's under quote is the real Under 3.5 quote, and only if it
-// clears the band's minimum quote. Small stake; still being validated by
-// the shadow log.
-const UNDER_MAX_GOAL_POINTS = -3;
-const UNDER_WR_LOW = 0.82;   // goal score <= -6
-const UNDER_WR_MID = 0.687;  // goal score -5..-3
+// premium and whose live goal score is low. Rule since 2026-10-16 from the
+// strict shadow log (11.-16.10., 85'+ rule): goal score <= 0 and live line
+// <= 3.5 -> 15/22 = 68% for non-premium cards (old rule <= -3 at line exactly
+// 3.5 never fired). Only at line 3.5 is the feed's under quote the real
+// Under 3.5 quote, so it must clear the minimum quote; at lower lines the
+// post asks to check the Under 3.5 quote at the bookmaker. Small stake;
+// re-check at >= 100 strict games.
+const UNDER_MAX_GOAL_POINTS = 0;
+const UNDER_MAX_LINE = 3.5;
+const UNDER_WR = 0.68;
 const UNITS_UNDER = 0.5;
 // Result tracking of posted signals.
 const TRACK_KEY = "track:open";
@@ -547,6 +548,22 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   return true;
 }
 
+// Live main line must be <= 3.5. At exactly 3.5 the feed's under quote is the
+// Under 3.5 quote and must clear the minimum quote; below 3.5 the feed has no
+// Under 3.5 quote (it is lower than the main-line under), so the post asks
+// the reader to check it.
+function underOddsOk(odds, mq) {
+  if (!odds || odds.line == null || odds.line > UNDER_MAX_LINE) return false;
+  if (odds.line === 3.5) return !!odds.under && odds.under >= mq;
+  return true;
+}
+
+function underQuoteLine(odds) {
+  return odds && odds.line === 3.5 && odds.under
+    ? `Quote: Under 3.5 @ ${odds.under.toFixed(2)}`
+    : `Live-Linie ${String(odds.line).replace(".", ",")} – Under-3.5-Quote bitte beim Buchmacher prüfen`;
+}
+
 // Posts an Under 3.5 tip for an O2.5 card when the conditions above hold.
 async function maybePostUnder35(env, text, parsed, score) {
   if (parsed.targetLine !== 2.5 || (score && score.passes)) return false;
@@ -556,21 +573,21 @@ async function maybePostUnder35(env, text, parsed, score) {
   if (live.goals !== 2 || live.redCards > 0) return false;
   const gs = goalScore({ ...live, minute: live.minute != null ? live.minute : parsed.minute }).points;
   if (gs > UNDER_MAX_GOAL_POINTS) return false;
-  const wr = gs <= -6 ? UNDER_WR_LOW : UNDER_WR_MID;
+  const wr = UNDER_WR;
   const mq = minQuote(wr);
   const odds = snap.odds;
-  if (!odds || odds.line !== 3.5 || !odds.under || odds.under < mq) return false;
+  if (!underOddsOk(odds, mq)) return false;
   if (!(await claimSignal(env, { ...parsed, targetLine: "u3.5" }))) return false;
   const keep = text.split(/\r?\n/).filter((l) =>
     /🏆/.test(l) || /\d+'[\s·•]+~?\d+\s*min left/i.test(l) || /Radar X:/i.test(l) ||
     (/^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*.+?\s+\d+\s*[–-]\s*\d+\s+.+$/u.test(l) && !/→|moneybag/i.test(l)));
   const signed = gs > 0 ? `+${gs}` : String(gs);
   const msg = [
-    `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${signed} · Rückrechnung ${Math.round(wr * 100)}%)`,
+    `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${signed} · Live-Log ${Math.round(wr * 100)}%)`,
     "",
     ...keep,
     "🎯 Tipp: Under 3.5 Tore (gewinnt, wenn höchstens noch 1 Tor fällt)",
-    `Quote: Under 3.5 @ ${odds.under.toFixed(2)}`,
+    underQuoteLine(odds),
     "",
     `💶 Nur setzen ab Quote ${fmtQuote(mq)} (Under 3.5) · Einsatz: ${String(UNITS_UNDER).replace(".", ",")} Einheiten`,
   ].join("\n");
@@ -2376,25 +2393,25 @@ export default {
           if (pick) {
             const s = pick.s;
             const gs = goalScore(s).points;
-            const wr = gs <= -6 ? UNDER_WR_LOW : UNDER_WR_MID;
+            const wr = UNDER_WR;
             const mq = minQuote(wr);
             const odds = oddsSnapshot(pick.m);
-            wouldPass = gs <= UNDER_MAX_GOAL_POINTS && s.redCards === 0 && !!odds && odds.line === 3.5 && odds.under >= mq;
+            wouldPass = gs <= UNDER_MAX_GOAL_POINTS && s.redCards === 0 && underOddsOk(odds, mq);
             matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
             text = [
               "🧪 TEST – kein Tipp, bitte nicht setzen",
-              `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${gs > 0 ? "+" + gs : gs} · Rückrechnung ${Math.round(wr * 100)}%)`,
+              `🛡️ Under 3.5 Tore – mit Vorsicht setzen (Tor-Score ${gs > 0 ? "+" + gs : gs} · Live-Log ${Math.round(wr * 100)}%)`,
               "",
               `🏆 ${pick.m.l || ""}`,
               `⚽ ${pick.m.h} ${s.score} ${pick.m.a}`,
               `⏱ ${s.minute}'`,
               `📡 Radar X: ${s.radar != null ? s.radar : "–"}`,
               "🎯 Tipp: Under 3.5 Tore (gewinnt, wenn höchstens noch 1 Tor fällt)",
-              odds && odds.under ? `Quote: Under ${odds.line} @ ${odds.under.toFixed(2)}` : null,
+              odds ? underQuoteLine(odds) : null,
               "",
               `💶 Nur setzen ab Quote ${fmtQuote(mq)} (Under 3.5) · Einsatz: ${String(UNITS_UNDER).replace(".", ",")} Einheiten`,
               "",
-              `Echt gepostet wird nur bei Tor-Score ≤ ${UNDER_MAX_GOAL_POINTS}, Live-Linie 3,5 und Quote ab Mindestquote. Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.`,
+              `Echt gepostet wird nur bei Tor-Score ≤ ${UNDER_MAX_GOAL_POINTS}, Live-Linie ≤ 3,5 (bei 3,5 Quote ab Mindestquote). Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.`,
             ].filter((x) => x != null).join("\n");
           } else {
             text = `🧪 TEST Under 3.5 – kein Tipp\n\nLive-Feed erreichbar (${feed.length} Spiele), aber gerade kein laufendes Spiel mit 2 Toren.`;
