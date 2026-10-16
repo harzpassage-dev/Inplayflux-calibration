@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:40px;font-size:58px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0}
+.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.board{display:flex;align-items:center;gap:40px;margin-top:20px}
+.num{width:230px;height:230px;border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:150px;font-weight:700;font-family:"DejaVu Sans Mono",monospace;box-shadow:0 0 0 8px #1a2a4f inset}
+.num.out{background:#2a0f12;color:#ff4d4d}.num.in{background:#0d2a1a;color:#3ee07f}
+.arrow{font-size:110px}
+.lbl{font-size:40px;color:#c9d3ea;margin-top:16px;font-weight:700}
+.hist{display:flex;gap:26px;margin-top:40px;width:100%;justify-content:center}
+.hc{width:240px;padding:26px 0;border-radius:22px;background:rgba(255,255,255,.06);opacity:0}
+.hc .y{font-size:44px;color:#c9d3ea;font-weight:700}.hc .n{font-size:110px;font-weight:700;color:#f5c542;line-height:1.1}.hc .w{font-size:36px;color:#c9d3ea}
+.bars{display:flex;align-items:flex-end;gap:70px;height:600px;margin-top:30px}
+.bar{width:260px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:72px;font-weight:700;margin-bottom:12px}
+.bar .b{width:100%;border-radius:18px 18px 0 0;background:linear-gradient(#f5c542,#c98a12)}
+.bar .b.low{background:linear-gradient(#8fa4d1,#5a6f9c)}
+.bar .l{font-size:42px;color:#c9d3ea;margin-top:16px;line-height:1.15}
+.why{display:flex;flex-direction:column;gap:24px;margin-top:40px;width:100%}
+.why div{font-size:52px;font-weight:700;background:rgba(255,255,255,.06);border-radius:18px;padding:22px 26px;text-align:left;opacity:0}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+<div class="scene" id="s1"><div class="board"><div><div class="num out" id="nOut">9</div><div class="lbl">RAUS</div></div><div class="arrow" id="arr">🔄</div><div><div class="num in" id="nIn">22</div><div class="lbl">REIN</div></div></div><div class="big" style="margin-top:70px;font-size:100px">Der Joker kommt.<br><span class="gold">Fällt jetzt<br>noch ein Tor?</span></div></div>
+<div class="scene" id="s2"><div class="tag">🔄 SO VIEL DARF GEWECHSELT WERDEN</div><div class="mid">Wechsel pro Team<br>im Profifußball</div><div class="hist"><div class="hc" id="h0"><div class="y">1970</div><div class="n">2</div><div class="w">erste WM<br>mit Wechseln</div></div><div class="hc" id="h1"><div class="y">1995</div><div class="n">3</div><div class="w">bis<br>2020</div></div><div class="hc" id="h2"><div class="y">heute</div><div class="n">5</div><div class="w">in max. 3<br>Pausen</div></div></div><div class="small" style="margin-top:40px">Wechsel in der Halbzeit<br>zählen nicht als Pause</div></div>
+<div class="scene" id="s3"><div class="small">Wir haben</div><div style="font-size:200px;font-weight:700" class="gold" id="cnt">0</div><div class="mid">Spiele ab<br>Minute 60 verfolgt –<br>der Joker-Phase</div></div>
+<div class="scene" id="s4"><div class="mid">Torgefahr<br><span class="gold">pro Minute</span></div><div class="bars" id="bars4"></div><div class="verdict" id="v4" style="background:#1e8e5a">Fast ein Drittel mehr!</div></div>
+<div class="scene" id="s5"><div style="font-size:150px">🤔</div><div class="mid">Liegt das<br>am Joker?</div><div class="why"><div id="w0">🦵 Frische Beine vorne</div><div id="w1">😮‍💨 Müde Abwehr hinten</div><div id="w2">⚔️ Alles auf Angriff</div></div><div class="small" id="w3" style="margin-top:34px;font-size:38px;opacity:0">Unsere Daten zeigen, <b style="color:#fff">wann</b> Tore fallen –<br>nicht, <b style="color:#fff">wer</b> sie schießt.</div></div>
+<div class="scene" id="s6"><div class="big">Wechselt dein<br>Trainer zu spät? 👇</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:31px">Torgefahr = Anteil der Spiele, in denen das nächste Tor<br>in dieser Phase fiel, geteilt durch ihre Minuten.<br>4.459 Spiele mit Live-Szene bei Min. 58–63, meist untere<br>Ligen, 5.9.–10.10.2026, eigene Auswertung. Regeln: IFAB</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,9.5],["s3",9.5,13],["s4",13,20.5],["s5",20.5,26],["s6",26,31]];
+const CAP=[[0,3.5,"Der Trainer bringt den Joker. Bringt das noch ein Tor?"],[3.5,9.5,"Früher durfte kaum gewechselt werden. Heute sind es bis zu fünf Spieler."],[9.5,13,"Wir haben über 4.000 Spiele ab Minute 60 verfolgt."],[13,20.5,"Ab Minute 76 steigt die Torgefahr pro Minute um fast ein Drittel!"],[20.5,26,"Ob es der Joker war? Das zeigen die Daten nicht – nur wann es knallt."],[26,31,"Wechselt dein Trainer zu spät? Schreib es in die Kommentare!"]];
+const B={bars4:[["61.–75.<br>Minute",2.4,"low"],["76.–90.<br>Minute",3.2,""]]};
+const START={bars4:13.6};
+for(const id in B){const el=document.getElementById(id);B[id].forEach(([l,v,cl],i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><div class="v" id="${id}v${i}">0 %</div><div class="b ${cl}" id="${id}b${i}"></div><div class="l">${l}</div></div>`))}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+const de=x=>x.toFixed(1).replace(".",",");
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ const blink=t>0.8&&t<3.5?(Math.floor(t*4)%2?1:.55):1;
+ document.getElementById("nOut").style.opacity=blink;document.getElementById("nIn").style.opacity=blink;
+ document.getElementById("arr").style.transform=`rotate(${t*120}deg)`;
+ for(let i=0;i<3;i++){const k=ease((t-4.2-i*.9)/.5);const e=document.getElementById("h"+i);e.style.opacity=k;e.style.transform=`translateY(${(1-k)*40}px) scale(${i===2?1+.08*clamp((t-6.5)/.3)*(1-clamp((t-7.2)/.4)):1})`}
+ document.getElementById("cnt").textContent=Math.round(4459*ease((t-9.9)/2)).toLocaleString("de-DE");
+ for(const id in B)B[id].forEach(([l,val],i)=>{const kk=ease((t-START[id]-i*1.0)/1.2);document.getElementById(id+"b"+i).style.height=(val/3.4*420*kk)+"px";const ee=document.getElementById(id+"v"+i);ee.textContent=de(val*kk)+" %";ee.style.opacity=kk>0?1:0});
+ const v=ease((t-16.6)/.35);const e=document.getElementById("v4");e.style.opacity=v;e.style.transform=`scale(${1.3-.3*v})`;
+ for(let i=0;i<3;i++){const k=ease((t-21.4-i*.6)/.4);const w=document.getElementById("w"+i);w.style.opacity=k;w.style.transform=`translateX(${(1-k)*-60}px)`}
+ document.getElementById("w3").style.opacity=clamp((t-23.6)/.4);
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>

@@ -140,6 +140,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 | 2 | `tiktok-mythen.mp4` (31 s) | "3 Mythen über Tore im Daten-Check" | corners 73/72/73 % (no effect), < 5 min after a goal 69 % vs 75 %, SoT 72→73→76 % |
 | 3 | `tiktok-nullnull.mp4` (31 s) | "0:0 nach 60 Minuten – fällt noch ein Tor?" | 748 unique matches 0:0 at ~61' (`scripts/nullnull_stats.py`): 68 % another goal, 32 % stay 0:0; first goal 61–70' 18 %, 71–80' 22 %, 81–90' 21 %, 90+' 7 % (both halves within ±3 pp) |
 | 4 | `tiktok-laender.mp4` (31 s) | "In welchem Land fällt am häufigsten noch ein Tor?" | countries with ≥ 250 scenes (`scripts/country_stats.py`, league name's first word): Finland 81 %, Poland 79 %, Norway 76 % vs Italy 70 %, Mexico 71 %, Brazil 68 % (avg 73 %); women 74 / youth 74 / men 72 % |
+| 5 | `tiktok-joker.mp4` (31 s) | "Der Joker kommt – fällt jetzt noch ein Tor?" (substitutions) | rules (IFAB): 1970 2 subs, 1995 3, today 5 in max. 3 stoppages; data (`scripts/sub_stats.py`, 4,459 unique matches with a card at 58–63'): next-goal rate per minute 61–75' 2.4 % vs 76–90' 3.2 % (+31 %, both halves 2.4/3.2); the data has no substitution column, so the video says it shows *when* goals fall, not *who* scores |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -150,6 +151,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   with a question.
 
 ## Change log (latest first)
+
+- 2026-10-16: TikTok video 5 `marketing/tiktok-joker.mp4` (substitutions / "Joker-Phase"). Exports
+  contain no substitution data: rule facts from IFAB Law 3, goal timing from `scripts/sub_stats.py`
+  (hazard of the next goal, counted per unique match); no claim that the substitute scores.
 
 - 2026-10-16: Under 3.5 rule changed from the strict shadow log (81 games 11.–16.10.): goal score
   ≤ 0 + live line ≤ 3.5 → 18/25 = 72 % (non-premium 15/22 = 68 %, used as `UNDER_WR`);
@@ -208,7 +213,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute: owner uploads videos 1–4 (one per evening, with sound in the app), sets
+- TikTok @torminute: owner uploads videos 1–5 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
