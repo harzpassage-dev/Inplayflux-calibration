@@ -21,6 +21,7 @@ erwähnen – weder im Video noch in Beschreibung, Bio, Kommentaren oder Nachric
 | 3 | `tiktok-nullnull.mp4` | 0:0 nach 60 Minuten – fällt da noch ein Tor? ⚽⏱️ 748 Spiele ausgewertet. Bleibst du dran oder schaltest du ab? 👇 #fußball #fussball #statistik #nullzunull #bundesliga #football | | | |
 | 4 | `tiktok-laender.mp4` | In welchem Land fällt am häufigsten noch ein Tor? 🌍⚽ 11.610 Spielszenen ausgewertet. Welches Land fehlt dir? 👇 #fußball #fussball #statistik #finnland #italien #football | | | |
 | 5 | `tiktok-joker.mp4` | Der Joker kommt – fällt jetzt noch ein Tor? 🔄⚽ 4.459 Spiele ab Minute 60 ausgewertet. Wechselt dein Trainer zu spät? 👇 #fußball #fussball #statistik #auswechslung #joker #football | | | |
+| 6 | `tiktok-sicher.mp4` | 73 % – klingt sicher. Ist es das? 🎲⚽ 11.610 Spielszenen ausgewertet: auch bei 73 % gibt es Pechsträhnen. Ab wie viel % ist es für dich sicher? 👇 #fußball #fussball #statistik #wahrscheinlichkeit #mathe #football | | | |
 
 ## So lädst du hoch (iPad)
 
