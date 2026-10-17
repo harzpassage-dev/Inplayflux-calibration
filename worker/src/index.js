@@ -1062,7 +1062,8 @@ const RUN_LOCK_MS = 110 * 1000;
 
 async function postUnchecked(env, item, reason, label) {
   const mq = minQuote(item.proba);
-  label = label || `🔥 High Confidence (${Math.round(item.proba * 100)}%) · ohne Live-Prüfung`;
+  // No "ohne Live-Prüfung" suffix since 17.10.: without a live source it was on every post (owner's call).
+  label = label || `🔥 High Confidence (${Math.round(item.proba * 100)}%)`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n\n" +
       stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds));
   await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
@@ -2579,7 +2580,7 @@ export default {
           text = `🧪 TEST – kein Tipp\n\nLive-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele), aber gerade kein laufendes ${only00 ? "0-0-" : ""}Spiel zwischen 20' und 85'.`;
         }
       } else {
-        text = "🧪 TEST – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Premium-Signale werden in diesem Zustand \"ohne Live-Prüfung\" gepostet.";
+        text = "🧪 TEST – kein Tipp\n\n⚠️ Live-Feed von Cloudflare NICHT erreichbar. Premium-Signale werden in diesem Zustand ohne Live-Prüfung gepostet.";
       }
       const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
       return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo });
