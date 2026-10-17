@@ -322,6 +322,13 @@ async function logPremiumForward(env, parsed, score, keyPrefix, extra = {}) {
 const PENDING_KEY = "premium:pending";
 const CONFIRM_DELAY_MS = 2 * 60 * 1000;
 const CONFIRM_GIVE_UP_MS = 4 * 60 * 1000; // match not found in the feed for this long -> post unchecked
+// Since 2026-10-17 InPlayFlux serves guests only a preview of ~15 matches (the
+// ones furthest into the game), so a card at minute 60 is usually not in it.
+// A feed this small is treated as that preview: a card whose match is missing
+// is posted unchecked right away instead of waiting for a match that won't show.
+const GUEST_FEED_MAX = 20;
+const GUEST_FEED_REASON = "Spiel nicht in der Gast-Vorschau des Live-Feeds";
+const isGuestFeed = (feed) => Array.isArray(feed) && feed.length <= GUEST_FEED_MAX;
 const FEED_URL = "https://inplayflux.com/maclarv8/GETAllMatches.php?inplay=inplay&v=";
 const RISK_MINUTE = 70;
 // The model docks every minute, so re-scoring at the later live minute pushed
@@ -603,14 +610,11 @@ async function maybePostUnder35(env, text, parsed, score) {
   return true;
 }
 
-async function signalOddsFor(parsed) {
-  return (await signalSnapshotFor(parsed)).odds;
-}
 
 async function signalSnapshotFor(parsed) {
   const feed = await fetchFeed();
   const match = Array.isArray(feed) ? findMatch(feed, parsed.homeTeam, parsed.awayTeam) : null;
-  return { odds: oddsSnapshot(match), matchId: match ? match.id : null, match };
+  return { odds: oddsSnapshot(match), matchId: match ? match.id : null, match, guestFeed: isGuestFeed(feed) };
 }
 
 function oddsText(o) {
@@ -941,9 +945,13 @@ async function readPending(env) {
   }
 }
 
+function premiumItem(text, parsed, score, signalOdds) {
+  return { id: randomToken().slice(0, 12), text, parsed, proba: score.proba, signalOdds, receivedAt: Date.now() };
+}
+
 async function queuePremium(env, text, parsed, score, signalOdds) {
   const pending = await readPending(env);
-  pending.push({ id: randomToken().slice(0, 12), text, parsed, proba: score.proba, signalOdds, receivedAt: Date.now() });
+  pending.push(premiumItem(text, parsed, score, signalOdds));
   await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(pending), { expirationTtl: 24 * 60 * 60 });
 }
 
@@ -1032,9 +1040,10 @@ async function processPendingPremium(env, due, feed) {
       // found keep retrying until CONFIRM_GIVE_UP_MS - then post it marked as
       // not live-checked (the old, pre-check behaviour, ~80% historically).
       const feedDown = !Array.isArray(feed);
-      if (feedDown || now - item.receivedAt >= CONFIRM_GIVE_UP_MS) {
+      const guest = isGuestFeed(feed);
+      if (feedDown || guest || now - item.receivedAt >= CONFIRM_GIVE_UP_MS) {
         done.add(item.id);
-        const reason = feedDown ? "Live-Feed nicht erreichbar" : "Spiel nicht im Live-Feed gefunden";
+        const reason = feedDown ? "Live-Feed nicht erreichbar" : guest ? GUEST_FEED_REASON : "Spiel nicht im Live-Feed gefunden";
         await postUnchecked(env, item, reason);
       }
       continue;
@@ -2583,7 +2592,14 @@ export default {
             // CONFIRM_DELAY_MS and only then posts (see processPendingPremium).
             // The quote at signal time is logged so posted bets can be priced later.
             if (await claimSignal(env, parsed)) {
-              await queuePremium(env, channelMsg.text, parsed, score, await signalOddsFor(parsed));
+              const snap = await signalSnapshotFor(parsed);
+              if (!snap.match && snap.guestFeed) {
+                // The live check could not find the match in 2 minutes either:
+                // post now, while the quote is still the one from the card.
+                await postUnchecked(env, premiumItem(channelMsg.text, parsed, score, snap.odds), GUEST_FEED_REASON);
+              } else {
+                await queuePremium(env, channelMsg.text, parsed, score, snap.odds);
+              }
             }
           } else if (
             RISK_ENABLED &&

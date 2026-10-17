@@ -21,7 +21,7 @@ Premium tiers (all in `worker/src/index.js`):
 
 | Tier | Rule | Stake |
 |---|---|---|
-| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O1.5 0.80, O0.5 0.75); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down | 1 (2 if goal score ≥ +1) |
+| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O1.5 0.80, O0.5 0.75); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
@@ -53,6 +53,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   **live line**. Never average the two lines.
 - Strategy headers like `💰 MONEYBAG 0-0 → GOAL` look like a team line; parsers must skip lines
   with `→`/`moneybag`. `Target: Goal` cards get line = current goals + 0.5.
+- **Guest preview since 2026-10-17**: without a VIP login the feed returns only ~15 matches, the ones
+  furthest into the game (seen: 11 at 90'+, then 79', 75', 74', 66'). Cards at minute ~60 are
+  usually missing, so the live check rarely runs; results still settle because matches show up
+  near the end. A full feed would need the owner's InPlayFlux VIP login as a Cloudflare secret.
 - **CSV exports** from InPlayFlux: since 10-06 the date comes as `="DD/MM/YYYY, hh:mm:ss"`,
   split into two columns by the comma, and **one hour early**. Normalize to
   `="YYYY-MM-DD hh:mm:ss"`, +1 h (verify the shift against the previous export's overlap),
@@ -153,6 +157,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   with a question.
 
 ## Change log (latest first)
+
+- 2026-10-17: InPlayFlux guest feed limited to ~15 matches → High Confidence cards whose match is not
+  in it are posted unchecked immediately (webhook) instead of after the 4-minute search.
 
 - 2026-10-17: TikTok video 7 `marketing/tiktok-frauen.mp4` (women vs men, verdict: practically equal).
 
