@@ -142,6 +142,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 | 4 | `tiktok-laender.mp4` (31 s) | "In welchem Land fällt am häufigsten noch ein Tor?" | countries with ≥ 250 scenes (`scripts/country_stats.py`, league name's first word): Finland 81 %, Poland 79 %, Norway 76 % vs Italy 70 %, Mexico 71 %, Brazil 68 % (avg 73 %); women 74 / youth 74 / men 72 % |
 | 5 | `tiktok-joker.mp4` (31 s) | "Der Joker kommt – fällt jetzt noch ein Tor?" (substitutions) | rules (IFAB): 1970 2 subs, 1995 3, today 5 in max. 3 stoppages; data (`scripts/sub_stats.py`, 4,459 unique matches with a card at 58–63'): next-goal rate per minute 61–75' 2.4 % vs 76–90' 3.2 % (+31 %, both halves 2.4/3.2); the data has no substitution column, so the video says it shows *when* goals fall, not *who* scores |
 | 6 | `tiktok-sicher.mp4` (31 s) | "73 % – klingt sicher. Ist es das?" (probability / streaks; owner asked for a "Quote" video, done without betting words for TikTok) | `scripts/streak_stats.py`, 11,610 scenes in time order: 72.8 % another goal (halves 73.1/72.1); blocks of 10: avg 2.7 without goal, 29 % of blocks ≥ 4 without (halves 28/30); longest run with goal 41, without goal 8 (8 in both halves) |
+| 7 | `tiktok-frauen.mp4` (31 s) | "Wer schießt mehr Tore – Frauen oder Männer?" | `scripts/gender_stats.py`, unique matches (earliest scene), youth excluded: 864 women / 5,847 men, 685 leagues; goals per 90 up to the scene 3.0 vs 3.1 (halves 3.09/3.25, 2.76/2.85); another goal 75 vs 74 % (halves 74.6/74.7, 77.0/70.6 – not stable, so only "Gleichauf"); median 15 min to next goal both. Message: practically equal. `Ort Gol Atar` columns are unclear (avg ~3.3 per team), not used |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -152,6 +153,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   with a question.
 
 ## Change log (latest first)
+
+- 2026-10-17: TikTok video 7 `marketing/tiktok-frauen.mp4` (women vs men, verdict: practically equal).
 
 - 2026-10-16: TikTok video 6 `marketing/tiktok-sicher.mp4` ("73 % – wie sicher ist das?"). The owner wanted
   a video about odds; TikTok forbids betting words, so it explains probability and losing streaks only.
@@ -218,7 +221,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute: owner uploads videos 1–6 (one per evening, with sound in the app), sets
+- TikTok @torminute: owner uploads videos 1–7 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
