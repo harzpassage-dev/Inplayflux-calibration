@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}.pink{color:#ff8fb8}.blue{color:#7fb2ff}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:40px;font-size:58px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0;background:#1d3d75}
+.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.vs{display:flex;align-items:center;gap:40px;margin-top:10px}
+.vs .p{font-size:210px}.vs .x{font-size:90px;font-weight:700;color:#f5c542}
+.duo{display:flex;gap:30px;margin-top:40px;width:100%}
+.duo>div{flex:1;border-radius:26px;padding:34px 10px;background:rgba(255,255,255,.06);opacity:0}
+.duo .e{font-size:90px}.duo .n{font-size:120px;font-weight:700;line-height:1.1}
+.duo .l{font-size:40px;color:#c9d3ea;margin-top:8px;line-height:1.2}
+.bars{display:flex;align-items:flex-end;gap:70px;height:560px;margin-top:30px}
+.bar{width:260px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:72px;font-weight:700;margin-bottom:12px}
+.bar .b{width:100%;border-radius:18px 18px 0 0}
+.bar .b.w{background:linear-gradient(#ff8fb8,#c4517f)}.bar .b.m{background:linear-gradient(#7fb2ff,#3d6fc4)}
+.bar .l{font-size:46px;margin-top:16px;font-weight:700}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+<div class="scene" id="s1"><div class="vs"><span class="p" id="pw">👩</span><span class="x">VS</span><span class="p" id="pm">👨</span></div><div class="big" style="margin-top:50px;font-size:104px">Wer schießt<br><span class="gold">mehr Tore?</span></div></div>
+<div class="scene" id="s2"><div class="mid">Wir haben<br>Live-Spiele verglichen</div><div class="duo"><div id="c0"><div class="e">👩</div><div class="n pink" id="n0">0</div><div class="l">Frauen-<br>spiele</div></div><div id="c1"><div class="e">👨</div><div class="n blue" id="n1">0</div><div class="l">Herren-<br>spiele</div></div></div><div class="small" style="margin-top:36px">aus über 600 Ligen weltweit<br>(Jugend nicht mitgezählt)</div></div>
+<div class="scene" id="s3"><div class="tag">⚽ RUNDE 1</div><div class="mid">Tore pro<br>90 Minuten</div><div class="bars" id="b3"></div><div class="verdict" id="v3">Fast gleich!</div></div>
+<div class="scene" id="s4"><div class="tag">⚽ RUNDE 2</div><div class="mid">Fällt bis zum Abpfiff<br>noch ein Tor?</div><div class="bars" id="b4"></div><div class="verdict" id="v4">Gleichauf!</div></div>
+<div class="scene" id="s5"><div class="tag">⚽ RUNDE 3</div><div class="mid">Wie lange bis<br>zum nächsten Tor?</div><div class="duo"><div id="c2"><div class="e">👩</div><div class="n pink">15</div><div class="l">Minuten<br>(Median)</div></div><div id="c3"><div class="e">👨</div><div class="n blue">15</div><div class="l">Minuten<br>(Median)</div></div></div><div class="verdict" id="v5" style="background:#1e8e5a;font-size:46px;white-space:nowrap">Gleich spannend bis zum Schluss</div></div>
+<div class="scene" id="s6"><div class="big">Hättest du<br>das gedacht? 👇</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:31px">864 Frauen- und 5.847 Herrenspiele mit Live-Szene,<br>meist untere Ligen, 5.9.–10.10.2026, eigene Auswertung.<br>Tore pro 90 Min. = Tore bis zur Szene, hochgerechnet.<br>Prozent = Anteil der Spiele, in denen danach noch ein Tor fiel</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,8.5],["s3",8.5,14.5],["s4",14.5,20.5],["s5",20.5,26],["s6",26,31]];
+const CAP=[[0,3.5,"Frauen oder Männer – wer schießt mehr Tore?"],[3.5,8.5,"Wir haben über 6.700 Live-Spiele aus aller Welt verglichen."],[8.5,14.5,"Tore pro 90 Minuten: 3,0 bei den Frauen, 3,1 bei den Männern."],[14.5,20.5,"Noch ein Tor bis zum Abpfiff? 75 % gegen 74 % – praktisch gleich!"],[20.5,26,"Und bis zum nächsten Tor dauert es bei beiden im Schnitt 15 Minuten."],[26,31,"Hättest du das gedacht? Schreib es in die Kommentare!"]];
+const B={b3:[["👩 Frauen",3.0,"w",3.5,"",1],["👨 Herren",3.1,"m",3.5,"",1]],b4:[["👩 Frauen",75,"w",85," %",0],["👨 Herren",74,"m",85," %",0]]};
+const START={b3:9.1,b4:15.1};
+for(const id in B){const el=document.getElementById(id);B[id].forEach(([l,v,cl],i)=>el.insertAdjacentHTML("beforeend",`<div class="bar"><div class="v" id="${id}v${i}">0</div><div class="b ${cl}" id="${id}b${i}"></div><div class="l">${l}</div></div>`))}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+const fmt=(x,dec)=>dec?x.toFixed(1).replace(".",","):String(Math.round(x));
+function pop(id,t0,t){const v=ease((t-t0)/.35);const e=document.getElementById(id);e.style.opacity=v;e.style.transform=`scale(${1.3-.3*v})`}
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ const w=Math.sin(t*5)*8;document.getElementById("pw").style.transform=`rotate(${w}deg)`;document.getElementById("pm").style.transform=`rotate(${-w}deg)`;
+ for(let i=0;i<2;i++){const k=ease((t-4.0-i*.5)/.5);document.getElementById("c"+i).style.opacity=k;document.getElementById("n"+i).textContent=Math.round([864,5847][i]*ease((t-4.1-i*.5)/1.6)).toLocaleString("de-DE")}
+ for(const id in B)B[id].forEach(([l,val,cl,max,suf,dec],i)=>{const kk=ease((t-START[id]-i*.8)/1.2);document.getElementById(id+"b"+i).style.height=(val/max*400*kk)+"px";const ee=document.getElementById(id+"v"+i);ee.textContent=fmt(val*kk,dec)+suf;ee.style.opacity=kk>0?1:0});
+ pop("v3",11.9,t);pop("v4",17.9,t);
+ for(let i=2;i<4;i++){const k=ease((t-21.2-(i-2)*.5)/.5);document.getElementById("c"+i).style.opacity=k}
+ pop("v5",23.0,t);
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>

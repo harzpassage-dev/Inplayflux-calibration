@@ -1,0 +1,68 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1920px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.scene{position:absolute;left:90px;right:150px;top:260px;bottom:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+.big{font-size:112px;font-weight:700;line-height:1.08;letter-spacing:-1px}
+.mid{font-size:68px;font-weight:700;line-height:1.15}
+.small{font-size:44px;color:#c9d3ea;line-height:1.3}
+.gold{color:#f5c542}
+#cap{position:absolute;left:90px;right:150px;bottom:430px;text-align:center;font-size:46px;font-weight:700;line-height:1.25}
+#cap span{background:rgba(0,0,0,.6);padding:8px 18px;border-radius:14px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+#brand{position:absolute;top:120px;left:0;right:0;text-align:center;font-size:36px;color:#f5c542;letter-spacing:6px;font-weight:700}
+#prog{position:absolute;left:0;top:0;height:10px;background:#f5c542}
+.verdict{margin-top:40px;font-size:56px;font-weight:700;padding:16px 30px;border-radius:20px;opacity:0}
+.tag{font-size:40px;color:#f5c542;font-weight:700;letter-spacing:4px;margin-bottom:14px}
+.legend{margin-top:30px;font-size:44px;font-weight:700;line-height:1.5;text-align:left}
+.legend i{display:inline-block;width:34px;height:34px;border-radius:8px;margin-right:16px;vertical-align:-4px}
+.grid{display:grid;grid-template-columns:repeat(5,140px);gap:26px;margin-top:50px}
+.cell{width:140px;height:140px;border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:84px;font-weight:700;opacity:0}
+.cell.y{background:rgba(245,197,66,.16);box-shadow:0 0 0 5px #f5c542 inset}
+.cell.n{background:rgba(255,255,255,.05);box-shadow:0 0 0 5px #5a6f9c inset;color:#8fa4d1}
+.duo{display:flex;gap:30px;margin-top:50px;width:100%}
+.duo>div{flex:1;border-radius:26px;padding:34px 10px;background:rgba(255,255,255,.06);opacity:0}
+.duo .n{font-size:170px;font-weight:700;line-height:1}
+.duo .l{font-size:40px;color:#c9d3ea;margin-top:14px;line-height:1.2}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1920"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="80" width="960" height="1760"/><line x1="60" y1="960" x2="1020" y2="960"/><circle cx="540" cy="960" r="180"/><rect x="290" y="80" width="500" height="260"/><rect x="290" y="1580" width="500" height="260"/></g></svg>
+<div id="prog"></div>
+<div id="brand">⚽ TORMINUTE</div>
+
+<div class="scene" id="s1"><div style="font-size:300px;font-weight:700;line-height:1" class="gold" id="hook">73 %</div><div class="big" style="margin-top:50px;font-size:100px">Klingt sicher.<br><span class="gold" id="hook2">Ist es das?</span></div></div>
+<div class="scene" id="s2"><div class="mid">So oft fiel in<br>11.610 Live-Spielszenen<br><span class="gold">noch ein Tor</span></div>
+<svg width="520" height="520" viewBox="0 0 560 560" style="margin-top:30px"><circle cx="280" cy="280" r="210" fill="none" stroke="#2b3f6b" stroke-width="90"/><circle id="arc" cx="280" cy="280" r="210" fill="none" stroke="#f5c542" stroke-width="90" stroke-dasharray="0 1320" transform="rotate(-90 280 280)"/><text x="280" y="310" text-anchor="middle" font-size="120" font-weight="700" fill="#fff" font-family="Liberation Sans" id="pct">0 %</text></svg>
+<div class="verdict" id="v2" style="background:#1d3d75;font-size:48px;white-space:nowrap">Mehr als jedes 4. Mal: kein Tor</div></div>
+<div class="scene" id="s3"><div class="tag">🔟 ZEHN SZENEN AM STÜCK</div><div class="mid">So sieht 73 %<br>im Schnitt aus</div><div class="grid" id="grid"></div><div class="legend" id="leg3" style="opacity:0"><div><i style="background:#f5c542"></i>7 mit Tor</div><div><i style="background:#5a6f9c"></i>3 ohne Tor</div></div></div>
+<div class="scene" id="s4"><div class="mid">Aber oft<br><span class="gold">kommt es dicker</span></div><div class="grid" id="grid4"></div><div class="mid" style="margin-top:50px;font-size:60px" id="s4b">In <span class="gold">29 %</span> der 10er-Blöcke:<br>4 oder mehr ohne Tor</div></div>
+<div class="scene" id="s5"><div class="tag">📈 REKORDE IN UNSEREN DATEN</div><div class="mid">Die längsten Serien<br>am Stück</div><div class="duo"><div id="d0"><div class="n gold" id="n0">0</div><div class="l">Szenen in Folge<br><b style="color:#fff">mit</b> Tor</div></div><div id="d1"><div class="n" style="color:#8fa4d1" id="n1">0</div><div class="l">Szenen in Folge<br><b style="color:#fff">ohne</b> Tor</div></div></div><div class="small" id="s5b" style="margin-top:40px;opacity:0">Auch bei 73 % gibt es<br>richtige Pechsträhnen.</div></div>
+<div class="scene" id="s6"><div class="big">Ab wie viel %<br>ist es für dich<br>„sicher“? 👇</div><div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽📊</div><div class="small" style="margin-top:70px;font-size:31px">Prozent = Anteil der Szenen, in denen bis zum Abpfiff<br>noch ein Tor fiel. 11.610 Live-Spielszenen in zeitlicher<br>Reihenfolge, meist untere Ligen, 5.9.–10.10.2026,<br>eigene Auswertung</div></div>
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=31;
+const S=[["s1",0,3.5],["s2",3.5,9],["s3",9,14.5],["s4",14.5,20.5],["s5",20.5,26],["s6",26,31]];
+const CAP=[[0,3.5,"73 Prozent. Klingt nach einer sicheren Sache, oder?"],[3.5,9,"In 73 % der Szenen fiel noch ein Tor. Heißt aber auch: in 27 % eben nicht."],[9,14.5,"Bei zehn Szenen sind das im Schnitt drei ohne Tor."],[14.5,20.5,"Und fast jeder dritte Block war schlimmer: vier oder mehr ohne Tor!"],[20.5,26,"Rekord: 41-mal am Stück ein Tor – aber auch 8-mal am Stück keins."],[26,31,"Ab wie viel Prozent ist es für dich sicher? Schreib es in die Kommentare!"]];
+// 10 cells: avg block (7/3) and a bad block (5/5)
+const G3=[1,1,0,1,1,1,0,1,1,0], G4=[1,0,0,1,0,1,1,0,1,0];
+const mk=(id,a)=>{const el=document.getElementById(id);a.forEach((v,i)=>el.insertAdjacentHTML("beforeend",`<div class="cell ${v?"y":"n"}" id="${id}c${i}">${v?"⚽":"✕"}</div>`))};
+mk("grid",G3);mk("grid4",G4);
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1080)+"px";
+ for(const [id,a,b] of S){const el=document.getElementById(id);let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.35),clamp((b-t)/.3));if(id==="s6")o=clamp((t-a)/.35)}
+  el.style.opacity=o;const k=ease((t-a)/.5);el.style.transform=`translateY(${(1-k)*60}px) scale(${.96+.04*k})`}
+ const h=ease((t-.1)/.6);document.getElementById("hook").style.transform=`scale(${1.4-.4*h})`;
+ document.getElementById("hook2").style.opacity=clamp((t-1.4)/.4);
+ const k=ease((t-4.2)/1.6);document.getElementById("arc").setAttribute("stroke-dasharray",`${1319.5*0.728*k} 1320`);document.getElementById("pct").textContent=Math.round(73*k)+" %";
+ const v=ease((t-6.4)/.35);const e=document.getElementById("v2");e.style.opacity=v;e.style.transform=`scale(${1.3-.3*v})`;
+ G3.forEach((_,i)=>{const kk=ease((t-9.8-i*.22)/.3);const c=document.getElementById("gridc"+i);c.style.opacity=kk;c.style.transform=`scale(${.6+.4*kk})`});
+ document.getElementById("leg3").style.opacity=clamp((t-12.2)/.4);
+ G4.forEach((_,i)=>{const kk=ease((t-15.2-i*.22)/.3);const c=document.getElementById("grid4c"+i);c.style.opacity=kk;c.style.transform=`scale(${.6+.4*kk})`});
+ document.getElementById("s4b").style.opacity=clamp((t-17.6)/.4);
+ for(let i=0;i<2;i++){const kk=ease((t-21.2-i*1.2)/.5);document.getElementById("d"+i).style.opacity=kk;document.getElementById("n"+i).textContent=Math.round([41,8][i]*ease((t-21.3-i*1.2)/1.2))}
+ document.getElementById("s5b").style.opacity=clamp((t-23.8)/.4);
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>
