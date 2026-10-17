@@ -21,7 +21,7 @@ Premium tiers (all in `worker/src/index.js`):
 
 | Tier | Rule | Stake |
 |---|---|---|
-| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O1.5 0.80, O0.5 0.75); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1) |
+| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
@@ -57,6 +57,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   furthest into the game (seen: 11 at 90'+, then 79', 75', 74', 66'). Cards at minute ~60 are
   usually missing, so the live check rarely runs; results still settle because matches show up
   near the end. Do **not** log the worker in with the owner's VIP account: the InPlayFlux Membership Agreement forbids bots/scraping and shared access (account ban without refund); the owner decided 2026-10-17 to take no risk. The 2-minute check uses API-Football instead (official API, own key).
+- **Half-time cards** ("Target: HT Goal", strategies "Iy gol (Imported)" / "HT over 0.5", minute 1–20) bet
+  on a goal before the break. The worker's parser returns `halfTime` without a line (never scored or
+  posted), and `scripts/goal_drivers.py` `load` drops them for all models (they had polluted O0.5/O1.5).
+- New exports: `python3 scripts/normalize_export.py RAW.csv --check-against data/<previous>.csv --write`.
 - **CSV exports** from InPlayFlux: since 10-06 the date comes as `="DD/MM/YYYY, hh:mm:ss"`,
   split into two columns by the comma, and **one hour early**. Normalize to
   `="YYYY-MM-DD hh:mm:ss"`, +1 h (verify the shift against the previous export's overlap),
@@ -158,6 +162,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-17: recalibration with the 10-17 export (12,582 signals, half-time cards excluded), report
+  `reports/2026-10-17-recalibration.md`. Unseen 11.–17.10.: O2.5 81.9 % (182), O0.5 78.3 % (83), O1.5 70.0 % (30)
+  → O1.5 premium/Half-Risiko off (`LINES_OFF`); no O3.5 cards since 10.10.; half-time cards ignored.
+
 - 2026-10-17: unchecked High Confidence posts no longer carry "· ohne Live-Prüfung" in the header (owner's
   request; with no live source it was on every post). The reason is still logged (`premium:fwd` `unchecked`).
 
@@ -231,7 +239,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-16)
+## Open items (as of 2026-10-17)
+
+- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: InPlayFlux sent no
+  O3.5 cards 11.–17.10.; check whether the strategy was dropped. O2.5 filter barely beats the raw O2.5
+  rate on the new days (81.9 vs 81.6 %).
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
   channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
