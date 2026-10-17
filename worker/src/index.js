@@ -1392,6 +1392,125 @@ async function listResults(env, sinceMs) {
   return unique.reverse();
 }
 
+// --- Fill "unclear" (void) results from an InPlayFlux CSV export ---
+// With the guest feed (~15 matches) many tips are never seen at the end and
+// settle as "void" after 4 h. The export knows the outcome of every card, so
+// the owner uploads it in the admin panel and void results get the real one.
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else q = false;
+      } else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => r.length > 1);
+}
+
+// One entry per decided card: time (naive, as written in the export), teams,
+// target line, result. Raw exports (date split into two columns, one hour
+// early) and normalized ones both work: matching allows a few hours of offset.
+function exportCards(text) {
+  const rows = parseCsv(text.replace(/^﻿/, ""));
+  if (rows.length < 2) return [];
+  const head = rows[0].map((h) => h.trim());
+  const col = (re) => head.findIndex((h) => re.test(h));
+  const ix = {
+    match: col(/^Maç/), score: col(/^Skor/), target: col(/^Hedef/),
+    result: col(/^Sonuç \(Result\)/), resultMin: col(/^Sonuç Dk/),
+  };
+  if (Object.values(ix).some((v) => v < 0)) return [];
+  const clean = (v) => String(v || "").replace(/[="]/g, "").trim();
+  const cards = [];
+  for (let r of rows.slice(1)) {
+    if (r.length === head.length + 1) r = [r[0] + "," + r[1]].concat(r.slice(2));
+    if (r.length !== head.length) continue;
+    const d = clean(r[0]);
+    let m = d.match(/^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)/);
+    let t = m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : null;
+    if (!m && (m = d.match(/^(\d\d)\/(\d\d)\/(\d{4}),? (\d\d):(\d\d)/))) t = Date.UTC(+m[3], m[2] - 1, +m[1], +m[4], +m[5]);
+    const teams = clean(r[ix.match]).split(/\s+vs\.?\s+/i);
+    const res = r[ix.result];
+    const won = /won/i.test(res) ? true : /lost/i.test(res) ? false : null;
+    if (t == null || teams.length !== 2 || won == null) continue;
+    const target = clean(r[ix.target]);
+    if (/\b(HT|IY|İY|1st half)\b/i.test(target)) continue;
+    let line = null;
+    const o = target.match(/Over\s*(\d+(?:\.5)?)/i);
+    if (o) line = Number(o[1]);
+    else if (/goal/i.test(target)) {
+      const s = clean(r[ix.score]).match(/(\d+)\s*-\s*(\d+)/);
+      if (s) line = Number(s[1]) + Number(s[2]) + 0.5;
+    }
+    if (line == null) continue;
+    cards.push({ t, home: normTeam(teams[0]), away: normTeam(teams[1]), line, won, minute: num(clean(r[ix.resultMin])) });
+  }
+  return cards;
+}
+
+const FILL_WINDOW_MS = 6 * 60 * 60 * 1000; // card time vs posting time (time zone + export shift)
+
+// Outcome of a void tip from the export cards of the same match, or null.
+function outcomeFromCards(rec, cards) {
+  const posted = Date.parse(rec.postedAt);
+  const same = cards.filter((c) => c.home === normTeam(rec.home) && c.away === normTeam(rec.away) &&
+    Math.abs(c.t - posted) <= FILL_WINDOW_MS);
+  const pick = (list) => {
+    if (!list.length || list.some((c) => c.won !== list[0].won)) return null; // none or contradicting
+    const mins = list.map((c) => c.minute).filter((x) => x != null);
+    return { won: list[0].won, minute: mins.length ? Math.min(...mins) : null };
+  };
+  if (rec.tier !== "under") {
+    const o = pick(same.filter((c) => c.line === rec.line));
+    return o && { result: o.won ? "won" : "lost", resultMinute: o.won ? o.minute : null };
+  }
+  // Under 3.5 (from an O2.5 card at 2 goals): lost only if 4+ goals.
+  const o35 = pick(same.filter((c) => c.line === 3.5));
+  if (o35) return { result: o35.won ? "lost" : "won", resultMinute: o35.won ? o35.minute : null };
+  const o25 = pick(same.filter((c) => c.line === 2.5));
+  if (o25 && !o25.won) return { result: "won", resultMinute: null };
+  return null; // 3rd goal fell, 4th unknown
+}
+
+async function fillUnclear(env, text, apply) {
+  const cards = exportCards(text);
+  if (!cards.length) return { error: "Keine Karten in der Datei gefunden (InPlayFlux-CSV-Export?)." };
+  const voids = [];
+  let cursor;
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: "result:", cursor });
+    for (const key of list.keys) if (key.metadata && key.metadata.result === "void") voids.push(key);
+    cursor = list.list_complete ? undefined : list.cursor;
+  } while (cursor);
+  const filled = [];
+  let missing = 0;
+  for (const key of voids) {
+    const o = outcomeFromCards(key.metadata, cards);
+    if (!o) { missing++; continue; }
+    filled.push({ home: key.metadata.home, away: key.metadata.away, tier: key.metadata.tier, line: key.metadata.line, ...o });
+    if (!apply) continue;
+    const raw = await env.ACCESS_KV.get(key.name);
+    if (!raw) continue;
+    const rec = { ...JSON.parse(raw), ...o, filledFrom: "csv" };
+    if (rec.betPlaced) rec.profit = Math.round((o.result === "won" ? rec.units * (rec.quote - 1) : -rec.units) * 100) / 100;
+    await env.ACCESS_KV.put(key.name, JSON.stringify(rec), {
+      ...(key.expiration ? { expiration: key.expiration } : {}),
+      metadata: resultMeta(rec),
+    });
+  }
+  return { cards: cards.length, voids: voids.length, filled, missing, applied: !!apply };
+}
+
 function summarize(rows) {
   const decided = rows.filter((r) => r.result === "won" || r.result === "lost");
   const tally = (list) => ({ n: list.length, won: list.filter((r) => r.result === "won").length });
@@ -1836,6 +1955,11 @@ async function handleAdminPage() {
   <button id="res7-btn">Letzte 7 Tage</button>
   <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
   <div id="res-out" style="margin-top:10px;"></div>
+  <h4 style="margin:16px 0 6px;">Unklare Ergebnisse nachtragen</h4>
+  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 8px;">InPlayFlux-CSV-Export auswählen (roh oder bearbeitet). Erst Vorschau, dann Übernehmen. Nur Tipps mit „unklar“ werden geändert.</p>
+  <input type="file" id="fill-file" accept=".csv,text/csv">
+  <div style="margin-top:8px;"><button id="fill-prev-btn">Vorschau</button><button id="fill-apply-btn" style="margin-left:6px;">Übernehmen</button></div>
+  <div class="out" id="fill-out" style="margin-top:8px;"></div>
 </section>
 
 <section>
@@ -2260,6 +2384,27 @@ document.getElementById('u35-csv-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+async function fillUnclear(apply) {
+  const out = document.getElementById('fill-out');
+  const file = document.getElementById('fill-file').files[0];
+  if (!file) { out.textContent = 'Bitte zuerst die CSV-Datei auswählen.'; return; }
+  out.textContent = apply ? 'Trage nach …' : 'Prüfe …';
+  try {
+    const r = await fetch('/admin/api/fill-unclear' + (apply ? '?apply=1' : ''), {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + pw(), 'Content-Type': 'text/csv' }, body: await file.text()
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    const won = d.filled.filter(x => x.result === 'won').length;
+    let html = '<div>' + d.cards + ' Karten in der Datei · ' + d.voids + ' unklare Tipps · <b>' + d.filled.length + (d.applied ? ' nachgetragen' : ' gefunden') + '</b> (' + won + ' Treffer, ' + (d.filled.length - won) + ' verloren) · ' + d.missing + ' nicht in der Datei</div>';
+    html += d.filled.slice(0, 60).map(x => '<div style="font-size:0.8rem;">' + (x.result === 'won' ? '✅ ' : '❌ ') + esc(x.home) + ' – ' + esc(x.away) + ' · ' + (x.tier === 'under' ? 'U' : 'O') + esc(x.line) + (x.resultMinute != null ? ' · Tor ' + esc(x.resultMinute) + "'" : '') + '</div>').join('');
+    if (d.applied) html += '<div style="margin-top:6px;">Fertig. Ergebnis-Seite zeigt es in max. 5 Minuten.</div>';
+    else if (d.filled.length) html += '<div style="margin-top:6px;">Passt das? Dann auf „Übernehmen“ tippen.</div>';
+    out.innerHTML = html;
+  } catch (e) { out.textContent = e.message; }
+}
+document.getElementById('fill-prev-btn').addEventListener('click', () => fillUnclear(false));
+document.getElementById('fill-apply-btn').addEventListener('click', () => fillUnclear(true));
 document.getElementById('res7-btn').addEventListener('click', () => loadResults(7));
 document.getElementById('res30-btn').addEventListener('click', () => loadResults(30));
 
@@ -2645,6 +2790,12 @@ export default {
         return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/csv; charset=utf-8" } });
       }
       return jsonResponse({ days, summary: u35Summary(rows), rows: rows.slice(0, 200) });
+    }
+
+    if (url.pathname === "/admin/api/fill-unclear" && request.method === "POST") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const res = await fillUnclear(env, await request.text(), url.searchParams.get("apply") === "1");
+      return jsonResponse(res, res.error ? 400 : 200);
     }
 
     if (url.pathname === "/admin/api/results" && request.method === "GET") {
