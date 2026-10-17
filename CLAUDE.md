@@ -158,6 +158,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-17: API-Football free account was suspended within minutes (free plans are blocked on shared IPs
+  such as Cloudflare Workers; a paid plan, ~19 $/month, lifts it). Owner chose **no live check** for now and
+  removes the `APIFOOTBALL_KEY` secret (with the key set but the account blocked, cards wait 2 min and then
+  fail over to unchecked). Code stays in place; re-adding the key on a paid plan re-enables the check.
 - 2026-10-17: API-Football as second live source for the 2-minute check (goal / red card / minute only),
   active once the owner sets the Cloudflare secret `APIFOOTBALL_KEY`. No VIP login at InPlayFlux (ToS).
   The owner was also told that forwarding InPlayFlux card text to paying subscribers may need their
