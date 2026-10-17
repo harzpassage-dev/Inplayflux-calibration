@@ -158,6 +158,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-17: unchecked High Confidence posts no longer carry "· ohne Live-Prüfung" in the header (owner's
+  request; with no live source it was on every post). The reason is still logged (`premium:fwd` `unchecked`).
+
 - 2026-10-17: API-Football free account was suspended within minutes (free plans are blocked on shared IPs
   such as Cloudflare Workers; a paid plan, ~19 $/month, lifts it). Owner chose **no live check** for now and
   removes the `APIFOOTBALL_KEY` secret (with the key set but the account blocked, cards wait 2 min and then
