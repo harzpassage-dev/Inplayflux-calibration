@@ -44,7 +44,10 @@ def load(paths):
     df["Skor"] = df["Skor"].astype(str).str.strip('="')
     df = df.drop_duplicates(subset=["Tarih", "Maç", "Strateji", "Sinyal Dk"]).reset_index(drop=True)
     df["won"] = df["Sonuç"].map(lambda s: 1 if "✅" in str(s) else (0 if "❌" in str(s) else np.nan))
-    return df[df.won.notna()].copy()
+    # Half-time cards ("HT Goal" target, "Iy gol" / "HT over" strategies) bet on a goal before the
+    # break, a different market; the worker ignores them, so they stay out of every model.
+    ht = df["Hedef"].astype(str).str.match(r"\s*HT\b") | df["Strateji"].astype(str).str.contains(r"Iy gol|^\s*HT\s", regex=True)
+    return df[df.won.notna() & ~ht].copy()
 
 
 def features(df):
