@@ -241,8 +241,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Open items (as of 2026-10-17)
 
-- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: InPlayFlux sent no
-  O3.5 cards 11.–17.10.; check whether the strategy was dropped. O2.5 filter barely beats the raw O2.5
+- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: no cards 11.–17.10.
+  because the owner's O3.5 strategy was switched off by mistake; re-enabled 17.10. evening. The O3.5
+  model is unchanged (CV 78.8 % at 0.75, n=934, no unseen-day test yet) – check it on the next export. O2.5 filter barely beats the raw O2.5
   rate on the new days (81.9 vs 81.6 %).
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
