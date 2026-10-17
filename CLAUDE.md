@@ -162,6 +162,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   such as Cloudflare Workers; a paid plan, ~19 $/month, lifts it). Owner chose **no live check** for now and
   removes the `APIFOOTBALL_KEY` secret (with the key set but the account blocked, cards wait 2 min and then
   fail over to unchecked). Code stays in place; re-adding the key on a paid plan re-enables the check.
+  Highlightly (RapidAPI "Football Highlights API", free 100/day) was tested 17.10.: works from a datacenter
+  IP, has live clock/score/events, but covers mostly top tiers (Poland only Ekstraklasa/I Liga, Italy only
+  Serie A/B, Germany up to 3. Liga + one Oberliga), so most InPlayFlux cards (Polish III/IV Liga, Czech 4.
+  Liga, Serie D, Kolmonen) would not be found and would only be delayed. Not built; owner stays without
+  live check. API-Football (paid) is the only checked option with lower-league coverage.
 - 2026-10-17: API-Football as second live source for the 2-minute check (goal / red card / minute only),
   active once the owner sets the Cloudflare secret `APIFOOTBALL_KEY`. No VIP login at InPlayFlux (ToS).
   The owner was also told that forwarding InPlayFlux card text to paying subscribers may need their
