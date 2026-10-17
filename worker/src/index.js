@@ -329,6 +329,55 @@ const CONFIRM_GIVE_UP_MS = 4 * 60 * 1000; // match not found in the feed for thi
 const GUEST_FEED_MAX = 20;
 const GUEST_FEED_REASON = "Spiel nicht in der Gast-Vorschau des Live-Feeds";
 const isGuestFeed = (feed) => Array.isArray(feed) && feed.length <= GUEST_FEED_MAX;
+
+// Second source for the 2-minute check while InPlayFlux is only a guest preview:
+// API-Football (api-sports.io), an official API with its own key (Cloudflare
+// secret APIFOOTBALL_KEY; free plan 100 calls/day, one call per minute only while
+// cards wait). It has minute, score and red cards for nearly all leagues, but no
+// shots on target, radar or market line, so it only checks "no goal, no red card,
+// not too late". Without the key cards are posted unchecked as before.
+const APIFOOTBALL_LIVE_URL = "https://v3.football.api-sports.io/fixtures?live=all";
+
+async function fetchApiFootballLive(env) {
+  if (!env.APIFOOTBALL_KEY) return null;
+  try {
+    const resp = await fetch(APIFOOTBALL_LIVE_URL, {
+      headers: { "x-apisports-key": env.APIFOOTBALL_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    // Quota or key problems come back as HTTP 200 with an "errors" object.
+    const errors = data && data.errors;
+    if (!data || !Array.isArray(data.response) || (errors && Object.keys(errors).length)) return null;
+    return data.response.map((f) => {
+      const gh = num(f.goals && f.goals.home) || 0;
+      const ga = num(f.goals && f.goals.away) || 0;
+      const events = Array.isArray(f.events) ? f.events : null;
+      return {
+        h: f.teams && f.teams.home && f.teams.home.name,
+        a: f.teams && f.teams.away && f.teams.away.name,
+        minute: num(f.fixture && f.fixture.status && f.fixture.status.elapsed),
+        goals: gh + ga,
+        score: `${gh}-${ga}`,
+        redCards: events ? events.filter((e) => e.type === "Card" && /red/i.test(e.detail || "")).length : null,
+      };
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+// The checks of confirmLive that API-Football can answer.
+function confirmBasic(item, m) {
+  const goalsAtSignal = item.parsed.targetLine - 0.5;
+  const live = { source: "api-football", minute: m.minute, score: m.score, redCards: m.redCards };
+  if (m.minute == null) return { ok: false, unknown: true, live };
+  if (m.goals > goalsAtSignal) return { ok: false, reason: `Tor schon gefallen (${m.score})`, live };
+  if (m.redCards > 0) return { ok: false, reason: "Rote Karte", live };
+  if (m.minute >= RISK_MINUTE) return { ok: false, reason: `zu spät (${m.minute}')`, live };
+  return { ok: true, live };
+}
 const FEED_URL = "https://inplayflux.com/maclarv8/GETAllMatches.php?inplay=inplay&v=";
 const RISK_MINUTE = 70;
 // The model docks every minute, so re-scoring at the later live minute pushed
@@ -1011,9 +1060,9 @@ async function runMinuteJobs(env) {
 const RUN_LOCK_KEY = "lock:minute";
 const RUN_LOCK_MS = 110 * 1000;
 
-async function postUnchecked(env, item, reason) {
+async function postUnchecked(env, item, reason, label) {
   const mq = minQuote(item.proba);
-  const label = `🔥 High Confidence (${Math.round(item.proba * 100)}%) · ohne Live-Prüfung`;
+  label = label || `🔥 High Confidence (${Math.round(item.proba * 100)}%) · ohne Live-Prüfung`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n\n" +
       stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds));
   await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
@@ -1032,8 +1081,27 @@ async function processPendingPremium(env, due, feed) {
   const now = Date.now();
 
   const done = new Set();
+  let apiLive; // fetched at most once per run, only when a card needs it
   for (const item of due) {
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
+    if (!match && env.APIFOOTBALL_KEY && (!Array.isArray(feed) || isGuestFeed(feed))) {
+      if (apiLive === undefined) apiLive = await fetchApiFootballLive(env);
+      const m = apiLive ? findMatch(apiLive, item.parsed.homeTeam, item.parsed.awayTeam) : null;
+      const res = m ? confirmBasic(item, m) : null;
+      if (res && res.ok) {
+        done.add(item.id);
+        await postUnchecked(env, item, "nur Tor/Rote Karte geprüft (API-Football)",
+          `🔥 High Confidence (${Math.round(item.proba * 100)}%) · live geprüft: kein Tor, keine Rote Karte`);
+      } else if (res && !res.unknown) {
+        done.add(item.id);
+        await logConfirmation(env, item, res, "premium:rej");
+      } else if (!apiLive || now - item.receivedAt >= CONFIRM_GIVE_UP_MS) {
+        // API down/quota used up, or the match is not found there either.
+        done.add(item.id);
+        await postUnchecked(env, item, apiLive ? "Spiel weder im Live-Feed noch bei API-Football" : "API-Football nicht erreichbar");
+      }
+      continue;
+    }
     if (!match) {
       // A card that cleared the model must never be lost to an infrastructure
       // problem: with the feed down post it right away, with the match not
@@ -2593,7 +2661,7 @@ export default {
             // The quote at signal time is logged so posted bets can be priced later.
             if (await claimSignal(env, parsed)) {
               const snap = await signalSnapshotFor(parsed);
-              if (!snap.match && snap.guestFeed) {
+              if (!snap.match && snap.guestFeed && !env.APIFOOTBALL_KEY) {
                 // The live check could not find the match in 2 minutes either:
                 // post now, while the quote is still the one from the card.
                 await postUnchecked(env, premiumItem(channelMsg.text, parsed, score, snap.odds), GUEST_FEED_REASON);
