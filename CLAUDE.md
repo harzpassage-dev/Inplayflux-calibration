@@ -88,6 +88,15 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   `moneybag-access` from this branch (root `/worker`, `npx wrangler deploy`) about a minute
   after each push. Red checks "Workers Builds: inplayflux-calibration / inplayflux-calibr"
   belong to deleted projects and are harmless.
+- Sessions often get their own branch (e.g. `claude/video-spieler-auswechseln-uzcyn5`): work there,
+  open a PR **into `claude/page-radar-signal-analysis-bdok65`** and merge it when the owner wants it
+  live (the iPad merge box is hard to find; Claude merged #2–#6 on request). After a merge, reset the
+  session branch onto the base before new work. On non-production branches "Workers Builds:
+  moneybag-access" is a Cloudflare **preview** build that always fails (also for docs-only commits);
+  it does not block merging or the production deploy – comment once per PR, nothing else.
+- Never post to Telegram from the webhook path: parallel webhook runs race on KV (no atomic
+  check-and-set). The webhook only queues (`premium:pending`); the minute cron posts under its run lock
+  and dedupes by `tipKey(tier, home, away, line)`.
 - Before every push: `node --check worker/src/index.js` and
   `cd worker && npx wrangler deploy --dry-run`. Test changes with a local Node harness that
   imports the worker and mocks KV, `fetch` (feed + Telegram) and `Date.now`; render the admin
@@ -246,26 +255,32 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-17)
+## Open items (as of 2026-10-17 evening)
 
 - O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: no cards 11.–17.10.
   because the owner's O3.5 strategy was switched off by mistake; re-enabled 17.10. evening. The O3.5
   model is unchanged (CV 78.8 % at 0.75, n=934, no unseen-day test yet) – check it on the next export. O2.5 filter barely beats the raw O2.5
   rate on the new days (81.9 vs 81.6 %).
 
-- Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
-  channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
+- Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
+  (W) – SC Ell (W) posts (17.10.) in the free and premium channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
   under the article (never on TikTok).
 - Check the first auto-marked premium posts (WIN/LOST edit, 17291bb). If a post stays
   unmarked: the tracked entry has no `msgId` (posted before the change) or Telegram refused the
   edit (bot must stay admin with "edit messages" right in the premium channel). Older posts
   are still marked by hand.
-- Watch for double posts after the run-lock fix (c16ea4f); if one appears, check whether two
-  cron invocations started at the same moment (KV has no atomic lock).
+- Watch for double posts after the 17.10. fix (webhook only queues, `tipKey` dedupe, `free:sent:*`).
+  If one appears: same card from several strategies → check `processPendingPremium`; two cron runs at
+  once → run lock (`lock:minute`). Known leftover: parallel webhook writes to `premium:pending` can
+  drop a card (one KV key, read-modify-write); a per-card key (`pending:<id>` + list) would fix it.
+- Live check: none for now (guest feed ~15 matches; API-Football free plan suspended on Cloudflare IPs;
+  Highlightly lacks lower leagues). Re-enable by a paid API-Football plan + secret `APIFOOTBALL_KEY`
+  (code ready). Owner was offered an email draft to InPlayFlux (API access / partnership, also about
+  forwarding card text to paying subscribers) – not known whether it was sent.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute: owner uploads videos 1–7 (one per evening, with sound in the app), sets
+- TikTok @torminute (videos 1–7 ready, see table above): owner uploads videos 1–7 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
