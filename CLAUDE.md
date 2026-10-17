@@ -171,6 +171,13 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-17 night: admin "Unklare Ergebnisse nachtragen": the owner uploads an InPlayFlux CSV export (raw or
+  normalized), `/admin/api/fill-unclear` (preview, `?apply=1` writes) gives void results (guest feed never showed
+  the end) the export's outcome: same teams, same line, card time within 6 h of posting (`FILL_WINDOW_MS`, covers
+  time zone + export shift), contradicting cards skipped; Under 3.5 from an O3.5 card, or won if the O2.5 card lost.
+  Records get `filledFrom: "csv"`; the Telegram post is not re-marked. Test with the 10-17 export: 25 of 31 voids
+  found, 15 won / 10 lost (60 %) – voids lean to losses, so hit rates without filling look too good.
+
 - 2026-10-17 evening: triple posts (Swift Hesperange (W) – SC Ell (W), O3.5, three strategies at once). Cause: the
   "post at once" path posted from the webhook, so parallel webhook runs all got past the KV claim. Now the
   webhook only queues (guest-feed misses as `fast`, posted by the next minute run), `processPendingPremium`
