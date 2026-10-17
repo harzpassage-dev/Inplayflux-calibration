@@ -1013,9 +1013,14 @@ function premiumItem(text, parsed, score, signalOdds) {
   return { id: randomToken().slice(0, 12), text, parsed, proba: score.proba, signalOdds, receivedAt: Date.now() };
 }
 
-async function queuePremium(env, text, parsed, score, signalOdds) {
+// Same tip = same tier, match and line (normalised team names).
+function tipKey(tier, home, away, line) {
+  return `${tier}|${normTeam(home)}|${normTeam(away)}|${line}`;
+}
+
+async function queuePremium(env, text, parsed, score, signalOdds, fast = false) {
   const pending = await readPending(env);
-  pending.push(premiumItem(text, parsed, score, signalOdds));
+  pending.push({ ...premiumItem(text, parsed, score, signalOdds), fast });
   await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(pending), { expirationTtl: 24 * 60 * 60 });
 }
 
@@ -1052,7 +1057,7 @@ async function runMinuteJobs(env) {
   const [pending, tracked, ...u35Lists] = await Promise.all([
     readPending(env), readTracked(env), ...u35Keys.map((k) => readU35(env, k)),
   ]);
-  const due = pending.filter((p) => now - p.receivedAt >= CONFIRM_DELAY_MS);
+  const due = pending.filter((p) => p.fast || now - p.receivedAt >= CONFIRM_DELAY_MS);
   const u35Open = u35Lists.some((l) => l.some((e) => u35Status(e, now) === "open"));
   if (!due.length && !tracked.length && !u35Open) return; // the common case: KV reads only, no fetch, no writes
   // A slow feed can make one minute's run overlap the next. Both would then
@@ -1098,7 +1103,17 @@ async function processPendingPremium(env, due, feed) {
 
   const done = new Set();
   let apiLive; // fetched at most once per run, only when a card needs it
+  // One post per match and line: skip cards whose tip is already open or was
+  // handled earlier in this run (several strategies send the same match).
+  const seen = new Set((await readTracked(env)).filter((t) => t.tier === "premium").map((t) => tipKey(t.tier, t.home, t.away, t.line)));
   for (const item of due) {
+    const k = tipKey("premium", item.parsed.homeTeam, item.parsed.awayTeam, item.parsed.targetLine);
+    if (seen.has(k)) {
+      done.add(item.id);
+      await logConfirmation(env, item, { reason: "doppelt (gleiches Spiel und gleiche Linie schon gepostet)" }, "premium:rej");
+      continue;
+    }
+    seen.add(k);
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
     if (!match && env.APIFOOTBALL_KEY && (!Array.isArray(feed) || isGuestFeed(feed))) {
       if (apiLive === undefined) apiLive = await fetchApiFootballLive(env);
@@ -1225,7 +1240,13 @@ async function settleTracked(env, feed) {
   const now = Date.now();
   let changed = false;
   const keep = [];
+  const settled = new Set(); // duplicates of a tip settled in this run are dropped silently
   for (const t of open) {
+    const k = tipKey(t.tier, t.home, t.away, t.line);
+    if (settled.has(k)) {
+      changed = true;
+      continue;
+    }
     const m = findTrackedMatch(feed, t);
     let result = null;
     if (m) {
@@ -1255,6 +1276,7 @@ async function settleTracked(env, feed) {
       result = "void";
     }
     if (result) {
+      settled.add(k);
       changed = true;
       await saveResult(env, t, result);
       try {
@@ -1468,7 +1490,11 @@ async function maybePostFree(env, t, result) {
   const key = `free:count:${new Date().toISOString().slice(0, 10)}`;
   const count = Number(await env.ACCESS_KV.get(key)) || 0;
   if (count >= FREE_PER_DAY) return;
+  // Never show the same tip twice in the free channel (17.10.: one tip posted three times).
+  const sentKey = `free:sent:${tipKey(t.tier, t.home, t.away, t.line)}`;
+  if (await env.ACCESS_KV.get(sentKey)) return;
   const sent = await sendTelegramMessage(env, freeChannel(env), freeSignalText(t, result, env));
+  if (sent) await env.ACCESS_KV.put(sentKey, "1", { expirationTtl: 2 * DAY_MS / 1000 });
   if (sent) await env.ACCESS_KV.put(key, String(count + 1), { expirationTtl: 2 * DAY_MS / 1000 });
 }
 
@@ -2677,13 +2703,13 @@ export default {
             // The quote at signal time is logged so posted bets can be priced later.
             if (await claimSignal(env, parsed)) {
               const snap = await signalSnapshotFor(parsed);
-              if (!snap.match && snap.guestFeed && !env.APIFOOTBALL_KEY) {
-                // The live check could not find the match in 2 minutes either:
-                // post now, while the quote is still the one from the card.
-                await postUnchecked(env, premiumItem(channelMsg.text, parsed, score, snap.odds), GUEST_FEED_REASON);
-              } else {
-                await queuePremium(env, channelMsg.text, parsed, score, snap.odds);
-              }
+              // A match missing from the guest preview cannot be checked in 2
+              // minutes either: mark it "fast" so the next minute run posts it.
+              // Posting stays in the cron (one run at a time): several InPlayFlux
+              // strategies send the same match within seconds, and parallel
+              // webhook runs got past the KV claim and posted it three times (17.10.).
+              const fast = !snap.match && snap.guestFeed && !env.APIFOOTBALL_KEY;
+              await queuePremium(env, channelMsg.text, parsed, score, snap.odds, fast);
             }
           } else if (
             RISK_ENABLED &&

@@ -162,6 +162,13 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-17 evening: triple posts (Swift Hesperange (W) – SC Ell (W), O3.5, three strategies at once). Cause: the
+  "post at once" path posted from the webhook, so parallel webhook runs all got past the KV claim. Now the
+  webhook only queues (guest-feed misses as `fast`, posted by the next minute run), `processPendingPremium`
+  skips a tip already open or seen in the run (`tipKey`), `settleTracked` settles duplicates once, and
+  `maybePostFree` posts a tip at most once (`free:sent:<tipKey>`). Known leftover: parallel writes to
+  `premium:pending` can drop a card (read-modify-write on one KV key); harmless for duplicates.
+
 - 2026-10-17: recalibration with the 10-17 export (12,582 signals, half-time cards excluded), report
   `reports/2026-10-17-recalibration.md`. Unseen 11.–17.10.: O2.5 81.9 % (182), O0.5 78.3 % (83), O1.5 70.0 % (30)
   → O1.5 premium/Half-Risiko off (`LINES_OFF`); no O3.5 cards since 10.10.; half-time cards ignored.
@@ -241,8 +248,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Open items (as of 2026-10-17)
 
-- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: InPlayFlux sent no
-  O3.5 cards 11.–17.10.; check whether the strategy was dropped. O2.5 filter barely beats the raw O2.5
+- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: no cards 11.–17.10.
+  because the owner's O3.5 strategy was switched off by mistake; re-enabled 17.10. evening. The O3.5
+  model is unchanged (CV 78.8 % at 0.75, n=934, no unseen-day test yet) – check it on the next export. O2.5 filter barely beats the raw O2.5
   rate on the new days (81.9 vs 81.6 %).
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) in the free and premium
