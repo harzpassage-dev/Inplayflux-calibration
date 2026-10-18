@@ -23,6 +23,7 @@ erwähnen – weder im Video noch in Beschreibung, Bio, Kommentaren oder Nachric
 | 5 | `tiktok-joker.mp4` | Der Joker kommt – fällt jetzt noch ein Tor? 🔄⚽ 4.459 Spiele ab Minute 60 ausgewertet. Wechselt dein Trainer zu spät? 👇 #fußball #fussball #statistik #auswechslung #joker #football | | | |
 | 6 | `tiktok-sicher.mp4` | 73 % – klingt sicher. Ist es das? 🎲⚽ 11.610 Spielszenen ausgewertet: auch bei 73 % gibt es Pechsträhnen. Ab wie viel % ist es für dich sicher? 👇 #fußball #fussball #statistik #wahrscheinlichkeit #mathe #football | | | |
 | 7 | `tiktok-frauen.mp4` | Frauen oder Männer – wer schießt mehr Tore? 👩⚽👨 6.700+ Live-Spiele aus aller Welt verglichen. Hättest du das gedacht? 👇 #fußball #frauenfußball #statistik #womensfootball #football | | | |
+| 8 | `tiktok-ecken.mp4` | Viele Ecken = viele Tore? 🚩⚽ 8.600+ Live-Spiele im Daten-Check. Zählst du beim Spiel die Ecken? 👇 #fußball #ecken #statistik #football #datencheck | | | |
 
 ## So lädst du hoch (iPad)
 
