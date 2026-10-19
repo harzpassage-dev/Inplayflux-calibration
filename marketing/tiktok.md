@@ -24,6 +24,7 @@ erwähnen – weder im Video noch in Beschreibung, Bio, Kommentaren oder Nachric
 | 6 | `tiktok-sicher.mp4` | 73 % – klingt sicher. Ist es das? 🎲⚽ 11.610 Spielszenen ausgewertet: auch bei 73 % gibt es Pechsträhnen. Ab wie viel % ist es für dich sicher? 👇 #fußball #fussball #statistik #wahrscheinlichkeit #mathe #football | | | |
 | 7 | `tiktok-frauen.mp4` | Frauen oder Männer – wer schießt mehr Tore? 👩⚽👨 6.700+ Live-Spiele aus aller Welt verglichen. Hättest du das gedacht? 👇 #fußball #frauenfußball #statistik #womensfootball #football | | | |
 | 8 | `tiktok-ecken.mp4` | Viele Ecken = viele Tore? 🚩⚽ 8.600+ Live-Spiele im Daten-Check. Zählst du beim Spiel die Ecken? 👇 #fußball #ecken #statistik #football #datencheck | | | |
+| 9 | `tiktok-trainer.mp4` | 3 Trainer-Sprüche im Daten-Check 📋⚽ „Die Null muss stehen“, „Das 2:0 ist das gefährlichste Ergebnis“, „Ein Spiel dauert 90 Minuten“ – stimmt das? Welchen Spruch checken wir als Nächstes? 👇 #fußball #trainer #statistik #football #datencheck | | | |
 
 ## So lädst du hoch (iPad)
 
