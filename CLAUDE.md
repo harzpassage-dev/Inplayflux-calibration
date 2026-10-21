@@ -173,6 +173,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-21: recalibration with the 10-21 export (13,237 signals, thresholds unchanged), badge
+  "Kalibriert: 21.10.2026 · 13.237 Signale", report `reports/2026-10-21-recalibration.md`, O3.5 scoreline /
+  HT-goal / O1.5 analysis in `scripts/o35_scoreline.py`.
+
 - 2026-10-21: Under 3.5 premium tips paused on the owner's request (`UNDER_ENABLED = false`) until the rule is
   recalculated; the `u35:*` shadow log keeps running; results page and weekly report label the tier
   "seit 21.10. pausiert". Re-enable only after a recalculation on the strict log (≥ 100 games).
@@ -272,12 +276,17 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-17 evening)
+## Open items (as of 2026-10-21)
 
-- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. O3.5: no cards 11.–17.10.
-  because the owner's O3.5 strategy was switched off by mistake; re-enabled 17.10. evening. The O3.5
-  model is unchanged (CV 78.8 % at 0.75, n=934, no unseen-day test yet) – check it on the next export. O2.5 filter barely beats the raw O2.5
-  rate on the new days (81.9 vs 81.6 %).
+- Recalibration 21.10. (`reports/2026-10-21-recalibration.md`, 13,237 signals). Unseen 17.–21.10.: O2.5
+  78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
+- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
+  simple rule minute ≤ 61 + pre-match line ≥ 2.75 gives 76.1 % (522, halves 80.9/73.0), unseen 75.8 % (91)
+  → borderline; offered to the owner as a 0.5-unit test tier (min. quote 1.32), not built without a yes.
+- O3.5 by score (`scripts/o35_scoreline.py`): 3:0/0:3 73 %, 2:1/1:2 69 %; 3:0/0:3 + min ≤ 63 + line ≥ 3
+  78.2 % (698). Score is not a model feature yet (unseen: 72.6 vs 67.5 %); candidate for the next export.
+- Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
+  ignoring HT cards.
 
 - Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
   (W) – SC Ell (W) posts (17.10.) in the free and premium channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
