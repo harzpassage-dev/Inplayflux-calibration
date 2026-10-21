@@ -24,7 +24,7 @@ Premium tiers (all in `worker/src/index.js`):
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
-| 🛡️ Under 3.5 ("mit Vorsicht setzen") | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
+| 🛡️ Under 3.5 ("mit Vorsicht setzen", **paused** since 2026-10-21, `UNDER_ENABLED`; shadow log keeps running) | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
 
 Plus: free public channel **@MoneyBagAnalyst** (`FREE_CHANNEL_ID`, CTA `FREE_CTA_URL`): weekly report
 and the first 3 settled premium tips per day (won or lost, never picked by result, posted only
@@ -172,6 +172,10 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   with a question.
 
 ## Change log (latest first)
+
+- 2026-10-21: Under 3.5 premium tips paused on the owner's request (`UNDER_ENABLED = false`) until the rule is
+  recalculated; the `u35:*` shadow log keeps running; results page and weekly report label the tier
+  "seit 21.10. pausiert". Re-enable only after a recalculation on the strict log (≥ 100 games).
 
 - 2026-10-19: TikTok video 9 `marketing/tiktok-trainer.mp4` (three coach sayings checked against the data).
 

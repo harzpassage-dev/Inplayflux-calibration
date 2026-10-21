@@ -433,6 +433,9 @@ const UNITS_HALF = 0.5;
 // Under 3.5 quote, so it must clear the minimum quote; at lower lines the
 // post asks to check the Under 3.5 quote at the bookmaker. Small stake;
 // re-check at >= 100 strict games.
+// Paused 2026-10-21 by the owner until the rule is recalculated; the shadow
+// log (logUnder35) keeps running so the new numbers can be computed.
+const UNDER_ENABLED = false;
 const UNDER_MAX_GOAL_POINTS = 0;
 const UNDER_MAX_LINE = 3.5;
 const UNDER_WR = 0.68;
@@ -637,6 +640,7 @@ function underQuoteLine(odds) {
 
 // Posts an Under 3.5 tip for an O2.5 card when the conditions above hold.
 async function maybePostUnder35(env, text, parsed, score) {
+  if (!UNDER_ENABLED) return false;
   if (parsed.targetLine !== 2.5 || (score && score.passes)) return false;
   const snap = await signalSnapshotFor(parsed);
   if (!snap.match) return false;
@@ -1544,7 +1548,7 @@ function weeklyReportText(sum, fromDate, toDate) {
     // Tiers without decided tips that week (e.g. the switched-off Risiko) are left out.
     ...[
       ["🔥 High Confidence", sum.premium], ["🟠 Half-Risiko", sum.half], ["⚠️ Risiko (seit 13.10. abgeschaltet)", sum.risk],
-      ["🛡️ Under 3.5 (mit Vorsicht)", sum.under],
+      ["🛡️ Under 3.5 (seit 21.10. pausiert)", sum.under],
     ].filter(([, t]) => t && t.n).map(([label, t]) => `${label}: ${pctText(t)}`),
     `Gesamt: ${pctText(sum.all)}`,
   ];
@@ -1626,7 +1630,7 @@ const RESULTS_PAGE_URL = "https://moneybag-signals.com/ergebnisse";
 const RESULTS_CACHE_S = 300;
 const RESULTS_PAGE_ROWS = 150;
 const RESULT_TIERS = [
-  ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko (seit 13.10. abgeschaltet)"], ["under", "🛡️ Under 3.5 (mit Vorsicht)"],
+  ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko (seit 13.10. abgeschaltet)"], ["under", "🛡️ Under 3.5 (seit 21.10. pausiert)"],
 ];
 
 function htmlEsc(v) {
