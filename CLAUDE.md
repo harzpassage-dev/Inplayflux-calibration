@@ -120,7 +120,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   "https://moneybag-signals.com/?t=premium:pending"` must give 403; `curl -sI .../admin` must
   show `x-frame-options: DENY`. If the owner gets "Zu viele Fehlversuche", they just wait
   15 min (or delete `adminfail:<ip>` in KV). Recommended to them: admin password ≥ 16 chars.
-- Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`,
+- Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`, `?tier=o15`,
   `?target=free`) are marked TEST and are never tracked or logged. Admin "Bilanz-Grafik
   erstellen" draws the 7-day results as a 1080×1350 PNG in the browser.
 - Marketing rules: only verifiable numbers, backtests labelled, no gain promises, always

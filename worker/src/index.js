@@ -2004,6 +2004,8 @@ async function handleAdminPage() {
   <div class="out" id="test-under-out" style="margin-bottom:10px;"></div>
   <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
   <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
+  <button id="test-o15-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 1.5 senden</button>
+  <div class="out" id="test-o15-out" style="margin-bottom:10px;"></div>
   <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -2394,6 +2396,29 @@ document.getElementById('test-half-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+let o15Armed = false;
+document.getElementById('test-o15-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-o15-out');
+  const btn = document.getElementById('test-o15-btn');
+  if (!o15Armed) {
+    o15Armed = true;
+    btn.textContent = 'Wirklich senden? Nochmal tippen';
+    out.textContent = 'Der Test-Post geht an alle Abonnenten (deutlich als TEST markiert).';
+    setTimeout(() => { o15Armed = false; btn.textContent = 'Test Over 1.5 senden'; }, 8000);
+    return;
+  }
+  o15Armed = false;
+  btn.textContent = 'Test Over 1.5 senden';
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?tier=o15', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
+    out.textContent = (d.sent ? '✅ Gesendet. ' : '❌ Telegram hat nicht angenommen. ') +
+      (d.match ? 'Beispiel: ' + d.match + '.' : 'Beispielspiel (gerade kein passendes Live-Spiel mit 1 Tor).');
+  } catch (e) { out.textContent = e.message; }
+});
+
 function u35Part(label, x) {
   const p = v => v == null ? '–' : Math.round(v * 1000) / 10 + ' %';
   return '<tr><td>' + label + '</td><td>' + x.won + '/' + x.n + '<br><small>' + p(x.rate) + '</small></td><td>' + p(x.marketAvg) + '</td><td>' +
@@ -2745,6 +2770,40 @@ export default {
         }
         const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
         return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass });
+      }
+      if (url.searchParams.get("tier") === "o15") {
+        // Same layout as a real Over 1.5 Test post, on the live 1-goal match
+        // closest to minute 58 (or a sample match). Not tracked or logged.
+        let pick = null;
+        if (feedOk) {
+          const live = feed
+            .map((m) => ({ m, s: liveSnapshot(m) }))
+            .filter((x) => x.s.minute != null && x.s.minute >= 20 && x.s.minute <= 85 && x.s.goals === 1);
+          live.sort((a, b) => Math.abs(a.s.minute - 58) - Math.abs(b.s.minute - 58));
+          pick = live[0] || null;
+        }
+        const s = pick ? pick.s : { minute: 58, score: "1-0", radar: null, goallinePre: 3, redCards: 0 };
+        const odds = pick ? oddsSnapshot(pick.m) : null;
+        const pre = s.goallinePre;
+        const wouldPass = s.minute <= O15_MAX_MINUTE && pre != null && pre >= O15_MIN_LINE_PRE && s.redCards === 0;
+        matchInfo = pick ? `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})` : null;
+        text = [
+          "🧪 TEST – kein Tipp, bitte nicht setzen",
+          `🧪 Over 1.5 Test (Minute ${s.minute}' · Vor-Spiel-Linie ${pre != null ? String(pre).replace(".", ",") : "–"})`,
+          "",
+          pick ? `🏆 ${pick.m.l || ""}` : "🏆 Beispiel-Liga",
+          pick ? `⚽ ${pick.m.h} ${s.score} ${pick.m.a}` : "⚽ Heim FC 1-0 Gast FC (Beispiel)",
+          "🎯 Target: Over 1.5 Goals",
+          `📡 Radar X: ${s.radar != null ? s.radar : "–"}`,
+          odds ? `Quote: ${oddsText(odds)}` : null,
+          "",
+          "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.",
+          stakeAdvice(1.5, minQuote(O15_WR), UNITS_HALF, odds),
+          "",
+          `Echt gepostet wird nur bei Over-1.5-Karten bis Minute ${O15_MAX_MINUTE} mit Vor-Spiel-Linie ab 2,75. ${pick ? `Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.` : "Gerade kein passendes Live-Spiel mit 1 Tor, daher Beispielspiel."}`,
+        ].filter((x) => x != null).join("\n");
+        const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
+        return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass: pick ? wouldPass : null });
       }
       if (url.searchParams.get("tier") === "half") {
         // Same layout as a real Half-Risiko post, on the live match closest
