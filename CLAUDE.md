@@ -81,7 +81,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
    `worker/src/index.js`; recheck `RISK_WR`, `HALF_WR`; update the tool's `DEFAULT_CALIB`
    and the badge "📅 Kalibriert: …" in **both** `worker/public/index.html` and
    `tools/moneybag-analyst.html` (keep the two files identical).
-5. Write a dated German report in `reports/`.
+5. `python3 scripts/o35_scoreline.py data/*.csv`: O3.5 by score, half-time cards and the Over 1.5 test
+   rule on the new days (keep `O15_*` in the worker in line).
+6. Write a dated German report in `reports/` and update this file.
 
 ## Code conventions and checks
 
@@ -284,7 +286,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 - Recalibration 21.10. (`reports/2026-10-21-recalibration.md`, 13,237 signals). Unseen 17.–21.10.: O2.5
   78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
-- O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
+- O1.5 model tier (High Confidence / Half-Risiko) is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
   simple rule minute ≤ 61 + pre-match line ≥ 2.75 gives 76.1 % (522, halves 80.9/73.0), unseen 75.8 % (91)
   → borderline; owner said yes 21.10.: running as 🧪 Over 1.5 Test (0.5 units). Check it at ≥ 100 tips on
   `/ergebnisse`; switch off (`O15_TEST_ENABLED = false`) if it stays below ~72 %.
@@ -318,8 +320,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
-- Under 3.5: new rule since 16.10. rests on only 22–25 strict log games (± ~15 pp). Re-check
-  at ≥ 100 strict games (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
+- Under 3.5: **paused since 21.10.** (rule rested on only 22–25 strict log games, ± ~15 pp). Owner wants
+  it recalculated: needs the admin "Under 3.5 (still protokolliert)" CSV with ≥ 100 strict games (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
   lines below 3.5: the feed has no Under 3.5 quote there (it is lower than the main-line under,
   roughly 1.40–1.50 at line 3.0).
 - Market cut (60 %) is provisional: recalibrate from `market_proba` in the premium CSV export
