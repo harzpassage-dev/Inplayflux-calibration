@@ -425,6 +425,19 @@ const HALF_MIN_GOAL_POINTS = -7;
 // Recalibrated 2026-10-10 with the refit goal score: 65.0% (n=183).
 const HALF_WR = 0.65;
 const UNITS_HALF = 0.5;
+// "Over 1.5 Test" (since 2026-10-21, owner's call): the O1.5 model stays off
+// (LINES_OFF, 71% on the unseen days), but the simple rule minute <= 61 and
+// pre-match line >= 2.75 gave 76.1% (n=522, halves 80.9/73.0) and 75.8% on
+// the unseen days 17.-21.10. (n=91). Half stake, own tier in the results;
+// queued by the webhook, posted by the next minute run (no goal or red card
+// since the card if the match is in the feed). Re-check at >= 100 live tips.
+const O15_TEST_ENABLED = true;
+const O15_MAX_MINUTE = 61;
+const O15_MIN_LINE_PRE = 2.75;
+const O15_WR = 0.76;
+const o15TestRule = (parsed) => O15_TEST_ENABLED && parsed.targetLine === 1.5 &&
+  parsed.minute != null && parsed.minute <= O15_MAX_MINUTE &&
+  parsed.goallinePre != null && parsed.goallinePre >= O15_MIN_LINE_PRE;
 // "Under 3.5 – mit Vorsicht setzen": O2.5 cards (2 goals) that are not
 // premium and whose live goal score is low. Rule since 2026-10-16 from the
 // strict shadow log (11.-16.10., 85'+ rule): goal score <= 0 and live line
@@ -1014,7 +1027,7 @@ async function readPending(env) {
 }
 
 function premiumItem(text, parsed, score, signalOdds) {
-  return { id: randomToken().slice(0, 12), text, parsed, proba: score.proba, signalOdds, receivedAt: Date.now() };
+  return { id: randomToken().slice(0, 12), text, parsed, proba: score ? score.proba : null, signalOdds, receivedAt: Date.now() };
 }
 
 // Same tip = same tier, match and line (normalised team names).
@@ -1022,9 +1035,9 @@ function tipKey(tier, home, away, line) {
   return `${tier}|${normTeam(home)}|${normTeam(away)}|${line}`;
 }
 
-async function queuePremium(env, text, parsed, score, signalOdds, fast = false) {
+async function queuePremium(env, text, parsed, score, signalOdds, fast = false, tier = "premium") {
   const pending = await readPending(env);
-  pending.push({ ...premiumItem(text, parsed, score, signalOdds), fast });
+  pending.push({ ...premiumItem(text, parsed, score, signalOdds), fast, tier });
   await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(pending), { expirationTtl: 24 * 60 * 60 });
 }
 
@@ -1102,6 +1115,34 @@ async function postUnchecked(env, item, reason, label) {
   });
 }
 
+// Over 1.5 Test: posted at the next minute run. If the match is in the feed,
+// a goal or red card since the card rejects it; otherwise it is posted as is
+// (the guest feed rarely shows matches at minute ~60).
+async function postO15Test(env, item, match) {
+  const p = item.parsed;
+  let odds = item.signalOdds || null;
+  let live = null;
+  if (match) {
+    live = liveSnapshot(match);
+    odds = oddsSnapshot(match) || odds;
+    const reason = live.goals > p.targetLine - 0.5 ? `Tor schon gefallen (${live.score})` : live.redCards > 0 ? "Rote Karte" : null;
+    if (reason) return logConfirmation(env, item, { tier: "o15", reason, live }, "o15:rej");
+  }
+  const mq = minQuote(O15_WR);
+  const label = `🧪 Over 1.5 Test (Minute ${p.minute}' · Vor-Spiel-Linie ${String(p.goallinePre).replace(".", ",")}${match ? " · live: kein Tor, keine Rote Karte" : ""})`;
+  const post = await postPremium(env, buildPremiumMessage(item.text, label) +
+      (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
+      "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.\n" +
+      stakeAdvice(p.targetLine, mq, UNITS_HALF, odds));
+  await trackSignal(env, {
+    ...post,
+    tier: "o15", home: p.homeTeam, away: p.awayTeam, matchId: match ? match.id || null : null,
+    line: p.targetLine, minute: live && live.minute != null ? live.minute : p.minute, minQuote: mq, units: UNITS_HALF, odds,
+  });
+  await logPremiumForward(env, p, item.proba != null ? { proba: item.proba, threshold: null } : null, "o15:fwd", { signalOdds: item.signalOdds || null, postOdds: odds });
+  await logConfirmation(env, item, { tier: "o15", live, postOdds: odds }, "o15:ok");
+}
+
 async function processPendingPremium(env, due, feed) {
   const now = Date.now();
 
@@ -1109,15 +1150,21 @@ async function processPendingPremium(env, due, feed) {
   let apiLive; // fetched at most once per run, only when a card needs it
   // One post per match and line: skip cards whose tip is already open or was
   // handled earlier in this run (several strategies send the same match).
-  const seen = new Set((await readTracked(env)).filter((t) => t.tier === "premium").map((t) => tipKey(t.tier, t.home, t.away, t.line)));
+  const seen = new Set((await readTracked(env)).filter((t) => t.tier === "premium" || t.tier === "o15").map((t) => tipKey(t.tier, t.home, t.away, t.line)));
   for (const item of due) {
-    const k = tipKey("premium", item.parsed.homeTeam, item.parsed.awayTeam, item.parsed.targetLine);
+    const tier = item.tier || "premium";
+    const k = tipKey(tier, item.parsed.homeTeam, item.parsed.awayTeam, item.parsed.targetLine);
     if (seen.has(k)) {
       done.add(item.id);
-      await logConfirmation(env, item, { reason: "doppelt (gleiches Spiel und gleiche Linie schon gepostet)" }, "premium:rej");
+      await logConfirmation(env, item, { tier, reason: "doppelt (gleiches Spiel und gleiche Linie schon gepostet)" }, `${tier}:rej`);
       continue;
     }
     seen.add(k);
+    if (tier === "o15") {
+      done.add(item.id);
+      await postO15Test(env, item, Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null);
+      continue;
+    }
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
     if (!match && env.APIFOOTBALL_KEY && (!Array.isArray(feed) || isGuestFeed(feed))) {
       if (apiLive === undefined) apiLive = await fetchApiFootballLive(env);
@@ -1525,6 +1572,7 @@ function summarize(rows) {
     risk: tally(decided.filter((r) => r.tier === "risk")),
     half: tally(decided.filter((r) => r.tier === "half")),
     under: tally(decided.filter((r) => r.tier === "under")),
+    o15: tally(decided.filter((r) => r.tier === "o15")),
     priced: priced.length,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
@@ -1548,7 +1596,7 @@ function weeklyReportText(sum, fromDate, toDate) {
     // Tiers without decided tips that week (e.g. the switched-off Risiko) are left out.
     ...[
       ["🔥 High Confidence", sum.premium], ["🟠 Half-Risiko", sum.half], ["⚠️ Risiko (seit 13.10. abgeschaltet)", sum.risk],
-      ["🛡️ Under 3.5 (seit 21.10. pausiert)", sum.under],
+      ["🛡️ Under 3.5 (seit 21.10. pausiert)", sum.under], ["🧪 Over 1.5 Test (seit 21.10.)", sum.o15],
     ].filter(([, t]) => t && t.n).map(([label, t]) => `${label}: ${pctText(t)}`),
     `Gesamt: ${pctText(sum.all)}`,
   ];
@@ -1580,7 +1628,7 @@ async function sendWeeklyReport(env) {
 // posted only after the match is decided, so the premium channel keeps its
 // value. Override with FREE_CHANNEL_ID / FREE_CTA_URL in Cloudflare.
 const FREE_PER_DAY = 3;
-const FREE_TIER_LABEL = { premium: "🔥 High Confidence", half: "🟠 Half-Risiko", risk: "⚠️ Risiko", under: "🛡️ Mit Vorsicht" };
+const FREE_TIER_LABEL = { premium: "🔥 High Confidence", half: "🟠 Half-Risiko", risk: "⚠️ Risiko", under: "🛡️ Mit Vorsicht", o15: "🧪 Over 1.5 Test" };
 
 function freeChannel(env) {
   return env.FREE_CHANNEL_ID || "@MoneyBagAnalyst";
@@ -1631,6 +1679,7 @@ const RESULTS_CACHE_S = 300;
 const RESULTS_PAGE_ROWS = 150;
 const RESULT_TIERS = [
   ["premium", "🔥 High Confidence"], ["half", "🟠 Half-Risiko"], ["risk", "⚠️ Risiko (seit 13.10. abgeschaltet)"], ["under", "🛡️ Under 3.5 (seit 21.10. pausiert)"],
+  ["o15", "🧪 Over 1.5 Test (seit 21.10.)"],
 ];
 
 function htmlEsc(v) {
@@ -1763,6 +1812,7 @@ async function premiumExportCsv(env) {
     ["premium:fwd:", "forwarded"],
     ["risk:fwd:", "risk"],
     ["half:fwd:", "half"],
+    ["o15:fwd:", "o15_test"],
     ["under:fwd:", "under35"],
     ["premium:ok:", "confirmed"],
     ["premium:rej:", "rejected"],
@@ -2155,6 +2205,7 @@ function drawBilanz(s, from, to) {
   const rows = [
     ['🔥', 'High Confidence', s.premium], ['🟠', 'Half-Risiko', s.half || { n: 0, won: 0 }],
     ['⚠️', 'Risiko', s.risk, 'seit 13.10. abgeschaltet'], ['🛡️', 'Under 3.5', s.under || { n: 0, won: 0 }],
+    ['🧪', 'Over 1.5 Test', s.o15 || { n: 0, won: 0 }, 'seit 21.10.'],
   ].filter(r => r[2] && r[2].n);
   let y = 700;
   rows.forEach(([icon, label, t, note]) => {
@@ -2210,7 +2261,7 @@ async function loadResults(days) {
     const d = await r.json();
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
-    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Over 1.5 Test: <b>' + t(s.o15 || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
     html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
@@ -2222,7 +2273,7 @@ async function loadResults(days) {
           : x.result === 'won' ? '<span style="color:#4caf7a;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
           : x.result === 'lost' ? '<span style="color:#e0a040;">✖ kein Tor</span>' : '<span style="color:#8891a3;">– unklar</span>';
         const q = x.quote != null ? Number(x.quote).toFixed(2) + (x.betPlaced ? '' : ' (unter ' + Number(x.minQuote).toFixed(2) + ')') : '–';
-        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : x.tier === 'under' ? 'Under' : 'Premium') + (x.tier === 'under' ? ' · U' : ' · O') + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
+        html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : x.tier === 'under' ? 'Under' : x.tier === 'o15' ? 'O1.5 Test' : 'Premium') + (x.tier === 'under' ? ' · U' : ' · O') + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
       });
       html += '</table>';
     }
@@ -2614,7 +2665,7 @@ export default {
     if (url.pathname === "/admin/api/free-backfill" && request.method === "POST") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const rows = (await listResults(env, Date.now() - 2 * DAY_MS))
-        .filter((r) => (r.result === "won" || r.result === "lost") && ["premium", "half", "under"].includes(r.tier));
+        .filter((r) => (r.result === "won" || r.result === "lost") && ["premium", "half", "under", "o15"].includes(r.tier));
       const picked = [];
       for (const r of rows) {
         if (picked.length >= FREE_PER_DAY) break;
@@ -2896,6 +2947,10 @@ export default {
             parsed.minute < RISK_MINUTE
           ) {
             await maybePostHalfRisk(env, channelMsg.text, parsed, score);
+          } else if (o15TestRule(parsed) && (await claimSignal(env, parsed))) {
+            // Queued only; the minute cron posts it under its run lock.
+            const snap = await signalSnapshotFor(parsed);
+            await queuePremium(env, channelMsg.text, parsed, score, snap.odds, true, "o15");
           }
           // Shadow log only, nothing is posted.
           try {

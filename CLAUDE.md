@@ -23,6 +23,7 @@ Premium tiers (all in `worker/src/index.js`):
 |---|---|---|
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
+| 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75 (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen", **paused** since 2026-10-21, `UNDER_ENABLED`; shadow log keeps running) | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
 
@@ -173,6 +174,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-21: Over 1.5 test tier on the owner's request (min ≤ 61 + pre-match line ≥ 2.75, 0.5 units,
+  min. quote 1.32, logs `o15:fwd/ok/rej`). Re-check at ≥ 100 live tips; switch off below ~72 %.
+
 - 2026-10-21: recalibration with the 10-21 export (13,237 signals, thresholds unchanged), badge
   "Kalibriert: 21.10.2026 · 13.237 Signale", report `reports/2026-10-21-recalibration.md`, O3.5 scoreline /
   HT-goal / O1.5 analysis in `scripts/o35_scoreline.py`.
@@ -282,7 +286,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
 - O1.5 is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
   simple rule minute ≤ 61 + pre-match line ≥ 2.75 gives 76.1 % (522, halves 80.9/73.0), unseen 75.8 % (91)
-  → borderline; offered to the owner as a 0.5-unit test tier (min. quote 1.32), not built without a yes.
+  → borderline; owner said yes 21.10.: running as 🧪 Over 1.5 Test (0.5 units). Check it at ≥ 100 tips on
+  `/ergebnisse`; switch off (`O15_TEST_ENABLED = false`) if it stays below ~72 %.
 - O3.5 by score (`scripts/o35_scoreline.py`): 3:0/0:3 73 %, 2:1/1:2 69 %; 3:0/0:3 + min ≤ 63 + line ≥ 3
   78.2 % (698). Score is not a model feature yet (unseen: 72.6 vs 67.5 %); candidate for the next export.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
