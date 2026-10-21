@@ -290,6 +290,13 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   simple rule minute ≤ 61 + pre-match line ≥ 2.75 gives 76.1 % (522, halves 80.9/73.0), unseen 75.8 % (91)
   → borderline; owner said yes 21.10.: running as 🧪 Over 1.5 Test (0.5 units). Check it at ≥ 100 tips on
   `/ergebnisse`; switch off (`O15_TEST_ENABLED = false`) if it stays below ~72 %.
+- O1.5 cards from InPlayFlux (owner's strategies, screenshot 21.10.): "Money Bag Over 1.5" (min 60–64, money
+  movement = 1, pre-match line ≥ 3, since 20.10.), "Over 1.5 Value" (min 60–64, last-5 O2.5 ≥ 60 %, clear
+  favourite, since 18.10.), "Over 1.5 ValueShots15" (same + total shots ≥ 15, since 18.10.); old "Over 1.5",
+  "Over 1.5 cloude", "Over 1.5 claude 1.änderung" ended 17.10. Cards say `Target: Goal` at 1 goal, header
+  "Over 1.5" → parsed as line 1.5. Export to 21.10. with our rule (min ≤ 61, line ≥ 2.75): Money Bag 79 % (19),
+  Value 77 % (48), ValueShots15 71 % (24), old ones 74–78 % (431). Expected ~5–25 posts/day (one per match).
+  Compare strategies one by one at ~100 tips; ValueShots15 is the candidate to switch off.
 - O3.5 by score (`scripts/o35_scoreline.py`): 3:0/0:3 73 %, 2:1/1:2 69 %; 3:0/0:3 + min ≤ 63 + line ≥ 3
   78.2 % (698). Score is not a model feature yet (unseen: 72.6 vs 67.5 %); candidate for the next export.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
