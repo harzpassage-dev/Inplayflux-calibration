@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1080px;height:1350px;overflow:hidden;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff;background:#0b1630}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.07}
+.brand{position:absolute;top:70px;left:0;right:0;text-align:center;font-size:34px;color:#f5c542;letter-spacing:6px;font-weight:700}
+.slide{position:absolute;inset:150px 80px 120px;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.on{display:flex}
+.big{font-size:104px;font-weight:700;line-height:1.08}
+.mid{font-size:60px;font-weight:700;line-height:1.2}
+.small{font-size:40px;color:#c9d3ea;line-height:1.35}
+.gold{color:#f5c542}
+.card{width:100%;background:rgba(255,255,255,.06);border-radius:28px;padding:34px 30px;margin-top:28px;display:flex;align-items:center;gap:30px;text-align:left}
+.card .n{font-size:84px;font-weight:700;color:#f5c542;min-width:250px;text-align:center}
+.card .l{font-size:40px;line-height:1.25}
+.foot{position:absolute;bottom:50px;left:0;right:0;text-align:center;font-size:26px;color:#8fa0c4}
+.dots{position:absolute;bottom:95px;left:0;right:0;text-align:center;font-size:30px;color:#f5c542;letter-spacing:10px}
+.list{margin-top:40px;text-align:left;font-size:46px;line-height:1.7}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1080" height="1350"><g fill="none" stroke="#fff" stroke-width="6"><rect x="50" y="50" width="980" height="1250"/><line x1="50" y1="675" x2="1030" y2="675"/><circle cx="540" cy="675" r="160"/></g></svg>
+<div class="brand">⚽ TORMINUTE</div>
+
+<div class="slide" id="s1">
+ <div style="font-size:200px;line-height:1">⏱️</div>
+ <div class="big" style="margin-top:30px">Hallo, wir sind<br><span class="gold">Torminute</span></div>
+ <div class="small" style="margin-top:40px">Wir verfolgen Fußballspiele live<br>und fragen: <b style="color:#fff">Wann fallen Tore –<br>und warum?</b></div>
+</div>
+
+<div class="slide" id="s2">
+ <div class="mid">Das zeigen unsere Daten</div>
+ <div class="card"><div class="n">3 von 4</div><div class="l">Spielen: Nach Minute 60<br>fällt noch ein Tor</div></div>
+ <div class="card"><div class="n">1 von 5</div><div class="l">Toren fällt erst<br>nach Minute 85</div></div>
+ <div class="card"><div class="n">15 Min.</div><div class="l">dauert es im Mittel<br>bis zum nächsten Tor</div></div>
+ <div class="small" style="margin-top:34px;font-size:28px">8.680 Spiele mit Live-Szene um Minute 60,<br>meist untere Ligen, 5.9.–21.10.2026, eigene Auswertung</div>
+</div>
+
+<div class="slide" id="s3">
+ <div class="mid">Was dich hier erwartet</div>
+ <div class="list">📊 Fußball-Mythen im Daten-Check<br>⏱️ Wann das späte Tor kommt<br>🌍 Ligen &amp; Länder im Vergleich<br>🎬 Neue Reels jede Woche</div>
+ <div class="mid" style="margin-top:60px">Folge <span class="gold">@torminute</span> ⚽</div>
+ <div class="small" style="margin-top:20px">Welchen Mythos sollen wir prüfen? 👇</div>
+</div>
+
+<div class="dots" id="dots"></div>
+<script>
+const n=Number(new URLSearchParams(location.search).get("s")||1);
+document.getElementById("s"+n).classList.add("on");
+document.getElementById("dots").textContent=[1,2,3].map(i=>i===n?"●":"○").join("");
+</script></body></html>
