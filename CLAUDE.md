@@ -326,6 +326,19 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Open items (as of 2026-10-22)
 
+- Improvement plan given to the owner 22.10. (profit first). Done: (1) automatic quote per tip from the card
+  (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
+  warning (`maybeWarn`). Open, owner to pick: (2) market comparison from the admin premium CSV, (4) simpler O2.5
+  rule (filter lost to raw rate on unseen days), (5) score as O3.5 feature, (6) fixed Monday routine (new CSV →
+  recalibrate, switch weak tiers off), (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
+  GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
+  keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
+  (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
+  fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
+  (15) weekly results image to the free channel.
+- First quote check (harness, 2 cards): O0.5 at 0:0 est. 1.20 vs Mindestquote 1.23, O1.5 at 1:0 est. 1.18 vs 1.32
+  → after ~1 week compare per tier: hit rate vs average signal quote and the 1.40-wait result in admin
+  "Ergebnisse"; tiers that do not beat the market get stricter or switched off.
 - Profit check (from 22.10.): once ≥ 20 tips with a signal quote are settled, `/ergebnisse` shows the profit lines.
   Compare per tier: average signal quote vs hit rate (break-even = 1 / hit rate). Tiers whose quotes sit below
   their Mindestquote lose money even at good hit rates → raise thresholds or switch off.
