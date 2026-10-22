@@ -41,8 +41,8 @@ the owner's yes.
    with the unseen-day numbers.
 4. Tool `DEFAULT_CALIB` + badge "📅 Kalibriert: <date> · <n> Signale" in **both**
    `worker/public/index.html` and `tools/moneybag-analyst.html` (keep identical: `cmp` them).
-5. `node --check worker/src/index.js`, `cd worker && npx wrangler deploy --dry-run`, local harness for
-   anything that changed in the worker.
+5. `node --check worker/src/index.js`, `node --test "worker/test/*.test.mjs"` (add or adjust a test for
+   anything that changed in the worker), `cd worker && npx wrangler deploy --dry-run`.
 6. German report `reports/<date>-recalibration.md` (table: tier, filtered %, n, raw %, verdict);
    CLAUDE.md change log + open items.
 7. Commit (trailers from the system reminder), push to `claude/page-radar-signal-analysis-bdok65`,

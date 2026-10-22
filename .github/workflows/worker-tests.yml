@@ -1,0 +1,24 @@
+name: Worker tests
+
+# Runs on every push and pull request: syntax check, the worker test suite
+# (worker/test, plain node:test, no npm install) and a wrangler dry-run build,
+# so a broken worker is caught before Cloudflare deploys it.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: node --check worker/src/index.js
+      - name: Worker tests
+        run: node --test "worker/test/*.test.mjs"
+      - name: Wrangler dry-run build
+        working-directory: worker
+        run: npx --yes wrangler@4.152.0 deploy --dry-run --outdir /tmp/wrangler-out

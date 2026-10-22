@@ -1,0 +1,159 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results } from "./helpers.mjs";
+
+const worker = await loadWorker();
+const premiumPosts = (net) => net.sent.filter((m) => m.method === "sendMessage" && m.chat_id === "-100");
+
+test("security: guessable KV keys never open the tool, admin page headers", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  env.ACCESS_KV.store.set("premium:pending", "[]");
+  assert.equal((await worker.fetch(new Request("https://x/?t=premium:pending"), env, {})).status, 403);
+  const r = await worker.fetch(new Request("https://x/admin"), env, {});
+  assert.equal(r.headers.get("x-frame-options"), "DENY");
+  assert.equal((await admin(worker, env, "/admin/api/results?days=7", { headers: { Authorization: "Bearer wrong" } })).status, 401);
+});
+
+test("admin page and results page: every inline script parses", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  for (const p of ["/admin", "/ergebnisse"]) {
+    const html = await (await worker.fetch(new Request("https://x" + p), env, {})).text();
+    for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+      assert.doesNotThrow(() => new Function(js), `script in ${p} does not parse`);
+    }
+  }
+});
+
+test("High Confidence: queued by the webhook, posted once by the cron even if three strategies send it", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  for (const h of ["💰 MoneyBag 2-0/0-2 → Over 2.5 New", "Over 2.5 Value", "Over 2.5 Odd Filter"]) {
+    await webhook(worker, env, card({ header: h }));
+  }
+  assert.equal(premiumPosts(net).length, 0, "webhook must not post");
+  await cron(worker, env);
+  await cron(worker, env);
+  assert.equal(premiumPosts(net).length, 1);
+  const t = tracked(env);
+  assert.equal(t.length, 1);
+  assert.equal(t[0].tier, "premium");
+  assert.ok(t[0].signalQuote && t[0].signalQuote.over > 1, "quote from the card is stored");
+});
+
+test("O0.5 at 0:0: 2 units from pre-match line 4.0, 1 unit below", async () => {
+  for (const [pre, units] of [["4.0", 2], ["3.5", 1]]) {
+    const net = mockNet({ feed: [] });
+    const env = makeEnv();
+    await webhook(worker, env, card({ header: "💰 MoneyBag 0-0 → Goal", score: "0-0", target: "Goal", minute: 61, sot: [3, 2], radar: 380, pre, live: "1.5", over: "2.10", under: "1.70" }));
+    await cron(worker, env);
+    assert.equal(tracked(env)[0].units, units, `line ${pre}`);
+    assert.match(premiumPosts(net)[0].text, new RegExp(`Einsatz: ${units} Einheit`));
+  }
+});
+
+test("Over 1.5 Test: rule minute <= 61 and line >= 2.75, rejected after a goal", async () => {
+  const cases = [
+    { minute: 58, pre: "3.0", feed: [], posts: 1 },
+    { minute: 62, pre: "3.0", feed: [], posts: 0 },
+    { minute: 58, pre: "2.5", feed: [], posts: 0 },
+    { minute: 58, pre: "3.0", feed: [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "59", hg: "1", ag: "1", ou_odds: ["1.9", "1.9", "2.5"] }], posts: 0 },
+  ];
+  for (const c of cases) {
+    const net = mockNet({ feed: c.feed });
+    const env = makeEnv();
+    await webhook(worker, env, card({ header: "💰  Over 1.5 Value", score: "1-0", target: "Goal", minute: c.minute, pre: c.pre, live: "2.5" }));
+    await cron(worker, env);
+    assert.equal(premiumPosts(net).length, c.posts, JSON.stringify(c));
+    if (c.posts) assert.equal(tracked(env)[0].tier, "o15");
+  }
+});
+
+test("settling: exact goal minute from the feed, WIN banner, free channel, result record", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  await webhook(worker, env, card());
+  await cron(worker, env);
+  net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "3", ag: "0", sonGolDakikasi: "71", ou_odds: ["1.9", "1.9", "3.5"] }];
+  await cron(worker, env);
+  const edit = net.sent.find((m) => m.method === "editMessageText");
+  assert.ok(edit && edit.text.startsWith("✅ WIN – Tor in Minute 71'"), edit && edit.text);
+  assert.ok(net.sent.some((m) => m.chat_id === "@MoneyBagAnalyst"), "free channel post");
+  const r = results(env)[0];
+  assert.equal(r.result, "won");
+  assert.equal(r.resultMinute, 71);
+  assert.ok(r.quote > 1 && r.marketP > 0 && r.wait, "quote, market and wait estimate stored");
+  assert.equal(tracked(env).length, 0);
+});
+
+test("settling with two goals: minute unknown, banner without minute", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  await webhook(worker, env, card());
+  await cron(worker, env);
+  net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "4", ag: "0", sonGolDakikasi: "85", ou_odds: ["1.9", "1.9", "4.5"] }];
+  await cron(worker, env);
+  const edit = net.sent.find((m) => m.method === "editMessageText");
+  assert.ok(edit.text.startsWith("✅ WIN – Tor\n"), edit.text);
+});
+
+function seedResults(env, n, wins, extra = {}) {
+  const now = Date.now();
+  for (let i = 0; i < n; i++) {
+    const r = { tier: "premium", home: "H" + i, away: "A" + i, line: 2.5, minute: 60, units: 1,
+      postedAt: new Date(now - (i + 2) * 3600e3).toISOString(), settledAt: new Date(now - (i + 1) * 3600e3).toISOString(),
+      result: i < wins ? "won" : "lost", quote: 1.3, marketP: 0.75, ...extra };
+    const k = `result:${now - (i + 1) * 3600e3}:${i}`;
+    env.ACCESS_KV.store.set(k, JSON.stringify(r));
+    env.ACCESS_KV.meta.set(k, r);
+  }
+}
+
+test("early warning: bad run of a tier -> one private message per day, none on a good run", async () => {
+  for (const [wins, expectWarn] of [[14, true], [24, false]]) {
+    const net = mockNet({ feed: [] });
+    const env = makeEnv();
+    seedResults(env, 29, wins);
+    await webhook(worker, env, card());
+    await cron(worker, env);
+    net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "3", ag: "0", sonGolDakikasi: "70", ou_odds: ["1.9", "1.9", "3.5"] }];
+    await cron(worker, env);
+    const warns = net.sent.filter((m) => m.chat_id === "777" && m.text.includes("Frühwarnung"));
+    assert.equal(warns.length, expectWarn ? 1 : 0, `wins ${wins}`);
+  }
+});
+
+test("weekly cron: private Wochen-Check for the owner plus the channel reports", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  seedResults(env, 25, 20);
+  await cron(worker, env, "0 8 * * 1");
+  const own = net.sent.find((m) => m.chat_id === "777");
+  assert.ok(own && own.text.includes("Wochen-Check") && own.text.includes("Markt erwartete"), own && own.text);
+  assert.ok(net.sent.some((m) => m.chat_id === "-100" && m.text.includes("Wochenbilanz")));
+  assert.ok(net.sent.some((m) => m.chat_id === "@MoneyBagAnalyst" && m.text.includes("Keine Gewinngarantie")));
+});
+
+test("results page: escapes names, profit line from 20 quoted tips, admin summary has the market comparison", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  seedResults(env, 25, 20, { home: "Team <b>x" });
+  const html = await (await worker.fetch(new Request("https://x/ergebnisse"), env, {})).text();
+  assert.ok(html.includes("Team &lt;b&gt;x") && !html.includes("Team <b>x"));
+  assert.ok(html.includes("wenn jeder Tipp zur Quote beim Signal gesetzt wurde"));
+  const d = await (await admin(worker, env, "/admin/api/results?days=7")).json();
+  assert.equal(d.summary.market.premium.n, 25);
+  assert.equal(d.summary.quotedAll, 25);
+});
+
+test("admin test posts are marked TEST and never tracked", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  for (const q of ["", "?line=0.5", "?tier=half", "?tier=o15", "?tier=under"]) {
+    const r = await admin(worker, env, "/admin/api/test-post" + q, { method: "POST" });
+    assert.equal(r.status, 200, q);
+  }
+  assert.ok(premiumPosts(net).every((m) => m.text.includes("TEST")));
+  assert.equal(tracked(env).length, 0);
+});

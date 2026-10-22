@@ -120,11 +120,12 @@ then decide per tier on the new days and apply.
 - Never post to Telegram from the webhook path: parallel webhook runs race on KV (no atomic
   check-and-set). The webhook only queues (`premium:pending`); the minute cron posts under its run lock
   and dedupes by `tipKey(tier, home, away, line)`.
-- Before every push: `node --check worker/src/index.js` and
-  `cd worker && npx wrangler deploy --dry-run`. Test changes with a local Node harness that
-  imports the worker and mocks KV, `fetch` (feed + Telegram) and `Date.now`; render the admin
-  page in Playwright (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`) and check for JS
-  errors.
+- Before every push: `node --check worker/src/index.js`, **`node --test "worker/test/*.test.mjs"`** and
+  `cd worker && npx wrangler deploy --dry-run`. The test suite (since 2026-10-22, `worker/test/helpers.mjs` fakes KV,
+  the feed and Telegram; `worker.test.mjs` covers security, queue/dedupe, O0.5 units, O1.5 test, settling + exact
+  goal minute, early warning, weekly check, results page, test posts, and that every inline admin script parses)
+  also runs on GitHub for every push/PR (`.github/workflows/worker-tests.yml`). Add a test for every worker change.
+  For UI changes still render the admin page in Playwright (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`).
 - The admin page is a JS **template literal**: inside it write `\\n` for a JS newline and never
   use `\'` (it turns into a bare quote and breaks the page).
 - KV writes cost money/limits: batch per day key, write only on change. Account is on Workers
@@ -210,6 +211,9 @@ then decide per tier on the new days and apply.
   scheduled task that builds a new video and sends it – not set up (owner did not answer).
 
 ## Change log (latest first)
+
+- 2026-10-22: worker test suite `worker/test/` (11 tests, node:test) + GitHub Action `worker-tests.yml` (syntax, tests,
+  wrangler dry-run on every push/PR); mutation check: a wrong O0.5 stake and a `\'` in the admin script both fail it.
 
 - 2026-10-22: Under 3.5 recalculated on 164 strict log games: no rule holds in both halves, stays paused.
 
@@ -345,8 +349,7 @@ then decide per tier on the new days and apply.
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
-  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. Open, owner to pick: (8) harness tests in the repo +
-  GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
+  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). Open, owner to pick: (9) per-card pending
   keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
