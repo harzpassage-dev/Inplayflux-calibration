@@ -1076,14 +1076,34 @@ function confirmationBlock(res) {
   return lines.join("\n");
 }
 
+// Queued cards: one KV key per card ("pending:<receivedAt>:<id>", since 22.10.).
+// The old single list (PENDING_KEY) was read-modify-write, so two webhook runs
+// at the same moment could drop a card; a per-card key is a single put. The
+// old key is still read until it has emptied. Each item carries its key.
+const PENDING_PREFIX = "pending:";
 async function readPending(env) {
+  const items = [];
   const raw = await env.ACCESS_KV.get(PENDING_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
+  if (raw) {
+    try {
+      for (const p of JSON.parse(raw)) items.push({ ...p, legacy: true });
+    } catch (e) {}
   }
+  let cursor;
+  const keys = [];
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: PENDING_PREFIX, cursor });
+    keys.push(...list.keys.map((k) => k.name));
+    cursor = list.list_complete ? null : list.cursor;
+  } while (cursor);
+  const vals = await Promise.all(keys.map((k) => env.ACCESS_KV.get(k)));
+  vals.forEach((v, i) => {
+    if (!v) return; // deleted meanwhile (list is eventually consistent)
+    try {
+      items.push({ ...JSON.parse(v), key: keys[i] });
+    } catch (e) {}
+  });
+  return items.sort((a, b) => a.receivedAt - b.receivedAt);
 }
 
 function premiumItem(text, parsed, score, signalOdds) {
@@ -1096,9 +1116,8 @@ function tipKey(tier, home, away, line) {
 }
 
 async function queuePremium(env, text, parsed, score, signalOdds, fast = false, tier = "premium") {
-  const pending = await readPending(env);
-  pending.push({ ...premiumItem(text, parsed, score, signalOdds), fast, tier });
-  await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(pending), { expirationTtl: 24 * 60 * 60 });
+  const item = { ...premiumItem(text, parsed, score, signalOdds), fast, tier };
+  await env.ACCESS_KV.put(`${PENDING_PREFIX}${item.receivedAt}:${item.id}`, JSON.stringify(item), { expirationTtl: 24 * 60 * 60 });
 }
 
 async function logConfirmation(env, item, res, keyPrefix) {
@@ -1292,13 +1311,16 @@ async function processPendingPremium(env, due, feed) {
   }
 
   if (done.size) {
-    // Re-read so a card queued by the webhook while we were working isn't lost.
-    const latest = await readPending(env);
-    const left = latest.filter((p) => !done.has(p.id));
-    if (left.length) {
-      await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(left), { expirationTtl: 24 * 60 * 60 });
-    } else {
-      await env.ACCESS_KV.delete(PENDING_KEY);
+    await Promise.all(due.filter((p) => done.has(p.id) && p.key).map((p) => env.ACCESS_KV.delete(p.key)));
+    if (due.some((p) => p.legacy && done.has(p.id))) {
+      // Old single list: re-read so nothing queued there meanwhile is lost.
+      const raw = await env.ACCESS_KV.get(PENDING_KEY);
+      let left = [];
+      try {
+        left = (raw ? JSON.parse(raw) : []).filter((p) => !done.has(p.id));
+      } catch (e) {}
+      if (left.length) await env.ACCESS_KV.put(PENDING_KEY, JSON.stringify(left), { expirationTtl: 24 * 60 * 60 });
+      else await env.ACCESS_KV.delete(PENDING_KEY);
     }
   }
 }

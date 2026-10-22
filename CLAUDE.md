@@ -212,6 +212,9 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-22: per-card queue keys (`pending:*`) instead of one shared list – parallel webhook runs no longer drop
+  cards (test "cards arriving at the same moment" fails on the old code, passes now).
+
 - 2026-10-22: worker test suite `worker/test/` (11 tests, node:test) + GitHub Action `worker-tests.yml` (syntax, tests,
   wrangler dry-run on every push/PR); mutation check: a wrong O0.5 stake and a `\'` in the admin script both fail it.
 
@@ -349,8 +352,7 @@ then decide per tier on the new days and apply.
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
-  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). Open, owner to pick: (9) per-card pending
-  keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
+  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). Open, owner to pick: (9) per-card pending keys (done 22.10.), (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
   (15) weekly results image to the free channel.
@@ -401,8 +403,10 @@ then decide per tier on the new days and apply.
   are still marked by hand.
 - Watch for double posts after the 17.10. fix (webhook only queues, `tipKey` dedupe, `free:sent:*`).
   If one appears: same card from several strategies → check `processPendingPremium`; two cron runs at
-  once → run lock (`lock:minute`). Known leftover: parallel webhook writes to `premium:pending` can
-  drop a card (one KV key, read-modify-write); a per-card key (`pending:<id>` + list) would fix it.
+  once → run lock (`lock:minute`). Fixed 22.10.: the queue is one KV key per card (`pending:<receivedAt>:<id>`,
+  `queuePremium` = single put, `readPending` = list + get, done keys deleted; the old `premium:pending` list is still
+  read until empty). KV list is eventually consistent: a card can show up one minute later; a deleted key seen again
+  is caught by the `tipKey` dedupe.
 - Live check: none for now (guest feed ~15 matches; API-Football free plan suspended on Cloudflare IPs;
   Highlightly lacks lower leagues). Re-enable by a paid API-Football plan + secret `APIFOOTBALL_KEY`
   (code ready). Owner was offered an email draft to InPlayFlux (API access / partnership, also about

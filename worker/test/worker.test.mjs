@@ -157,3 +157,23 @@ test("admin test posts are marked TEST and never tracked", async () => {
   assert.ok(premiumPosts(net).every((m) => m.text.includes("TEST")));
   assert.equal(tracked(env).length, 0);
 });
+
+test("queue: cards arriving at the same moment are all kept (one KV key per card)", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  await Promise.all(["Gamma FC", "Delta FC", "Eps FC", "Zeta FC"].map((h, i) =>
+    webhook(worker, env, card({ home: h, away: "Opp " + i }))));
+  await cron(worker, env);
+  assert.equal(premiumPosts(net).length, 4);
+  assert.equal([...env.ACCESS_KV.store.keys()].filter((k) => k.startsWith("pending:")).length, 0, "queue emptied");
+});
+
+test("queue: cards still in the old single list are posted and the old key removed", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const parsed = { homeTeam: "Old FC", awayTeam: "List FC", targetLine: 2.5, minute: 56, goals: 2 };
+  env.ACCESS_KV.store.set("premium:pending", JSON.stringify([{ id: "legacy1", text: "x", parsed, proba: 0.85, receivedAt: Date.now() - 600000, fast: true }]));
+  await cron(worker, env);
+  assert.equal(premiumPosts(net).length, 1);
+  assert.equal(env.ACCESS_KV.store.has("premium:pending"), false);
+});
