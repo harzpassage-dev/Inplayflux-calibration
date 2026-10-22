@@ -2866,7 +2866,7 @@ export default {
           const goal = goalScore(s);
           const proba = score ? score.proba : null;
           const mq = minQuote(Math.min(proba || goal.wr || 0.75, goal.wr || 1));
-          const units = goal.points >= 1 ? UNITS_STRONG : UNITS_NORMAL;
+          const units = goal.points >= 1 || strongO05({ targetLine: line, goallinePre: s.goallinePre }) ? UNITS_STRONG : UNITS_NORMAL;
           const res = { live: s, score: score || { proba: proba || 0 }, goal, postOdds: oddsSnapshot(pick.m), signalOdds: null };
           matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
           text = [
