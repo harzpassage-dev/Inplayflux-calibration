@@ -428,7 +428,11 @@ then decide per tier on the new days and apply.
 - TikTok @torminute (videos 1–11 ready, see table above): owner uploads videos 1–11 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
-- Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
+- Marketing: price set 22.10.: **Premium 20 € per month, requests by email to harzpassage@gmx.de** (owner's choice);
+  `marketing/werbetexte.md` rewritten 22.10. (no 2-minute live check claim any more, Under 3.5/Risiko removed, link =
+  free channel t.me/MoneyBagAnalyst or a per-source invite link, results page linked). Paid ads (Telega.io) only after
+  the market comparison shows an edge (≥ 50 tips) and InPlayFlux has answered (plan item 12). Owner told: a paid
+  offer in Germany needs an Impressum/terms;
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
