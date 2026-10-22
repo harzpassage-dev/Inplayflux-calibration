@@ -174,6 +174,19 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   72.3 %); "what the pre-match goal expectation tells you" (careful: no bookmaker wording).
 - Posting: max. 1 video/day, evenings 18–21 h, owner answers every comment, ends each video
   with a question.
+- **Instagram @torminute** (since 2026-10-21): same name, profile picture, rules and videos (as Reels, same
+  captions). Bio (≤ 150 chars): "⚽ Fußball-Statistik aus 13.000+ Live-Spielszenen / 📊 Wann fallen Tore – und
+  warum? / 🔍 Mythen im Daten-Check / 🔔 Neue Reels jede Woche". First post: intro carousel
+  `marketing/instagram-intro-{1,2,3}.png` (1080×1350, source `instagram-intro.html?s=N`; 3 of 4 matches another
+  goal after 60', 1 of 5 goals after 85', median 15 min; 8,680 matches, both halves stable).
+- Meta rules (checked 21.10.): ads that promote or link to online gambling need Meta's written authorization
+  with a gambling licence → no paid Instagram/Facebook ads for MoneyBag; offers with "guaranteed win" are
+  banned outright; organic gambling posts are a restricted category (possibly 18+ / not recommended,
+  not confirmed). Keep MoneyBag off Torminute; if ever on Instagram, only a separate account.
+- Auto-posting: Claude cannot post to TikTok/Instagram (no access). OpusClip is connected but on the FREE
+  plan (no API access; even Pro needs per-post approval in the app). Recommended to the owner: schedule
+  posts in the apps (Instagram "Planen", TikTok web upload "Planen", ~10 days ahead). Offered a weekly
+  scheduled task that builds a new video and sends it – not set up (owner did not answer).
 
 ## Change log (latest first)
 
@@ -288,7 +301,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-21)
+## Open items (as of 2026-10-22)
 
 - Recalibration 21.10. (`reports/2026-10-21-recalibration.md`, 13,237 signals). Unseen 17.–21.10.: O2.5
   78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
