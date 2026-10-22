@@ -340,6 +340,12 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
   (15) weekly results image to the free channel.
+- O2.5 analysis 22.10. (`scripts/o25_stats.py`, 6,487 cards at 2 goals): since 01.10. almost all O2.5 cards come
+  from "MoneyBag 2-0/0-2 → Over 2.5 New" (pre-match line ≥ 3.25 built in, minute 55–67, ~43 cards/day): raw 80.2 %
+  (945); model ≥ 0.80 on it 81.1 % (486, ~22/day), unseen 17.–21.10. 78.3 % (83) vs raw 81.2 % (149). Simple rule
+  line ≥ 3.25 & minute ≤ 63: 81.7 % (2,466, halves 82.3/81.0, unseen 81.6 %). Score (1:1 vs 2:0), SoT, radar barely
+  matter. Conclusion: the strategy already filters, the model adds ~1 pp and halves volume; no change until the
+  market comparison (≥ 50 tips) shows which O2.5 subset beats the market. Old "MoneyBag 2-0/0-2 → Over 2.5" 74.6 %.
 - First quote check (harness, 2 cards): O0.5 at 0:0 est. 1.20 vs Mindestquote 1.23, O1.5 at 1:0 est. 1.18 vs 1.32
   → after ~1 week compare per tier: hit rate vs average signal quote and the 1.40-wait result in admin
   "Ergebnisse"; tiers that do not beat the market get stricter or switched off.
