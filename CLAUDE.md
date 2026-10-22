@@ -333,7 +333,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Improvement plan given to the owner 22.10. (profit first). Done: (1) automatic quote per tip from the card
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
-  22.10. (see below, no change yet). Open, owner to pick: (5) score as O3.5 feature, (6) fixed Monday routine (new CSV →
+  22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). Open, owner to
+  pick: (6) fixed Monday routine (new CSV →
   recalibrate, switch weak tiers off), (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
   GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
   keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
@@ -366,7 +367,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   Value 77 % (48), ValueShots15 71 % (24), old ones 74–78 % (431). Expected ~5–25 posts/day (one per match).
   Compare strategies one by one at ~100 tips; ValueShots15 is the candidate to switch off.
 - O3.5 by score (`scripts/o35_scoreline.py`): 3:0/0:3 73 %, 2:1/1:2 69 %; 3:0/0:3 + min ≤ 63 + line ≥ 3
-  78.2 % (698). Score is not a model feature yet (unseen: 72.6 vs 67.5 %); candidate for the next export.
+  78.2 % (698). Score as 5th model feature tested 22.10. (`scripts/o35_score_feature.py`): CV at 0.75 77.3 vs 78.2 %
+  (worse), unseen 17.–21.10. 75.9 % (79) vs 74.7 % (87), best 80/120 75.0/76.7 vs 76.2/76.7 – no measurable gain
+  (weight 0.08; minute and pre-match line already carry it). Not built; retest on the next export.
 - O0.5 analysis 22.10. (`scripts/o05_stats.py`, 1,457 cards at 0:0, 1,194 matches): all 71 %; the pre-match line
   drives it (≤ 2.5 63 %, 2.75–3.0 70 %, 3.25–3.5 71 %, ≥ 3.5 81.5 % (325, halves 84/79), ≥ 4 93.5 % (107, halves
   93/94)); SoT, radar and minute barely matter (the model is mostly a line filter). Live High Confidence O0.5
