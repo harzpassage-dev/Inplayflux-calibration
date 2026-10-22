@@ -235,6 +235,9 @@ function parseForConfidenceScore(text) {
   if (m) out.radar = parseInt(m[1], 10);
   m = text.match(/O\/U\s*([\d.]+)\s*→/i);
   if (m) out.goallinePre = parseFloat(m[1]);
+  // "⚖️ O/U 3.0 → 3.5  Over 1.80  Under 2.00": the odds belong to the live line.
+  m = text.match(/O\/U\s*[\d.]+\s*→\s*([\d.]+)\s+Over\s*([\d.]+)\s+Under\s*([\d.]+)/i);
+  if (m) out.cardOdds = { line: parseFloat(m[1]), over: parseFloat(m[2]), under: parseFloat(m[3]) };
   // Team/score line. Skips strategy headers like "💰 MoneyBag 0-0 → Goal",
   // which have the same "name n-n name" shape.
   for (const tm of text.matchAll(/^(?:📊|📖|⚽|🥅|🏟️|🆚|⚔️)?\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\s*$/gmu)) {
@@ -632,7 +635,7 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   await trackSignal(env, {
     ...post,
     tier: "half", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
-    line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds,
+    line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_HALF, odds, signalQuote: cardQuote(parsed),
   });
   await logPremiumForward(env, parsed, score, "half:fwd", { signalOdds: odds, postOdds: odds, goalPoints: gs.points, marketProba: market });
   await logConfirmation(env, item, { tier: "half", live, goal: gs, postOdds: odds, market }, "half:ok");
@@ -786,6 +789,30 @@ function marketLambda(match) {
     else hi = mid;
   }
   return (lo + hi) / 2;
+}
+
+// Over quote for the tip's own line at signal time, from the card's live line
+// and odds (no input needed). Same line: the card's quote. Other line: Poisson
+// lambda from the card's line, fair probability for the target line, then the
+// card's bookmaker margin applied - an estimate, flagged with exact: false.
+function cardQuote(parsed) {
+  const o = parsed && parsed.cardOdds;
+  if (!o || !o.over || !o.under || o.line == null || parsed.goals == null || parsed.targetLine == null) return null;
+  if (o.line === parsed.targetLine) return { over: o.over, line: o.line, exact: true };
+  const rest = o.line - parsed.goals;
+  if (rest <= 0) return null;
+  const book = 1 / o.over + 1 / o.under;
+  const pFair = 1 / o.over / book;
+  let lo = 0;
+  let hi = 20;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (overLineProb(rest, mid) < pFair) lo = mid;
+    else hi = mid;
+  }
+  const p = poissonTail(Math.floor(parsed.targetLine - parsed.goals) + 1, (lo + hi) / 2);
+  if (!(p > 0 && p < 1)) return null;
+  return { over: Math.max(1.01, Math.round((1 / (p * book)) * 100) / 100), line: parsed.targetLine, exact: false };
 }
 
 function marketProb(match, targetLine) {
@@ -1117,6 +1144,7 @@ async function postUnchecked(env, item, reason, label) {
     ...post,
     tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
     line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units, odds: item.signalOdds || null,
+    signalQuote: cardQuote(item.parsed),
   });
 }
 
@@ -1143,6 +1171,7 @@ async function postO15Test(env, item, match) {
     ...post,
     tier: "o15", home: p.homeTeam, away: p.awayTeam, matchId: match ? match.id || null : null,
     line: p.targetLine, minute: live && live.minute != null ? live.minute : p.minute, minQuote: mq, units: UNITS_HALF, odds,
+    signalQuote: cardQuote(p),
   });
   await logPremiumForward(env, p, item.proba != null ? { proba: item.proba, threshold: null } : null, "o15:fwd", { signalOdds: item.signalOdds || null, postOdds: odds });
   await logConfirmation(env, item, { tier: "o15", live, postOdds: odds }, "o15:ok");
@@ -1219,6 +1248,7 @@ async function processPendingPremium(env, due, feed) {
         ...post,
         tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: match.id || null,
         line: item.parsed.targetLine, minute: res.live.minute, minQuote: mq, units, odds: res.postOdds,
+        signalQuote: cardQuote(item.parsed),
       });
       await logPremiumForward(env, item.parsed, res.score, "premium:fwd", {
         signalOdds: item.signalOdds || null,
@@ -1384,7 +1414,12 @@ async function saveResult(env, t, result) {
   const now = new Date();
   // Profit in units only where the logged quote is for the signal's own line.
   const quoteSide = t.under ? "under" : "over";
-  const priced = t.odds && t.odds.line === t.line && t.odds[quoteSide] ? t.odds[quoteSide] : null;
+  // Feed quote for the tip's own line if logged, else the quote from the card
+  // (since 22.10., estimated when the card's live line differs).
+  const feedQuote = t.odds && t.odds.line === t.line && t.odds[quoteSide] ? t.odds[quoteSide] : null;
+  const card = !t.under && t.signalQuote && t.signalQuote.over ? t.signalQuote : null;
+  const priced = feedQuote != null ? feedQuote : card ? card.over : null;
+  const quoteEstimated = feedQuote == null && card ? !card.exact : false;
   const betPlaced = priced != null && priced >= t.minQuote;
   let profit = null;
   if (betPlaced && result !== "void") profit = result === "won" ? t.units * (priced - 1) : -t.units;
@@ -1392,7 +1427,7 @@ async function saveResult(env, t, result) {
     tier: t.tier, home: t.home, away: t.away, line: t.line, minute: t.minute,
     postedAt: new Date(t.postedAt).toISOString(), settledAt: now.toISOString(),
     result, resultMinute: t.resultMinute != null ? t.resultMinute : null,
-    units: t.units, minQuote: t.minQuote, quote: priced, betPlaced,
+    units: t.units, minQuote: t.minQuote, quote: priced, quoteEstimated, betPlaced,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
   };
   // The record is also stored as key metadata, so listing results (public
@@ -1571,6 +1606,9 @@ function summarize(rows) {
   const decided = rows.filter((r) => r.result === "won" || r.result === "lost");
   const tally = (list) => ({ n: list.length, won: list.filter((r) => r.result === "won").length });
   const priced = decided.filter((r) => r.profit != null);
+  // Every tip bet at its quote at signal time, whatever the minimum quote says.
+  const quoted = decided.filter((r) => r.quote != null && r.units);
+  const profitAll = quoted.reduce((a, r) => a + (r.result === "won" ? r.units * (r.quote - 1) : -r.units), 0);
   return {
     all: tally(decided),
     premium: tally(decided.filter((r) => r.tier === "premium")),
@@ -1579,6 +1617,11 @@ function summarize(rows) {
     under: tally(decided.filter((r) => r.tier === "under")),
     o15: tally(decided.filter((r) => r.tier === "o15")),
     priced: priced.length,
+    estimated: priced.filter((r) => r.quoteEstimated).length,
+    quotedAll: quoted.length,
+    profitAll: Math.round(profitAll * 100) / 100,
+    stakedAll: quoted.reduce((a, r) => a + r.units, 0),
+    avgQuote: quoted.length ? Math.round((quoted.reduce((a, r) => a + r.quote, 0) / quoted.length) * 100) / 100 : null,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
   };
@@ -1610,7 +1653,7 @@ function weeklyReportText(sum, fromDate, toDate) {
   if (sum.priced >= MIN_PRICED_FOR_PROFIT) {
     const sign = sum.profit >= 0 ? "+" : "";
     const roi = sum.staked ? Math.round((sum.profit / sum.staked) * 1000) / 10 : 0;
-    lines.push("", `💶 Mit Quote ab Mindestquote gesetzt (${sum.priced} ${sum.priced === 1 ? "Tipp" : "Tipps"}): ${sign}${String(sum.profit).replace(".", ",")} Einheiten (Rendite ${sign}${String(roi).replace(".", ",")} %)`);
+    lines.push("", `💶 Rechnerisch, mit der Quote beim Signal, nur Tipps ab Mindestquote (${sum.priced} ${sum.priced === 1 ? "Tipp" : "Tipps"}${sum.estimated ? `, ${sum.estimated} Quoten geschätzt` : ""}): ${sign}${String(sum.profit).replace(".", ",")} Einheiten (Rendite ${sign}${String(roi).replace(".", ",")} %)`);
   }
   lines.push("", "Automatisch ausgewertet aus dem Live-Spielstand. Keine Gewinngarantie, 18+.");
   return lines.join("\n");
@@ -1709,10 +1752,15 @@ function resultsPageHtml(rows, env, nowMs) {
     + `<tr class="total"><td>Alle Stufen</td>${periods.map(([, s]) => `<td>${rateCell(s.all)}</td>`).join("")}</tr>`;
   const all = periods[2][1];
   let profit = "";
+  if (all.quotedAll >= MIN_PRICED_FOR_PROFIT) {
+    const sg = all.profitAll >= 0 ? "+" : "";
+    const r = all.stakedAll ? Math.round((all.profitAll / all.stakedAll) * 1000) / 10 : 0;
+    profit += `<p class="note">Rechnerisch, wenn jeder Tipp zur Quote beim Signal gesetzt wurde (${all.quotedAll} Tipps seit 22.10., Ø Quote ${String(all.avgQuote).replace(".", ",")}, Quoten teils aus der Live-Linie geschätzt): <b>${sg}${String(all.profitAll).replace(".", ",")} Einheiten</b> (Rendite ${sg}${String(r).replace(".", ",")} %).</p>`;
+  }
   if (all.priced >= MIN_PRICED_FOR_PROFIT) {
     const sign = all.profit >= 0 ? "+" : "";
     const roi = all.staked ? Math.round((all.profit / all.staked) * 1000) / 10 : 0;
-    profit = `<p class="note">Tipps mit erfasster Live-Quote ab Mindestquote (${all.priced}): <b>${sign}${String(all.profit).replace(".", ",")} Einheiten</b> (Rendite ${sign}${String(roi).replace(".", ",")} %).</p>`;
+    profit += `<p class="note">Rechnerisch, mit der Quote beim Signal, nur Tipps ab Mindestquote (${all.priced}${all.estimated ? `, davon ${all.estimated} Quoten aus der Live-Linie geschätzt` : ""}): <b>${sign}${String(all.profit).replace(".", ",")} Einheiten</b> (Rendite ${sign}${String(roi).replace(".", ",")} %).</p>`;
   }
   // Last 14 days as small won/lost bars.
   const dayKey = (iso) => berlin(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
@@ -2269,6 +2317,7 @@ async function loadResults(days) {
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
     let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Over 1.5 Test: <b>' + t(s.o15 || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    if (s.quotedAll) html += '<br>Jeder Tipp zur Quote beim Signal (' + s.quotedAll + ' Tipps, Ø Quote ' + s.avgQuote + '): <b>' + (s.profitAll >= 0 ? '+' : '') + s.profitAll + ' Einheiten</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
     html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
@@ -3001,6 +3050,7 @@ export default {
               ...post,
               tier: "risk", home: parsed.homeTeam, away: parsed.awayTeam, matchId: snap.matchId,
               line: parsed.targetLine, minute: parsed.minute, minQuote: mq, units: UNITS_RISK, odds,
+              signalQuote: cardQuote(parsed),
             });
             await logPremiumForward(env, parsed, score, "risk:fwd", { signalOdds: odds, postOdds: odds, marketProba: market });
           } else if (

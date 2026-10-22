@@ -35,7 +35,11 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 overlapping runs never post or settle a tip twice, when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
 "❌ LOST …" (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
 calls `editMessageText`; posts from before 2026-10-14 evening have no id and stay unmarked),
-every post shows a
+every tracked tip stores `signalQuote` = `cardQuote(parsed)` (since 2026-10-22: the card's ⚖️ live-line odds; exact
+when the live line is the target line, else Poisson λ from the card's line + the card's margin, `exact: false`);
+`saveResult` prices with the feed quote for the own line, else `signalQuote` (`quoteEstimated`), and the results
+page / weekly report / admin show profit for *every* tip at its signal quote (`profitAll`, from 20 tips) and for
+tips at ≥ Mindestquote only. The owner does not bet every tip, so no manual quote entry. Every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
 `/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
 total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
@@ -191,6 +195,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-22: automatic quote per tip from the signal card (`cardQuote`, estimated via Poisson when the card's live
+  line differs); profit shown for all tips at signal quote and for tips ≥ Mindestquote. First harness check: O0.5
+  at 0:0 with live line 1.5 (2.10/1.70) → est. 1.20, O1.5 at 1:0 line 2.5 → 1.18 – both below the Mindestquote,
+  so watch whether tiers beat the market at all.
+
 - 2026-10-22: TikTok video 11 `marketing/tiktok-methode.mp4` (how the numbers are made, stability test, limits).
 
 - 2026-10-22: O0.5 analysis (`scripts/o05_stats.py`); High Confidence O0.5 at pre-match line ≥ 4 posts with
@@ -306,6 +315,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Open items (as of 2026-10-22)
 
+- Profit check (from 22.10.): once ≥ 20 tips with a signal quote are settled, `/ergebnisse` shows the profit lines.
+  Compare per tier: average signal quote vs hit rate (break-even = 1 / hit rate). Tiers whose quotes sit below
+  their Mindestquote lose money even at good hit rates → raise thresholds or switch off.
 - Recalibration 21.10. (`reports/2026-10-21-recalibration.md`, 13,237 signals). Unseen 17.–21.10.: O2.5
   78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
 - O1.5 model tier (High Confidence / Half-Risiko) is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
