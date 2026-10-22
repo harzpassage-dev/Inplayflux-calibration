@@ -413,7 +413,9 @@ then decide per tier on the new days and apply.
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
 - Under 3.5: **paused since 21.10.** (rule rested on only 22–25 strict log games, ± ~15 pp). Owner wants
-  it recalculated: needs the admin "Under 3.5 (still protokolliert)" CSV with ≥ 100 strict games (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
+  it recalculated: needs the admin "Under 3.5 (still protokolliert)" CSV (button "CSV", last 60 days) with ≥ 100 strict
+  games; analysis ready: `python3 scripts/u35_stats.py under35_log_<date>.csv` (strict = has goal score, won only
+  with `seen_late`, a minute ≥ 85, not a boolean; reproduces 16.10.: 81 games, old rule 72 % n=25). Owner asked 22.10. (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
   lines below 3.5: the feed has no Under 3.5 quote there (it is lower than the main-line under,
   roughly 1.40–1.50 at line 3.0).
 - Market cut (60 %) is provisional: recalibrate from `market_proba` in the premium CSV export
