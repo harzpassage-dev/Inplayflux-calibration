@@ -87,6 +87,12 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Recalibration routine (new export)
 
+Weekly since 2026-10-22 (plan item 6): Monday 08:00 UTC the bot sends the owner a private "Wochen-Check"
+(`adminWeeklyText`: 7-day hit rate per tier, market points, both profit estimates, reminder to export a
+new CSV). With the upload, follow `.claude/skills/wochen-routine/SKILL.md`: `python3 scripts/weekly.py RAW.csv`
+runs steps 1–5 below at once (stops if the time shift is not 0; report `reports/<date>-wochen-check.txt`),
+then decide per tier on the new days and apply.
+
 1. Normalize and add the CSV to `data/`.
 2. `python3 scripts/recalibrate.py data/*.csv --split "<last export end>"` → check CV and the
    time split, then `--write` (thresholds via `--threshold LINE=VALUE`).
@@ -204,6 +210,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   scheduled task that builds a new video and sends it – not set up (owner did not answer).
 
 ## Change log (latest first)
+
+- 2026-10-22: weekly routine: Monday "Wochen-Check" DM to the owner, `scripts/weekly.py` (all analyses from one raw
+  CSV), project skill `.claude/skills/wochen-routine/SKILL.md`.
 
 - 2026-10-22: market comparison per tier in admin "Ergebnisse" (`marketP` per result).
 
@@ -333,9 +342,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Improvement plan given to the owner 22.10. (profit first). Done: (1) automatic quote per tip from the card
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
-  22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). Open, owner to
-  pick: (6) fixed Monday routine (new CSV →
-  recalibrate, switch weak tiers off), (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
+  22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
+  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). Open, owner to pick: (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
   GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
   keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;

@@ -1759,10 +1759,36 @@ function weeklyReportText(sum, fromDate, toDate) {
   return lines.join("\n");
 }
 
+// Monday check for the owner only (ADMIN_CHAT_ID): last 7 days per tier, the
+// market comparison, both profit estimates and the reminder for the weekly
+// routine (export a new CSV at InPlayFlux and hand it to Claude).
+function adminWeeklyText(sum) {
+  const de = (x) => String(x).replace(".", ",");
+  const sg = (x) => (x >= 0 ? "+" : "") + de(x);
+  const lines = ["🗓️ Wochen-Check (nur für dich, letzte 7 Tage)", ""];
+  for (const [key, label] of RESULT_TIERS) {
+    const t = sum[key];
+    if (!t || !t.n) continue;
+    const m = sum.market && sum.market[key];
+    const mk = m ? ` · Markt erwartete ${de(m.expected)} % → ${sg(Math.round((m.won / m.n * 100 - m.expected) * 10) / 10)} Punkte` : "";
+    lines.push(`${label}: ${pctText(t)}${mk}`);
+  }
+  if (!sum.all.n) lines.push("Keine entschiedenen Tipps.");
+  if (sum.quotedAll) lines.push("", `Jeder Tipp zur Quote beim Signal (${sum.quotedAll}): ${sg(sum.profitAll)} Einheiten`);
+  if (sum.waitBets) lines.push(`Warten bis Quote 1,40 (geschätzt, ${sum.waitBets} Einsätze, ${sum.waitSkipped} Tore kamen vorher): ${sg(sum.waitProfit)} Einheiten`);
+  lines.push("", "📥 Wochen-Routine: Bitte bei InPlayFlux den CSV-Export der letzten Woche herunterladen und Claude geben. Claude kalibriert neu und schaltet schwache Stufen ab.");
+  return lines.join("\n");
+}
+
 async function sendWeeklyReport(env) {
   const to = new Date();
   const from = new Date(to.getTime() - 7 * DAY_MS);
   const sum = summarize(await listResults(env, from.getTime()));
+  if (env.ADMIN_CHAT_ID) {
+    try {
+      await sendTelegramMessage(env, env.ADMIN_CHAT_ID, adminWeeklyText(sum));
+    } catch (e) {}
+  }
   if (!sum.all.n) return;
   const text = weeklyReportText(sum, from, to);
   await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text + `\n📋 Alle Ergebnisse: ${RESULTS_PAGE_URL}`);
