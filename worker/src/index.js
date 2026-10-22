@@ -798,11 +798,12 @@ function marketLambda(match) {
 function cardQuote(parsed) {
   const o = parsed && parsed.cardOdds;
   if (!o || !o.over || !o.under || o.line == null || parsed.goals == null || parsed.targetLine == null) return null;
-  if (o.line === parsed.targetLine) return { over: o.over, line: o.line, exact: true };
-  const rest = o.line - parsed.goals;
-  if (rest <= 0) return null;
   const book = 1 / o.over + 1 / o.under;
   const pFair = 1 / o.over / book;
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  if (o.line === parsed.targetLine) return { over: o.over, line: o.line, exact: true, p: r3(pFair), book: r3(book) };
+  const rest = o.line - parsed.goals;
+  if (rest <= 0) return null;
   let lo = 0;
   let hi = 20;
   for (let i = 0; i < 60; i++) {
@@ -812,7 +813,35 @@ function cardQuote(parsed) {
   }
   const p = poissonTail(Math.floor(parsed.targetLine - parsed.goals) + 1, (lo + hi) / 2);
   if (!(p > 0 && p < 1)) return null;
-  return { over: Math.max(1.01, Math.round((1 / (p * book)) * 100) / 100), line: parsed.targetLine, exact: false };
+  return { over: Math.max(1.01, Math.round((1 / (p * book)) * 100) / 100), line: parsed.targetLine, exact: false, p: r3(p), book: r3(book) };
+}
+
+// The owner's real entry: wait until the over quote reaches WAIT_QUOTE, then
+// bet. Estimated from the signal quote: the rate of the one goal still needed
+// falls linearly with the time left (to ~95'), so the quote rises; the entry
+// minute is when it reaches WAIT_QUOTE. Goal before it -> no bet, goal after ->
+// win at WAIT_QUOTE (or the signal quote if that was already higher), no goal ->
+// loss. Needs the exact goal minute (goalExact), otherwise unknown.
+const WAIT_QUOTE = 1.4;
+function waitEntryMinute(t) {
+  const q = t.signalQuote;
+  if (!q || !q.p || !q.book || t.minute == null || t.under) return null;
+  const target = 1 / (WAIT_QUOTE * q.book);
+  if (!(target > 0 && target < 1)) return null;
+  const lam0 = -Math.log(1 - Math.min(q.p, 0.999));
+  const lamStar = -Math.log(1 - target);
+  const left = Math.max(5, 95 - t.minute);
+  return Math.round(t.minute + (lamStar >= lam0 ? 0 : left * (1 - lamStar / lam0)));
+}
+
+function waitOutcome(t, result) {
+  const entry = waitEntryMinute(t);
+  if (entry == null || !t.units || (result !== "won" && result !== "lost")) return null;
+  const quote = Math.max(WAIT_QUOTE, entry === Math.round(t.minute) ? t.signalQuote.over : WAIT_QUOTE);
+  if (result === "lost") return { entry, bet: true, profit: -t.units };
+  if (!t.goalExact || t.resultMinute == null) return { entry, bet: null, profit: null };
+  if (t.resultMinute < entry) return { entry, bet: false, profit: 0 };
+  return { entry, bet: true, profit: Math.round(t.units * (quote - 1) * 100) / 100 };
 }
 
 function marketProb(match, targetLine) {
@@ -1327,6 +1356,7 @@ async function settleTracked(env, feed) {
   let changed = false;
   const keep = [];
   const settled = new Set(); // duplicates of a tip settled in this run are dropped silently
+  const warnTiers = new Set();
   for (const t of open) {
     const k = tipKey(t.tier, t.home, t.away, t.line);
     if (settled.has(k)) {
@@ -1340,7 +1370,11 @@ async function settleTracked(env, feed) {
       const minute = num(m.minute);
       if (goals > t.line) {
         result = t.under ? "lost" : "won";
-        t.resultMinute = minute;
+        // The guest feed often shows a match only near the end: take the
+        // feed's last-goal minute when exactly the one needed goal fell.
+        const lastGoal = num(m.sonGolDakikasi);
+        t.goalExact = !t.under && goals === t.line + 0.5 && lastGoal != null && lastGoal > 0 && (t.minute == null || lastGoal >= t.minute);
+        t.resultMinute = t.goalExact ? lastGoal : null; // unknown which goal came first
       } else {
         if (minute != null && minute >= TRACK_LOST_AFTER_MIN && !t.late) {
           t.late = true;
@@ -1364,6 +1398,7 @@ async function settleTracked(env, feed) {
     if (result) {
       settled.add(k);
       changed = true;
+      if (result !== "void") warnTiers.add(t.tier);
       await saveResult(env, t, result);
       try {
         await markPremiumPost(env, t, result);
@@ -1375,6 +1410,11 @@ async function settleTracked(env, feed) {
       keep.push(t);
     }
   }
+  if (warnTiers.size) {
+    try {
+      await maybeWarn(env, warnTiers);
+    } catch (e) {}
+  }
   if (!changed) return; // most minutes: no KV write at all
   const latest = await readTracked(env);
   const keepIds = new Set(keep.map((t) => t.id));
@@ -1383,6 +1423,44 @@ async function settleTracked(env, feed) {
   const merged = keep.concat(latest.filter((t) => !openIds.has(t.id) && !keepIds.has(t.id)));
   if (merged.length) await env.ACCESS_KV.put(TRACK_KEY, JSON.stringify(merged), { expirationTtl: 2 * 24 * 60 * 60 });
   else await env.ACCESS_KV.delete(TRACK_KEY);
+}
+
+// Early warning to the owner (ADMIN_CHAT_ID). After a tip settles, the last
+// WARN_WINDOW decided tips of its tier are compared with the expected hit rate:
+// fewer wins than expected minus 2 standard deviations (about a 1-in-40 chance
+// if nothing changed), or a loss over the last bets with the "wait for 1.40"
+// entry, sends one message per tier and day (warn:<tier>:<day>).
+const WARN_WINDOW = 30;
+const WARN_MIN = 20;
+const WARN_EXPECTED = { premium: 0.786, half: 0.65, o15: 0.76, under: 0.68, risk: 0.6 };
+const WARN_LABEL = { premium: "🔥 High Confidence", half: "🟠 Half-Risiko", o15: "🧪 Over 1.5 Test", under: "🛡️ Under 3.5", risk: "⚠️ Risiko" };
+async function maybeWarn(env, tiers) {
+  if (!env.ADMIN_CHAT_ID || !env.TELEGRAM_BOT_TOKEN) return;
+  const day = new Date().toISOString().slice(0, 10);
+  const todo = [];
+  for (const tier of tiers) {
+    if (!WARN_EXPECTED[tier] || (await env.ACCESS_KV.get(`warn:${tier}:${day}`))) continue;
+    todo.push(tier);
+  }
+  if (!todo.length) return;
+  const rows = await listResults(env, Date.now() - 30 * DAY_MS); // newest first
+  for (const tier of todo) {
+    const last = rows.filter((r) => r.tier === tier && (r.result === "won" || r.result === "lost")).slice(0, WARN_WINDOW);
+    if (last.length < WARN_MIN) continue;
+    const n = last.length;
+    const won = last.filter((r) => r.result === "won").length;
+    const p = WARN_EXPECTED[tier];
+    const floor = n * p - 2 * Math.sqrt(n * p * (1 - p));
+    const bets = last.filter((r) => r.wait && r.wait.bet && r.wait.profit != null);
+    const waitProfit = Math.round(bets.reduce((a, r) => a + r.wait.profit, 0) * 100) / 100;
+    const reasons = [];
+    if (won < floor) reasons.push(`nur ${won} von ${n} getroffen (${Math.round((won / n) * 100)} %, erwartet ~${Math.round(p * 100)} %)`);
+    if (bets.length >= WARN_MIN && waitProfit < 0) reasons.push(`mit Einstieg ab Quote 1,40 (geschätzt) ${String(waitProfit).replace(".", ",")} Einheiten bei ${bets.length} Einsätzen`);
+    if (!reasons.length) continue;
+    await env.ACCESS_KV.put(`warn:${tier}:${day}`, "1", { expirationTtl: 2 * DAY_MS / 1000 });
+    await sendTelegramMessage(env, env.ADMIN_CHAT_ID,
+      `⚠️ Frühwarnung: ${WARN_LABEL[tier]}\nLetzte ${n} Tipps: ${reasons.join("; ")}.\n\nBitte prüfen: ${RESULTS_PAGE_URL}\nZufall ist möglich (etwa 1 zu 40). Wenn es anhält: Stufe strenger machen oder abschalten.`);
+  }
 }
 
 // Posts a tip to the premium channel and returns what is needed to mark it
@@ -1428,6 +1506,7 @@ async function saveResult(env, t, result) {
     postedAt: new Date(t.postedAt).toISOString(), settledAt: now.toISOString(),
     result, resultMinute: t.resultMinute != null ? t.resultMinute : null,
     units: t.units, minQuote: t.minQuote, quote: priced, quoteEstimated, betPlaced,
+    wait: waitOutcome(t, result),
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
   };
   // The record is also stored as key metadata, so listing results (public
@@ -1621,6 +1700,16 @@ function summarize(rows) {
     quotedAll: quoted.length,
     profitAll: Math.round(profitAll * 100) / 100,
     stakedAll: quoted.reduce((a, r) => a + r.units, 0),
+    ...(() => {
+      const w = decided.filter((r) => r.wait && r.wait.profit != null);
+      const bets = w.filter((r) => r.wait.bet);
+      return {
+        waitBets: bets.length, waitWon: bets.filter((r) => r.result === "won").length,
+        waitSkipped: w.filter((r) => r.wait.bet === false).length,
+        waitProfit: Math.round(bets.reduce((a, r) => a + r.wait.profit, 0) * 100) / 100,
+        waitStaked: bets.reduce((a, r) => a + r.units, 0),
+      };
+    })(),
     avgQuote: quoted.length ? Math.round((quoted.reduce((a, r) => a + r.quote, 0) / quoted.length) * 100) / 100 : null,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
@@ -2317,6 +2406,7 @@ async function loadResults(days) {
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
     let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Over 1.5 Test: <b>' + t(s.o15 || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    if (s.waitBets) html += '<br>Warten bis Quote 1,40 (geschätzt): ' + s.waitWon + ' von ' + s.waitBets + ' gesetzten getroffen, ' + s.waitSkipped + ' Tore kamen vorher · <b>' + (s.waitProfit >= 0 ? '+' : '') + s.waitProfit + ' Einheiten</b>';
     if (s.quotedAll) html += '<br>Jeder Tipp zur Quote beim Signal (' + s.quotedAll + ' Tipps, Ø Quote ' + s.avgQuote + '): <b>' + (s.profitAll >= 0 ? '+' : '') + s.profitAll + ' Einheiten</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
     html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';

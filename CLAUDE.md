@@ -39,7 +39,15 @@ every tracked tip stores `signalQuote` = `cardQuote(parsed)` (since 2026-10-22: 
 when the live line is the target line, else Poisson λ from the card's line + the card's margin, `exact: false`);
 `saveResult` prices with the feed quote for the own line, else `signalQuote` (`quoteEstimated`), and the results
 page / weekly report / admin show profit for *every* tip at its signal quote (`profitAll`, from 20 tips) and for
-tips at ≥ Mindestquote only. The owner does not bet every tip, so no manual quote entry. Every post shows a
+tips at ≥ Mindestquote only. The owner does not bet every tip, so no manual quote entry. The owner's real entry is
+"wait until the quote reaches 1.40": `waitOutcome` (stored as `wait` on each result, admin "Ergebnisse" line
+"Warten bis Quote 1,40") estimates the entry minute (goal rate falls linearly to ~95', from `signalQuote.p/book`);
+goal before entry → no bet, after → win at 1.40, no goal → loss; needs the exact goal minute. Goal minute: since
+22.10. `settleTracked` takes the feed's `sonGolDakikasi` when exactly the one needed goal fell (`goalExact`), else
+`resultMinute` is null (the guest feed shows matches late, the old feed minute was often wrong). **Early warning**
+(`maybeWarn`, after each settled tip): last 30 decided tips of a tier below expected − 2 SD (`WARN_EXPECTED`:
+premium 0.786, half 0.65, o15 0.76, under 0.68) or the 1.40-wait profit < 0 over ≥ 20 bets → one Telegram message
+to ADMIN_CHAT_ID per tier and day (`warn:<tier>:<day>`). Every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
 `/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
 total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
@@ -194,6 +202,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   scheduled task that builds a new video and sends it – not set up (owner did not answer).
 
 ## Change log (latest first)
+
+- 2026-10-22: early warning to the owner via Telegram (`maybeWarn`), "wait for 1.40" entry estimate (`waitOutcome`),
+  exact goal minute from `sonGolDakikasi` (banner/results no longer show the late feed minute).
 
 - 2026-10-22: automatic quote per tip from the signal card (`cardQuote`, estimated via Poisson when the card's live
   line differs); profit shown for all tips at signal quote and for tips ≥ Mindestquote. First harness check: O0.5
