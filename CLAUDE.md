@@ -332,8 +332,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 - Improvement plan given to the owner 22.10. (profit first). Done: (1) automatic quote per tip from the card
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
-  warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). Open, owner to pick: (4) simpler O2.5
-  rule (filter lost to raw rate on unseen days), (5) score as O3.5 feature, (6) fixed Monday routine (new CSV →
+  warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
+  22.10. (see below, no change yet). Open, owner to pick: (5) score as O3.5 feature, (6) fixed Monday routine (new CSV →
   recalibrate, switch weak tiers off), (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
   GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
   keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
