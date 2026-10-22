@@ -415,6 +415,10 @@ const RISK_WR = 0.628;
 // Stake advice in units, by expected hit rate.
 const UNITS_STRONG = 2; // goal score >= +1 (historically ~82%)
 const UNITS_NORMAL = 1;
+// High Confidence O0.5 (0:0) at a pre-match line >= 4: 93.5% (n=107, halves
+// 93/94) in all exports up to 21.10. -> double stake (owner's call 22.10.).
+const O05_STRONG_LINE = 4;
+const strongO05 = (parsed) => parsed.targetLine === 0.5 && parsed.goallinePre != null && parsed.goallinePre >= O05_STRONG_LINE;
 const UNITS_RISK = 0.5;
 // Half-Risiko tier: cards at minute 68-69 below the confidence threshold,
 // only when the live goal score is >= -7 (backtest 2026-10-07: 66.3%, n=172,
@@ -1099,10 +1103,11 @@ const RUN_LOCK_MS = 110 * 1000;
 
 async function postUnchecked(env, item, reason, label) {
   const mq = minQuote(item.proba);
+  const units = strongO05(item.parsed) ? UNITS_STRONG : UNITS_NORMAL;
   // No "ohne Live-Prüfung" suffix since 17.10.: without a live source it was on every post (owner's call).
   label = label || `🔥 High Confidence (${Math.round(item.proba * 100)}%)`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n\n" +
-      stakeAdvice(item.parsed.targetLine, mq, UNITS_NORMAL, item.signalOdds));
+      stakeAdvice(item.parsed.targetLine, mq, units, item.signalOdds));
   await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
     signalOdds: item.signalOdds || null,
     unchecked: reason,
@@ -1111,7 +1116,7 @@ async function postUnchecked(env, item, reason, label) {
   await trackSignal(env, {
     ...post,
     tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
-    line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units: UNITS_NORMAL, odds: item.signalOdds || null,
+    line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units, odds: item.signalOdds || null,
   });
 }
 
@@ -1207,7 +1212,7 @@ async function processPendingPremium(env, due, feed) {
       // Expected hit rate: the lower of the live model and the goal-score band.
       const expected = Math.min(res.score.proba, res.goal.wr || res.score.proba);
       const mq = minQuote(expected);
-      const units = res.goal.points >= 1 ? UNITS_STRONG : UNITS_NORMAL;
+      const units = res.goal.points >= 1 || strongO05(item.parsed) ? UNITS_STRONG : UNITS_NORMAL;
       const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n" + confirmationBlock(res) + "\n\n" +
           stakeAdvice(item.parsed.targetLine, mq, units, res.postOdds));
       await trackSignal(env, {

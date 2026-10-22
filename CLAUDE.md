@@ -21,7 +21,7 @@ Premium tiers (all in `worker/src/index.js`):
 
 | Tier | Rule | Stake |
 |---|---|---|
-| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1) |
+| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75 (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
@@ -177,6 +177,9 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-22: O0.5 analysis (`scripts/o05_stats.py`); High Confidence O0.5 at pre-match line ≥ 4 posts with
+  2 units (93.5 %, n=107, halves 93/94).
+
 - 2026-10-21: TikTok video 10 `marketing/tiktok-knapp.mp4` (close lead vs clear lead: when the next goal falls).
 
 - 2026-10-21: Over 1.5 test tier on the owner's request (min ≤ 61 + pre-match line ≥ 2.75, 0.5 units,
@@ -306,7 +309,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   drives it (≤ 2.5 63 %, 2.75–3.0 70 %, 3.25–3.5 71 %, ≥ 3.5 81.5 % (325, halves 84/79), ≥ 4 93.5 % (107, halves
   93/94)); SoT, radar and minute barely matter (the model is mostly a line filter). Live High Confidence O0.5
   on `/ergebnisse` 18.–21.10.: 10/11 + 3 void. "MoneyBag 0-0 → Goal" sent no cards after 17.10. 19:46 (owner
-  to check whether it is switched off). Offered: 2 units for O0.5 at line ≥ 4 – only with the owner's yes.
+  to check whether it is switched off). Owner said yes 22.10.: O0.5 High Confidence at line ≥ 4 gets 2 units
+  (`O05_STRONG_LINE`); watch these tips on `/ergebnisse` (expected ~93 %, 2–3 per day).
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
