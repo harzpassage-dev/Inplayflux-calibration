@@ -1507,6 +1507,8 @@ async function saveResult(env, t, result) {
     result, resultMinute: t.resultMinute != null ? t.resultMinute : null,
     units: t.units, minQuote: t.minQuote, quote: priced, quoteEstimated, betPlaced,
     wait: waitOutcome(t, result),
+    // Market's fair probability for the tip at signal time (from the card, margin removed).
+    marketP: !t.under && t.signalQuote && t.signalQuote.p ? t.signalQuote.p : null,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
   };
   // The record is also stored as key metadata, so listing results (public
@@ -1700,6 +1702,15 @@ function summarize(rows) {
     quotedAll: quoted.length,
     profitAll: Math.round(profitAll * 100) / 100,
     stakedAll: quoted.reduce((a, r) => a + r.units, 0),
+    // Hit rate vs the market's expectation at signal time, per tier: we only
+    // make money over time where we hit more often than the market expects.
+    market: Object.fromEntries(["premium", "half", "o15", "under"].map((tier) => {
+      const m = decided.filter((r) => r.tier === tier && r.marketP != null);
+      return [tier, m.length ? {
+        n: m.length, won: m.filter((r) => r.result === "won").length,
+        expected: Math.round((m.reduce((a, r) => a + r.marketP, 0) / m.length) * 1000) / 10,
+      } : null];
+    })),
     ...(() => {
       const w = decided.filter((r) => r.wait && r.wait.profit != null);
       const bets = w.filter((r) => r.wait.bet);
@@ -2406,6 +2417,16 @@ async function loadResults(days) {
     const s = d.summary;
     const t = x => x.n ? x.won + '/' + x.n + ' = ' + (Math.round(x.won / x.n * 1000) / 10) + ' %' : '–';
     let html = '<div style="font-size:0.9rem;line-height:1.6;">High Confidence: <b>' + t(s.premium) + '</b><br>Half-Risiko: <b>' + t(s.half || {n:0}) + '</b><br>Risiko: <b>' + t(s.risk) + '</b><br>Under 3.5: <b>' + t(s.under || {n:0}) + '</b><br>Over 1.5 Test: <b>' + t(s.o15 || {n:0}) + '</b><br>Gesamt: <b>' + t(s.all) + '</b>';
+    const mk = Object.entries(s.market || {}).filter(e => e[1]);
+    if (mk.length) {
+      const nm = { premium: 'High Confidence', half: 'Half-Risiko', o15: 'Over 1.5 Test', under: 'Under 3.5' };
+      html += '<br><b>Markt-Vergleich</b> (Markt-Erwartung beim Signal vs. getroffen):';
+      mk.forEach(([k, v]) => {
+        const hit = Math.round(v.won / v.n * 1000) / 10;
+        const diff = Math.round((hit - v.expected) * 10) / 10;
+        html += '<br>' + nm[k] + ': Markt ' + v.expected + ' % · wir ' + hit + ' % (' + v.won + '/' + v.n + ') · <b style="color:' + (diff > 0 ? '#4caf7a' : '#e06c5a') + ';">' + (diff > 0 ? '+' : '') + diff + ' Punkte</b>' + (v.n < 50 ? ' <small>(noch wenig Daten)</small>' : '');
+      });
+    }
     if (s.waitBets) html += '<br>Warten bis Quote 1,40 (geschätzt): ' + s.waitWon + ' von ' + s.waitBets + ' gesetzten getroffen, ' + s.waitSkipped + ' Tore kamen vorher · <b>' + (s.waitProfit >= 0 ? '+' : '') + s.waitProfit + ' Einheiten</b>';
     if (s.quotedAll) html += '<br>Jeder Tipp zur Quote beim Signal (' + s.quotedAll + ' Tipps, Ø Quote ' + s.avgQuote + '): <b>' + (s.profitAll >= 0 ? '+' : '') + s.profitAll + ' Einheiten</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';

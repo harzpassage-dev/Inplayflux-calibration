@@ -47,7 +47,9 @@ goal before entry → no bet, after → win at 1.40, no goal → loss; needs the
 `resultMinute` is null (the guest feed shows matches late, the old feed minute was often wrong). **Early warning**
 (`maybeWarn`, after each settled tip): last 30 decided tips of a tier below expected − 2 SD (`WARN_EXPECTED`:
 premium 0.786, half 0.65, o15 0.76, under 0.68) or the 1.40-wait profit < 0 over ≥ 20 bets → one Telegram message
-to ADMIN_CHAT_ID per tier and day (`warn:<tier>:<day>`). Every post shows a
+to ADMIN_CHAT_ID per tier and day (`warn:<tier>:<day>`). **Market comparison** (since 22.10.): results store `marketP`
+(= `signalQuote.p`, fair market probability at signal time); `summarize().market` gives per tier the average
+market expectation vs our hit rate, shown in admin "Ergebnisse" (green/red points; < 50 tips flagged). Every post shows a
 **Mindestquote** = ceil(100 / win rate) / 100. Public **results page**
 `/ergebnisse` (no token): all settled tips from `result:*`, hit rate per tier for 7/30 days/
 total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Result records are
@@ -203,6 +205,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 ## Change log (latest first)
 
+- 2026-10-22: market comparison per tier in admin "Ergebnisse" (`marketP` per result).
+
 - 2026-10-22: early warning to the owner via Telegram (`maybeWarn`), "wait for 1.40" entry estimate (`waitOutcome`),
   exact goal minute from `sonGolDakikasi` (banner/results no longer show the late feed minute).
 
@@ -328,7 +332,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 - Improvement plan given to the owner 22.10. (profit first). Done: (1) automatic quote per tip from the card
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
-  warning (`maybeWarn`). Open, owner to pick: (2) market comparison from the admin premium CSV, (4) simpler O2.5
+  warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). Open, owner to pick: (4) simpler O2.5
   rule (filter lost to raw rate on unseen days), (5) score as O3.5 feature, (6) fixed Monday routine (new CSV →
   recalibrate, switch weak tiers off), (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
   GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
