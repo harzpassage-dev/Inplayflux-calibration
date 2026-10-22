@@ -302,6 +302,11 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   Compare strategies one by one at ~100 tips; ValueShots15 is the candidate to switch off.
 - O3.5 by score (`scripts/o35_scoreline.py`): 3:0/0:3 73 %, 2:1/1:2 69 %; 3:0/0:3 + min ≤ 63 + line ≥ 3
   78.2 % (698). Score is not a model feature yet (unseen: 72.6 vs 67.5 %); candidate for the next export.
+- O0.5 analysis 22.10. (`scripts/o05_stats.py`, 1,457 cards at 0:0, 1,194 matches): all 71 %; the pre-match line
+  drives it (≤ 2.5 63 %, 2.75–3.0 70 %, 3.25–3.5 71 %, ≥ 3.5 81.5 % (325, halves 84/79), ≥ 4 93.5 % (107, halves
+  93/94)); SoT, radar and minute barely matter (the model is mostly a line filter). Live High Confidence O0.5
+  on `/ergebnisse` 18.–21.10.: 10/11 + 3 void. "MoneyBag 0-0 → Goal" sent no cards after 17.10. 19:46 (owner
+  to check whether it is switched off). Offered: 2 units for O0.5 at line ≥ 4 – only with the owner's yes.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
