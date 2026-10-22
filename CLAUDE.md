@@ -214,6 +214,8 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-22: `/impressum` page from Cloudflare variables (404 until set), footer link on `/ergebnisse`.
+
 - 2026-10-22: daily private morning report to the owner (07:00 UTC, not Mondays) incl. "line went quiet" warning.
 
 - 2026-10-22: per-card queue keys (`pending:*`) instead of one shared list – parallel webhook runs no longer drop
@@ -432,7 +434,10 @@ then decide per tier on the new days and apply.
   `marketing/werbetexte.md` rewritten 22.10. (no 2-minute live check claim any more, Under 3.5/Risiko removed, link =
   free channel t.me/MoneyBagAnalyst or a per-source invite link, results page linked). Paid ads (Telega.io) only after
   the market comparison shows an edge (≥ 50 tips) and InPlayFlux has answered (plan item 12). Owner told: a paid
-  offer in Germany needs an Impressum/terms;
+  offer in Germany needs an Impressum/terms; `/impressum` built 22.10. (`impressumPage`, § 5 DDG, "kein Wettanbieter" note,
+  shown only when the owner sets the Cloudflare variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (lines split by "|"),
+  so the address stays out of the repo; linked from the results page footer; terms/AGB still missing, owner should
+  have it checked (lawyer or e-recht24);
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 

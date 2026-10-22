@@ -211,3 +211,19 @@ test("daily report: private summary of the last 24 h, flags a line that went qui
   }
   assert.equal(net2.sent.length, 0, "no daily report on Mondays");
 });
+
+test("impressum: hidden without the Cloudflare variables, shown (escaped) with them, linked from the results page", async () => {
+  mockNet({ feed: [] });
+  const none = makeEnv();
+  assert.equal((await worker.fetch(new Request("https://x/impressum"), none, {})).status, 404);
+  assert.ok(!(await (await worker.fetch(new Request("https://x/ergebnisse"), none, {})).text()).includes("/impressum"));
+  const env = makeEnv({ IMPRESSUM_NAME: "Max <Muster>", IMPRESSUM_ADDRESS: "Musterweg 1|12345 Musterstadt" });
+  const r = await worker.fetch(new Request("https://x/impressum"), env, {});
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("x-frame-options"), "DENY");
+  const html = await r.text();
+  for (const want of ["Max &lt;Muster&gt;", "Musterweg 1<br>12345 Musterstadt", "harzpassage@gmx.de", "§ 5 DDG", "kein Wettanbieter"]) {
+    assert.ok(html.includes(want), want);
+  }
+  assert.ok((await (await worker.fetch(new Request("https://x/ergebnisse"), env, {})).text()).includes('href="/impressum"'));
+});

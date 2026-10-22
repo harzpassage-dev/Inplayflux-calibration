@@ -2002,8 +2002,36 @@ ${profit}
 <h2>Selbst verfolgen</h2>
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00</footer>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a>' : ""}</footer>
 </main></body></html>`;
+}
+
+// Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
+// variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (address lines separated by
+// "|"), so the owner's address is never in the repository; IMPRESSUM_EMAIL is
+// optional. Without name and address the page does not exist (404).
+function impressumPage(env) {
+  if (!env.IMPRESSUM_NAME || !env.IMPRESSUM_ADDRESS) return new Response("Not found", { status: 404 });
+  const email = env.IMPRESSUM_EMAIL || "harzpassage@gmx.de";
+  const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join("<br>");
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – Impressum</title><meta name="robots" content="noindex">
+<style>body{margin:0;background:#0b1630;color:#eef2fb;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{font-size:18px;margin-top:28px;color:#f5c542}a{color:#f5c542}p{color:#d5ddef}</style></head><body><main>
+<h1>Impressum</h1>
+<h2>Angaben gemäß § 5 DDG</h2>
+<p>${htmlEsc(env.IMPRESSUM_NAME)}<br>${addr}</p>
+<h2>Kontakt</h2>
+<p>E-Mail: <a href="mailto:${htmlEsc(email)}">${htmlEsc(email)}</a></p>
+<h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+<p>${htmlEsc(env.IMPRESSUM_NAME)}, Anschrift wie oben</p>
+<h2>Hinweis zum Angebot</h2>
+<p>MoneyBag veröffentlicht statistische Auswertungen und Einschätzungen zu Fußballspielen. MoneyBag ist kein Wettanbieter, nimmt keine Wetten an und vermittelt keine Wetten. Jede Wette erfolgt auf eigenes Risiko bei einem Anbieter der eigenen Wahl. Vergangene Ergebnisse sagen nichts über künftige aus; es gibt keine Gewinngarantie. Teilnahme erst ab 18 Jahren. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00.</p>
+<h2>Verbraucherstreitbeilegung</h2>
+<p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+<p><a href="/ergebnisse">← Zur Ergebnisseite</a></p>
+</main></body></html>`;
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
 
 async function resultsPage(request, env, ctx) {
@@ -2773,6 +2801,11 @@ export default {
     if (url.pathname === "/ergebnisse" || url.pathname === "/ergebnisse/") {
       if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
       return resultsPage(request, env, ctx);
+    }
+
+    // --- Legal notice (Impressum) ---
+    if (url.pathname === "/impressum" || url.pathname === "/impressum/") {
+      return impressumPage(env);
     }
 
     // --- Admin ---
