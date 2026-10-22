@@ -357,7 +357,7 @@ then decide per tier on the new days and apply.
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
   (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). (9) per-card pending keys (done 22.10.). Open,
-  owner to pick: (10) daily morning report (done 22.10.), (11) paid API-Football for the live check (test 1 month),
+  owner to pick: (10) daily morning report (done 22.10.), (11) live check analysed 22.10. – not worth 19 $/month now (owner to decide),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
   (15) weekly results image to the free channel.
@@ -412,6 +412,12 @@ then decide per tier on the new days and apply.
   `queuePremium` = single put, `readPending` = list + get, done keys deleted; the old `premium:pending` list is still
   read until empty). KV list is eventually consistent: a card can show up one minute later; a deleted key seen again
   is caught by the `tipKey` dedupe.
+- Live check value (plan item 11, analysed 22.10. on 13,237 cards): the needed goal fell within 1 / 2 / 3 min
+  after the card in 1.0 / 2.1 / 3.3 % of all cards; a red card at signal time (7.1 % of cards) makes no
+  difference (71.8 vs 73.0 %). So the check would mainly drop ~1–2 % "already decided" tips (which today count as
+  wins, ~1 pp too optimistic) and cost speed (2-min wait). API-Football Pro ~19 $/month (7,500 calls/day; prices from
+  third-party listings, confirm on api-sports.io). Recommended to the owner: not now; if wanted, use the key for an
+  instant check at posting time (no 2-min wait) instead of the delayed check.
 - Live check: none for now (guest feed ~15 matches; API-Football free plan suspended on Cloudflare IPs;
   Highlightly lacks lower leagues). Re-enable by a paid API-Football plan + secret `APIFOOTBALL_KEY`
   (code ready). Owner was offered an email draft to InPlayFlux (API access / partnership, also about
