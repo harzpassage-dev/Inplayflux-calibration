@@ -211,6 +211,8 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-22: Under 3.5 recalculated on 164 strict log games: no rule holds in both halves, stays paused.
+
 - 2026-10-22: weekly routine: Monday "Wochen-Check" DM to the owner, `scripts/weekly.py` (all analyses from one raw
   CSV), project skill `.claude/skills/wochen-routine/SKILL.md`.
 
@@ -343,7 +345,7 @@ then decide per tier on the new days and apply.
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
-  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). Open, owner to pick: (7) Under 3.5 recalculation at 100 log games, (8) harness tests in the repo +
+  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. Open, owner to pick: (8) harness tests in the repo +
   GitHub Action (harnesses now only live in /tmp/claude-0 and are lost between containers), (9) per-card pending
   keys, (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
@@ -412,12 +414,12 @@ then decide per tier on the new days and apply.
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
 
-- Under 3.5: **paused since 21.10.** (rule rested on only 22–25 strict log games, ± ~15 pp). Owner wants
-  it recalculated: needs the admin "Under 3.5 (still protokolliert)" CSV (button "CSV", last 60 days) with ≥ 100 strict
-  games; analysis ready: `python3 scripts/u35_stats.py under35_log_<date>.csv` (strict = has goal score, won only
-  with `seen_late`, a minute ≥ 85, not a boolean; reproduces 16.10.: 81 games, old rule 72 % n=25). Owner asked 22.10. (`u35:*` log, rows with goal score + seen_late). Profit unknown for live
-  lines below 3.5: the feed has no Under 3.5 quote there (it is lower than the main-line under,
-  roughly 1.40–1.50 at line 3.0).
+- Under 3.5: **paused since 21.10., stays off after the recalculation of 22.10.** (`scripts/u35_stats.py` on
+  `under35_log_2026-10-22.csv`: 164 strict games 11.–22.10., halves split 17.10.): all 52 % (56/47); old rule goal
+  score ≤ 0 & live line ≤ 3.5 66 % (47) but 75 % → **47 %** (15) in the second half; line ≤ 3.0 81 → 55 %; market
+  ≥ 60 % 73 → 50 %; goal score ≤ −2 & line ≤ 3.5 75 → 57 % (7). Nothing holds in both halves. Only live line exactly
+  3.5 (real Under quote, avg 1.85): 52 games +2.9 units (−0.8 / +3.7 by half) – too small and unstable. Shadow log
+  keeps running; retest at ≥ 300 strict games (~3 weeks).
 - Market cut (60 %) is provisional: recalibrate from `market_proba` in the premium CSV export
   (`scripts/premium_report.py` prints hit rate by market band).
 - Risiko tier switched off 2026-10-13 (8/20, then 4/9 live). Re-enable only after a new export
