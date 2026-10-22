@@ -352,7 +352,8 @@ then decide per tier on the new days and apply.
   (owner does not bet every tip and waits for ≥ 1.40, so no manual entry; `cardQuote`, `waitOutcome`), (3) early
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
-  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). Open, owner to pick: (9) per-card pending keys (done 22.10.), (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
+  (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). (9) per-card pending keys (done 22.10.). Open,
+  owner to pick: (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
   (15) weekly results image to the free channel.
