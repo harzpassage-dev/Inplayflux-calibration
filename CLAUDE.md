@@ -209,10 +209,14 @@ then decide per tier on the new days and apply.
   not confirmed). Keep MoneyBag off Torminute; if ever on Instagram, only a separate account.
 - Auto-posting: Claude cannot post to TikTok/Instagram (no access). OpusClip is connected but on the FREE
   plan (no API access; even Pro needs per-post approval in the app). Recommended to the owner: schedule
-  posts in the apps (Instagram "Planen", TikTok web upload "Planen", ~10 days ahead). Offered a weekly
-  scheduled task that builds a new video and sends it – not set up (owner did not answer).
+  posts in the apps (Instagram "Planen", TikTok web upload "Planen", ~10 days ahead). Weekly scheduled task
+  "Torminute Wochen-Video" (id trig_01TmwaGTcKUy48D2mq19y4V7, set up 22.10. on the owner's request): Sundays 17:37
+  Berlin, fresh session, builds one new stable-statistics video by the rules above, pushes it (marketing/, scripts/,
+  CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-22: scheduled task "Torminute Wochen-Video" (Sundays 17:37 Berlin) builds and sends one new video per week.
 
 - 2026-10-22: `/impressum` page from Cloudflare variables (404 until set), footer link on `/ergebnisse`.
 
@@ -361,7 +365,7 @@ then decide per tier on the new days and apply.
   (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). (9) per-card pending keys (done 22.10.). Open,
   owner to pick: (10) daily morning report (done 22.10.), (11) live check analysed 22.10. – not worth 19 $/month now (owner to decide),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
-  fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
+  fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly video task (done 22.10.),
   (15) weekly results image to the free channel.
 - O2.5 analysis 22.10. (`scripts/o25_stats.py`, 6,487 cards at 2 goals): since 01.10. almost all O2.5 cards come
   from "MoneyBag 2-0/0-2 → Over 2.5 New" (pre-match line ≥ 3.25 built in, minute 55–67, ~43 cards/day): raw 80.2 %
