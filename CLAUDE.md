@@ -166,6 +166,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 | 8 | `tiktok-ecken.mp4` (31 s) | "Viele Ecken = viele Tore?" | `scripts/corner_stats.py`, 8,620 unique matches (earliest scene at 50–75', median 60', 05.09.–17.10.): avg 6 corners; goals up to the scene 0–4 corners 2.0, 5–8 1.9, 9–12 1.9 (halves 2.14/2.08/2.06, 1.71/1.61/1.57; corr −0.05); another goal 75/74/73 % (halves 75/75/75, 73/73/71); in matches with a lead the leading team has more corners 52 % vs trailing 36 % (halves 50/37, 55/33), 13 % equal; 13+ corners left out (n=143). Message: corners show pressure, not goals |
 | 9 | `tiktok-trainer.mp4` (31 s) | "3 Trainer-Sprüche im Daten-Check" | `scripts/trainer_stats.py`, 8,153 unique matches (earliest scene at 55–65', median 59', 05.09.–17.10.): "Die Null muss stehen" – 0:0 stays in 30 % (halves 28/31); "Das 2:0 ist das gefährlichste Ergebnis" – another goal at 0:0 70 %, 1:1 75 %, 2:0 77 % (halves 72/76/78, 69/74/77; who scores is unknown, said in the footnote); Herberger "Ein Spiel dauert 90 Minuten" – of next goals 20 % after 85' (halves 18.5/22), 7 % in stoppage time (6.4/6.9) |
 | 10 | `tiktok-knapp.mp4` (31 s) | "Knapp oder klar – wann fällt das nächste Tor?" | `scripts/margin_stats.py`, 8,680 unique matches (earliest scene at 55–65', median 60', 05.09.–21.10., halves split 01.10.): another goal 0:0 70 %, level with goals 75 %, 1-goal lead 73 %, 2+ lead 77 % (halves 72/69, 75.5/75.4, 74/71, 77/77); next goal after 75' 49 % at a 1-goal lead vs 41 % at 2+ (48/50, 40/43); in stoppage time 7.7 vs 5.4 % (7.5/8.1, 5.5/5.2). Who scores is unknown (footnote) |
+| 11 | `tiktok-methode.mp4` (31 s) | "Wie entstehen unsere Zahlen?" (method / behind the scenes, owner's topic) | steps: scene at ~60', wait for full time, count 8,680 unique matches; stability test shown with clear lead 77/77 % (kept) vs Spain 68/74 % (dropped, country check to 10.10.); example `scripts/method_stats.py`: 0:0 at 55–65' by pre-match goal expectation ≤ 2.5 64 % (182, halves 59/67) vs ≥ 3.75 82 % (131, halves 82/83); 'what we don't know': who scores, substitutions, weather/pitch |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -189,6 +190,8 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
   scheduled task that builds a new video and sends it – not set up (owner did not answer).
 
 ## Change log (latest first)
+
+- 2026-10-22: TikTok video 11 `marketing/tiktok-methode.mp4` (how the numbers are made, stability test, limits).
 
 - 2026-10-22: O0.5 analysis (`scripts/o05_stats.py`); High Confidence O0.5 at pre-match line ≥ 4 posts with
   2 units (93.5 %, n=107, halves 93/94).
@@ -345,7 +348,7 @@ lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute (videos 1–10 ready, see table above): owner uploads videos 1–10 (one per evening, with sound in the app), sets
+- TikTok @torminute (videos 1–11 ready, see table above): owner uploads videos 1–11 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: owner to fill placeholders in `marketing/werbetexte.md` (premium link, price);
