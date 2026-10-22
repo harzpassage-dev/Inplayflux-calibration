@@ -145,7 +145,9 @@ then decide per tier on the new days and apply.
   15 min (or delete `adminfail:<ip>` in KV). Recommended to them: admin password ≥ 16 chars.
 - Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`, `?tier=o15`,
   `?target=free`) are marked TEST and are never tracked or logged. Admin "Bilanz-Grafik
-  erstellen" draws the 7-day results as a 1080×1350 PNG in the browser.
+  erstellen" draws the 7-day results as a 1080×1350 PNG in the browser; its button "An Gratis-Kanal senden" (double tap)
+  uploads the PNG to `/admin/api/post-bilanz`, which posts it to the free channel with `sendPhoto` (Workers have no
+  canvas, so drawing stays in the browser; the Monday "Wochen-Check" reminds the owner).
 - Marketing rules: only verifiable numbers, backtests labelled, no gain promises, always
   "18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de"; free channel shows wins *and*
   losses (never cherry-pick); no spam DMs or hidden advertising.
@@ -215,6 +217,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-22: weekly results image to the free channel with one tap in admin (`/admin/api/post-bilanz`, sendPhoto).
 
 - 2026-10-22: scheduled task "Torminute Wochen-Video" (Sundays 17:37 Berlin) builds and sends one new video per week.
 
@@ -366,7 +370,7 @@ then decide per tier on the new days and apply.
   owner to pick: (10) daily morning report (done 22.10.), (11) live check analysed 22.10. – not worth 19 $/month now (owner to decide),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly video task (done 22.10.),
-  (15) weekly results image to the free channel.
+  (15) weekly results image to the free channel (done 22.10., one tap in admin).
 - O2.5 analysis 22.10. (`scripts/o25_stats.py`, 6,487 cards at 2 goals): since 01.10. almost all O2.5 cards come
   from "MoneyBag 2-0/0-2 → Over 2.5 New" (pre-match line ≥ 3.25 built in, minute 55–67, ~43 cards/day): raw 80.2 %
   (945); model ≥ 0.80 on it 81.1 % (486, ~22/day), unseen 17.–21.10. 78.3 % (83) vs raw 81.2 % (149). Simple rule

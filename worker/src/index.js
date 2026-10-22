@@ -1800,6 +1800,7 @@ function adminWeeklyText(sum) {
   if (sum.quotedAll) lines.push("", `Jeder Tipp zur Quote beim Signal (${sum.quotedAll}): ${sg(sum.profitAll)} Einheiten`);
   if (sum.waitBets) lines.push(`Warten bis Quote 1,40 (geschätzt, ${sum.waitBets} Einsätze, ${sum.waitSkipped} Tore kamen vorher): ${sg(sum.waitProfit)} Einheiten`);
   lines.push("", "📥 Wochen-Routine: Bitte bei InPlayFlux den CSV-Export der letzten Woche herunterladen und Claude geben. Claude kalibriert neu und schaltet schwache Stufen ab.");
+  lines.push("🖼️ Wochenbild: Admin → „Bilanz-Grafik erstellen (7 Tage)“ → „An Gratis-Kanal senden“.");
   return lines.join("\n");
 }
 
@@ -2519,10 +2520,35 @@ document.getElementById('img-btn').addEventListener('click', async () => {
     if (!r.ok) throw new Error('Fehler ' + r.status + ' (falsches Passwort?)');
     const d = await r.json();
     const to = new Date(), from = new Date(to.getTime() - 7 * 86400000);
-    const url = drawBilanz(d.summary, from, to).toDataURL('image/png');
+    const canvas = drawBilanz(d.summary, from, to);
+    const url = canvas.toDataURL('image/png');
     const name = 'moneybag_bilanz_' + to.toISOString().slice(0, 10) + '.png';
-    out.innerHTML = '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:6px;">Auf dem iPad: Bild lange gedrückt halten → „Zu Fotos hinzufügen“. Oder <a href="' + url + '" download="' + name + '" style="color:#d4a72c;">herunterladen</a>.</div>' +
+    out.innerHTML = '<button id="img-send-btn" style="margin-bottom:8px;">An Gratis-Kanal senden</button><div class="out" id="img-send-out"></div>' +
+      '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:6px;">Auf dem iPad: Bild lange gedrückt halten → „Zu Fotos hinzufügen“. Oder <a href="' + url + '" download="' + name + '" style="color:#d4a72c;">herunterladen</a>.</div>' +
       '<img src="' + url + '" style="width:100%;border-radius:6px;">';
+    let armed = false;
+    document.getElementById('img-send-btn').addEventListener('click', () => {
+      const btn = document.getElementById('img-send-btn');
+      const so = document.getElementById('img-send-out');
+      if (!armed) {
+        armed = true;
+        btn.textContent = 'Wirklich senden? Nochmal tippen';
+        so.textContent = 'Das Bild geht an alle Abonnenten des Gratis-Kanals.';
+        setTimeout(() => { armed = false; btn.textContent = 'An Gratis-Kanal senden'; }, 8000);
+        return;
+      }
+      armed = false;
+      btn.disabled = true;
+      so.textContent = 'Sende …';
+      canvas.toBlob(async (blob) => {
+        try {
+          const r = await fetch('/admin/api/post-bilanz', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw(), 'Content-Type': 'image/png' }, body: blob });
+          const res = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(res.error || ('Fehler ' + r.status));
+          so.textContent = res.sent ? '✅ Im Gratis-Kanal gepostet.' : '❌ Telegram hat nicht angenommen.';
+        } catch (e) { so.textContent = e.message; btn.disabled = false; }
+      }, 'image/png');
+    });
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -2973,6 +2999,25 @@ export default {
     // feed (token + cookie), build a post for a running match exactly like the
     // live check does, and send it to the premium channel clearly marked as a
     // test. Not tracked, not logged, not counted in the results.
+    // Weekly results image to the free channel: the admin page draws the
+    // 7-day image in the browser (canvas) and uploads the PNG here; the
+    // worker posts it with sendPhoto. Workers have no canvas, so the drawing
+    // stays in the browser.
+    if (url.pathname === "/admin/api/post-bilanz" && request.method === "POST") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const png = await request.arrayBuffer();
+      const head = new Uint8Array(png.slice(0, 8));
+      const isPng = head.length === 8 && head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47;
+      if (!isPng || png.byteLength > 5 * 1024 * 1024) return jsonResponse({ error: "Kein PNG-Bild (max. 5 MB)." }, 400);
+      const form = new FormData();
+      form.append("chat_id", freeChannel(env));
+      form.append("caption", `📊 Wochenbilanz – alle Tipps der letzten 7 Tage, Treffer und Verluste.\n\n${freeCta(env)}`);
+      form.append("photo", new Blob([png], { type: "image/png" }), "bilanz.png");
+      const resp = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendPhoto`, { method: "POST", body: form });
+      const data = await resp.json().catch(() => null);
+      return jsonResponse({ sent: !!(data && data.ok), channel: freeChannel(env) });
+    }
+
     // Fill the free channel by hand: the 3 most recently settled premium
     // tips of the last 48 h (won or lost - never chosen by result), each
     // posted at most once.

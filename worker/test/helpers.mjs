@@ -39,7 +39,7 @@ export function mockNet(state) {
     if (url.includes("ir_token_refresh")) return new Response(null, { status: 200, headers: { "X-IR-Token": "a".repeat(64), "Set-Cookie": "s=1; path=/" } });
     if (url.includes("GETAllMatches")) return state.feed === undefined ? new Response("err", { status: 500 }) : new Response(JSON.stringify(state.feed));
     if (url.includes("api.telegram.org")) {
-      const body = JSON.parse(opts.body);
+      const body = opts.body instanceof FormData ? Object.fromEntries(opts.body.entries()) : JSON.parse(opts.body);
       state.sent.push({ method: url.split("/").pop(), ...body });
       return new Response(JSON.stringify({ ok: true, result: { message_id: nextId++ } }));
     }

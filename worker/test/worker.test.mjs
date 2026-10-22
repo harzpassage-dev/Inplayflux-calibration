@@ -227,3 +227,20 @@ test("impressum: hidden without the Cloudflare variables, shown (escaped) with t
   }
   assert.ok((await (await worker.fetch(new Request("https://x/ergebnisse"), env, {})).text()).includes('href="/impressum"'));
 });
+
+test("weekly image: admin uploads the PNG, the worker posts it to the free channel with sendPhoto", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const post = (body, auth = "Bearer pw") => worker.fetch(new Request("https://x/admin/api/post-bilanz", {
+    method: "POST", headers: { Authorization: auth, "Content-Type": "image/png" }, body }), env, {});
+  assert.equal((await post(png, "Bearer wrong")).status, 401);
+  assert.equal((await post(new Uint8Array([1, 2, 3]))).status, 400);
+  const r = await post(png);
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).sent, true);
+  const photo = net.sent.find((m) => m.method === "sendPhoto");
+  assert.equal(photo.chat_id, "@MoneyBagAnalyst");
+  assert.ok(photo.caption.includes("Wochenbilanz") && photo.caption.includes("Keine Gewinngarantie"));
+  assert.ok(photo.photo instanceof Blob);
+});
