@@ -177,3 +177,37 @@ test("queue: cards still in the old single list are posted and the old key remov
   assert.equal(premiumPosts(net).length, 1);
   assert.equal(env.ACCESS_KV.store.has("premium:pending"), false);
 });
+
+test("daily report: private summary of the last 24 h, flags a line that went quiet, not on Mondays", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const now = Date.now();
+  const put = (i, hoursAgo, line, result) => {
+    const r = { tier: "premium", home: "H" + i, away: "A" + i, line, minute: 60, units: 1, result, quote: 1.3, marketP: 0.75,
+      postedAt: new Date(now - (hoursAgo + 1) * 3600e3).toISOString(), settledAt: new Date(now - hoursAgo * 3600e3).toISOString() };
+    env.ACCESS_KV.store.set(`result:${now - hoursAgo * 3600e3}:${i}`, JSON.stringify(r));
+    env.ACCESS_KV.meta.set(`result:${now - hoursAgo * 3600e3}:${i}`, r);
+  };
+  for (let i = 0; i < 6; i++) put(i, 2 + i, 2.5, i % 3 ? "won" : "lost");          // yesterday: O2.5 only
+  for (let i = 0; i < 20; i++) put(100 + i, 30 + i * 6, 0.5, "won");                // O0.5 earlier in the week only
+  const realDay = Date.prototype.getUTCDay;
+  Date.prototype.getUTCDay = () => 3;
+  try {
+    await cron(worker, env, "0 7 * * *");
+  } finally {
+    Date.prototype.getUTCDay = realDay;
+  }
+  const msg = net.sent.find((m) => m.chat_id === "777");
+  assert.ok(msg && msg.text.includes("Tages-Bericht") && msg.text.includes("4/6"), msg && msg.text);
+  assert.ok(msg.text.includes("Keine Tipps mehr für Over 0.5"), msg.text);
+  assert.ok(!msg.text.includes("Keine Tipps mehr für Over 2.5"));
+  assert.equal(net.sent.filter((m) => m.chat_id !== "777").length, 0, "nothing to the channels");
+  const net2 = mockNet({ feed: [] });
+  Date.prototype.getUTCDay = () => 1;
+  try {
+    await cron(worker, env, "0 7 * * *");
+  } finally {
+    Date.prototype.getUTCDay = realDay;
+  }
+  assert.equal(net2.sent.length, 0, "no daily report on Mondays");
+});

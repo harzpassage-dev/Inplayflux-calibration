@@ -17,8 +17,9 @@ run_worker_first = true
 
 # Every minute: live-confirm queued premium signals and settle posted ones.
 # Monday 08:00 UTC: weekly result summary to the premium channel.
+# Daily 07:00 UTC: private morning report to the owner (not on Mondays).
 [triggers]
-crons = ["* * * * *", "0 8 * * 1"]
+crons = ["* * * * *", "0 8 * * 1", "0 7 * * *"]
 
 [[kv_namespaces]]
 binding = "ACCESS_KV"

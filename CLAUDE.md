@@ -31,7 +31,9 @@ Plus: free public channel **@MoneyBagAnalyst** (`FREE_CHANNEL_ID`, CTA `FREE_CTA
 and the first 3 settled premium tips per day (won or lost, never picked by result, posted only
 after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
-(cron `0 8 * * 1`), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
+(cron `0 8 * * 1`), private morning report to the owner daily 07:00 UTC except Mondays (cron `0 7 * * *`,
+`sendDailyReport`/`dailyAdminText`: last 24 h per tier, voids, profit estimates, open tips, and a warning when a
+line with ≥ 2 tips/day over the week got none – a switched-off InPlayFlux strategy), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
 overlapping runs never post or settle a tip twice, when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
 "❌ LOST …" (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
 calls `editMessageText`; posts from before 2026-10-14 evening have no id and stay unmarked),
@@ -212,6 +214,8 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-22: daily private morning report to the owner (07:00 UTC, not Mondays) incl. "line went quiet" warning.
+
 - 2026-10-22: per-card queue keys (`pending:*`) instead of one shared list – parallel webhook runs no longer drop
   cards (test "cards arriving at the same moment" fails on the old code, passes now).
 
@@ -353,7 +357,7 @@ then decide per tier on the new days and apply.
   warning (`maybeWarn`). (2) market comparison, built automatically from the card (no CSV). (4) O2.5 analysed
   22.10. (see below, no change yet). (5) score as O3.5 feature tested 22.10., no gain (see O3.5 item). (6) Monday routine built
   (bot "Wochen-Check", `scripts/weekly.py`, skill `wochen-routine`). (7) Under 3.5 recalculated 22.10. → stays off. (8) worker tests in the repo + GitHub Action (done 22.10.). (9) per-card pending keys (done 22.10.). Open,
-  owner to pick: (10) daily Telegram summary to the owner, (11) paid API-Football for the live check (test 1 month),
+  owner to pick: (10) daily morning report (done 22.10.), (11) paid API-Football for the live check (test 1 month),
   (12) **InPlayFlux permission for forwarding card text** (biggest business risk; email drafted, owner to send;
   fallback: posts in our own words), (13) price/premium link + Telega.io test, (14) weekly scheduled video task,
   (15) weekly results image to the free channel.
