@@ -414,6 +414,12 @@ then decide per tier on the new days and apply.
   on `/ergebnisse` 18.–21.10.: 10/11 + 3 void. "MoneyBag 0-0 → Goal" sent no cards after 17.10. 19:46 (owner
   to check whether it is switched off). Owner said yes 22.10.: O0.5 High Confidence at line ≥ 4 gets 2 units
   (`O05_STRONG_LINE`); watch these tips on `/ergebnisse` (expected ~93 %, 2–3 per day).
+- InPlayFlux "Live Strategies" list from the owner, 24.10. (their counts, not ours): Money Bag Over 1.5 79 % (81),
+  Over 1.5 Value 77 % (116), Over 1.5 ValueShots15 75 % (52), HT Value12 66 % (137), MoneyBag 2-0/0-2 → Over 2.5 New
+  81 % (721), Over 0.5 Value 75 % (222), MoneyBag + 3 Goals → Over 3.5 71 % (428), HT over 0.5 71 % (72).
+  **"MoneyBag 0-0 → Goal" is not in the list → switched off** (no 0:0 cards since 17.10.); recommended to the owner to
+  switch it back on (its line ≥ 3.75 cards hit 82 %, and High Confidence O0.5 + the 2-unit rule need 0:0 cards).
+  HT strategies are ignored by the worker (could be switched off to keep the source channel clean).
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
