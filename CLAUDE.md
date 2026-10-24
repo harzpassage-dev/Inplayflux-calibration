@@ -218,6 +218,10 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-24: export 10-24 added via `scripts/weekly.py` (time shift 0, no refit: only ~2.7 new days); O0.5 check –
+  "Over 0.5 Value" now sends mostly low-line 0:0 games (27 cards, 70 %, none ≥ 3.75), so premium O0.5 is rare;
+  owner advised to switch "MoneyBag 0-0 → Goal" back on. Owner's InPlayFlux strategy list noted (open items).
+
 - 2026-10-22: weekly results image to the free channel with one tap in admin (`/admin/api/post-bilanz`, sendPhoto).
 
 - 2026-10-22: scheduled task "Torminute Wochen-Video" (Sundays 17:37 Berlin) builds and sends one new video per week.
@@ -360,7 +364,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-22)
+## Open items (as of 2026-10-24)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -370,7 +374,7 @@ then decide per tier on the new days and apply.
     `/impressum`, (14) weekly video task (Sundays), (15) weekly image to the free channel (one tap in admin).
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
-  - Waiting for the owner: (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
+  - Waiting for the owner: switch "MoneyBag 0-0 → Goal" back on at InPlayFlux (24.10.); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
     22.10.); set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare; terms (AGB/Widerruf) via e-recht24 or a lawyer;
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
