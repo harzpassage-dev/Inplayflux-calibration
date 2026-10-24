@@ -27,6 +27,7 @@ erwähnen – weder im Video noch in Beschreibung, Bio, Kommentaren oder Nachric
 | 9 | `tiktok-trainer.mp4` | 3 Trainer-Sprüche im Daten-Check 📋⚽ „Die Null muss stehen“, „Das 2:0 ist das gefährlichste Ergebnis“, „Ein Spiel dauert 90 Minuten“ – stimmt das? Welchen Spruch checken wir als Nächstes? 👇 #fußball #trainer #statistik #football #datencheck | | | |
 | 10 | `tiktok-knapp.mp4` | Knapp oder klar – wann fällt das nächste Tor? ⚖️⚽ 8.680 Live-Spiele ab Minute 60 ausgewertet. Bleibst du bei 1:0 bis zum Schluss dran? 👇 #fußball #fussball #statistik #nachspielzeit #football #datencheck | | | |
 | 11 | `tiktok-methode.mp4` | Wie entstehen unsere Zahlen? 🔬⚽ Ein Blick hinter die Kulissen: 8.680 Live-Spiele, ein Härtetest – und was wir ehrlich nicht wissen. Welche Frage sollen wir als Nächstes prüfen? 👇 #fußball #fussball #statistik #datenanalyse #football #datencheck | | | |
+| 12 | `tiktok-nutzen.mp4` | Bauchgefühl oder Daten? 🧠⚽ 4 Gründe, warum sich Fußball-Statistik lohnt – von Ecken-Mythos bis Nachspielzeit. Wo lag dein Bauchgefühl schon daneben? 👇 #fußball #fussball #statistik #datenanalyse #football #bauchgefühl | | | |
 
 ## So lädst du hoch (iPad)
 

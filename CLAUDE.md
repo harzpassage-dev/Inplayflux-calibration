@@ -192,6 +192,7 @@ then decide per tier on the new days and apply.
 | 9 | `tiktok-trainer.mp4` (31 s) | "3 Trainer-Sprüche im Daten-Check" | `scripts/trainer_stats.py`, 8,153 unique matches (earliest scene at 55–65', median 59', 05.09.–17.10.): "Die Null muss stehen" – 0:0 stays in 30 % (halves 28/31); "Das 2:0 ist das gefährlichste Ergebnis" – another goal at 0:0 70 %, 1:1 75 %, 2:0 77 % (halves 72/76/78, 69/74/77; who scores is unknown, said in the footnote); Herberger "Ein Spiel dauert 90 Minuten" – of next goals 20 % after 85' (halves 18.5/22), 7 % in stoppage time (6.4/6.9) |
 | 10 | `tiktok-knapp.mp4` (31 s) | "Knapp oder klar – wann fällt das nächste Tor?" | `scripts/margin_stats.py`, 8,680 unique matches (earliest scene at 55–65', median 60', 05.09.–21.10., halves split 01.10.): another goal 0:0 70 %, level with goals 75 %, 1-goal lead 73 %, 2+ lead 77 % (halves 72/69, 75.5/75.4, 74/71, 77/77); next goal after 75' 49 % at a 1-goal lead vs 41 % at 2+ (48/50, 40/43); in stoppage time 7.7 vs 5.4 % (7.5/8.1, 5.5/5.2). Who scores is unknown (footnote) |
 | 11 | `tiktok-methode.mp4` (31 s) | "Wie entstehen unsere Zahlen?" (method / behind the scenes, owner's topic) | steps: scene at ~60', wait for full time, count 8,680 unique matches; stability test shown with clear lead 77/77 % (kept) vs Spain 68/74 % (dropped, country check to 10.10.); example `scripts/method_stats.py`: 0:0 at 55–65' by pre-match goal expectation ≤ 2.5 64 % (182, halves 59/67) vs ≥ 3.75 82 % (131, halves 82/83); 'what we don't know': who scores, substitutions, weather/pitch |
+| 12 | `tiktok-nutzen.mp4` (31 s) | "Bauchgefühl oder Daten?" (what such analyses are good for, owner's topic) | only numbers already checked for earlier videos: (1) myth – corners 75/74/73 % (video 8), (2) 0:0 by pre-match goal expectation 64 vs 82 % (video 11), (3) 1 in 5 next goals after 85', 7 % in stoppage time (video 9), (4) honesty – 73 % means 27 % no goal, runs of up to 8 scenes without a goal (video 6) |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -217,6 +218,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-24: TikTok video 12 `marketing/tiktok-nutzen.mp4` ("Bauchgefühl oder Daten?", benefit of the analyses).
 
 - 2026-10-24: export 10-24 added via `scripts/weekly.py` (time shift 0, no refit: only ~2.7 new days); O0.5 check –
   "Over 0.5 Value" now sends mostly low-line 0:0 games (27 cards, 70 %, none ≥ 3.75), so premium O0.5 is rare;
@@ -459,7 +462,7 @@ then decide per tier on the new days and apply.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute (videos 1–11 ready, see table above): owner uploads videos 1–11 (one per evening, with sound in the app), sets
+- TikTok @torminute (videos 1–12 ready, see table above): owner uploads videos 1–12 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: price set 22.10.: **Premium 20 € per month, requests by email to harzpassage@gmx.de** (owner's choice);
