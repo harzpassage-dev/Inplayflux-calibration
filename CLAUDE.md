@@ -420,6 +420,12 @@ then decide per tier on the new days and apply.
   **"MoneyBag 0-0 → Goal" is not in the list → switched off** (no 0:0 cards since 17.10.); recommended to the owner to
   switch it back on (its line ≥ 3.75 cards hit 82 %, and High Confidence O0.5 + the 2-unit rule need 0:0 cards).
   HT strategies are ignored by the worker (could be switched off to keep the source channel clean).
+- Export 24.10. (`data/inplayflux_sinyaller_2026-10-24.csv`, report `reports/2026-10-24-wochen-check.txt`, models not
+  refitted). New days 21.10. 16:26 – 24.10. 09:27: O2.5 model 85.2 % (54) vs raw 83.0 % (94); O3.5 78.6 % (42) vs raw
+  79.5 % (83); O1.5 test rule 81.1 % (127; Value 84 % (50), Money Bag 80 % (59), ValueShots15 78 % (18)); O0.5: only 27
+  cards, all "Over 0.5 Value", 70.4 %, none with pre-match line ≥ 3.75 (median 2.75) → model passed 2. Value cards
+  overall: line ≥ 3.5 84.5 % (161), ≥ 4 94.7 % (57, halves 91/100), ≤ 3.0 70 % (363). O0.5 premium needs the switched-off
+  "MoneyBag 0-0 → Goal" (high-line games) back on.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
