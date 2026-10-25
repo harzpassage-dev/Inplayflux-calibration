@@ -1,0 +1,159 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;overflow:hidden;background:#0b1630;font-family:"Liberation Sans","DejaVu Sans",sans-serif;color:#fff}
+#bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,#16305e 0%,#0b1630 60%,#060c1c 100%)}
+#pitch{position:absolute;inset:0;opacity:.06}
+#brand{position:absolute;top:34px;left:60px;font-size:30px;color:#f5c542;letter-spacing:5px;font-weight:700}
+#chap{position:absolute;top:34px;right:60px;font-size:28px;color:#c9d3ea;font-weight:700;letter-spacing:2px}
+#prog{position:absolute;left:0;bottom:0;height:8px;background:#f5c542}
+.scene{position:absolute;left:120px;right:120px;top:110px;bottom:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0}
+[data-at]{opacity:0}
+.kick{font-size:34px;color:#f5c542;font-weight:700;letter-spacing:5px;margin-bottom:18px}
+.h1{font-size:96px;font-weight:700;line-height:1.08}.h2{font-size:64px;font-weight:700;line-height:1.15}.h3{font-size:44px;font-weight:700;line-height:1.25}
+.sub{font-size:36px;color:#c9d3ea;line-height:1.35;margin-top:18px}
+.gold{color:#f5c542}.red{color:#ff8a7a}.green{color:#5fe39a}
+.row{display:flex;gap:34px;justify-content:center;margin-top:40px;width:100%}
+.card{flex:1;max-width:520px;background:rgba(255,255,255,.07);border-radius:26px;padding:30px 24px}
+.card .n{font-size:84px;font-weight:700;color:#f5c542;line-height:1.05}.card .l{font-size:32px;color:#c9d3ea;margin-top:10px;line-height:1.25}
+.card .e{font-size:64px}
+.list{margin-top:30px;text-align:left;width:1200px}.list>div{display:flex;gap:26px;align-items:center;background:rgba(255,255,255,.06);border-radius:22px;padding:20px 28px;margin-top:18px;font-size:40px;font-weight:700;line-height:1.25}
+.list .k{font-size:50px;min-width:64px;text-align:center}
+.bars{display:flex;align-items:flex-end;justify-content:center;gap:44px;height:430px;margin-top:20px}
+.bar{width:210px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar .v{font-size:50px;font-weight:700;margin-bottom:10px}.bar .b{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(#f5c542,#c98a12)}
+.bar .b.low{background:linear-gradient(#8fa4d1,#5a6f9c)}.bar .l{font-size:28px;margin-top:12px;font-weight:700;line-height:1.2;color:#dfe6f6}
+.verdict{margin-top:30px;font-size:46px;font-weight:700;padding:14px 30px;border-radius:18px;background:#1d3d75}
+.half{display:inline-flex;gap:12px;font-size:44px;font-weight:700;margin-top:8px}.half span{background:rgba(255,255,255,.1);border-radius:12px;padding:4px 14px}
+#cap{position:absolute;left:200px;right:200px;bottom:44px;text-align:center;font-size:36px;font-weight:700;line-height:1.3}
+#cap span{background:rgba(0,0,0,.62);padding:6px 16px;border-radius:12px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.foot{font-size:24px;color:#a9b6d3;line-height:1.45;margin-top:34px;max-width:1500px}
+</style></head><body>
+<div id="bg"></div>
+<svg id="pitch" width="1920" height="1080"><g fill="none" stroke="#fff" stroke-width="6"><rect x="60" y="60" width="1800" height="960"/><line x1="960" y1="60" x2="960" y2="1020"/><circle cx="960" cy="540" r="150"/><rect x="60" y="300" width="240" height="480"/><rect x="1620" y="300" width="240" height="480"/></g></svg>
+<div id="brand">⚽ TORMINUTE</div><div id="chap"></div><div id="prog"></div>
+
+<!-- 0 Intro -->
+<div class="scene" data-s="0" data-e="14" data-chap="">
+ <div class="h1" data-at="0.3">Kann man einer<br><span class="gold">Fußball-Statistik</span> trauen?</div>
+ <div class="sub" data-at="2.5">Unsere Methode in 4 Minuten – und alles, was wir damit herausgefunden haben</div>
+ <div class="row" data-at="5"><div class="card"><div class="e">📥</div><div class="l">Daten sammeln</div></div><div class="card"><div class="e">🧪</div><div class="l">Härtetest</div></div><div class="card"><div class="e">📊</div><div class="l">Ergebnisse</div></div><div class="card"><div class="e">🤷</div><div class="l">Grenzen</div></div></div>
+</div>
+<!-- 1 Daten -->
+<div class="scene" data-s="14" data-e="40" data-chap="1 · DIE DATEN">
+ <div class="kick" data-at="0.2">KAPITEL 1 · DIE DATEN</div>
+ <div class="h2" data-at="0.6">Über <span class="gold">13.000</span> Live-Spielszenen</div>
+ <div class="sub" data-at="2">aus Hunderten Ligen weltweit – meist untere Ligen, Frauen und Jugend inklusive</div>
+ <div class="list" data-at="5"><div><span class="k">⏱️</span>Momentaufnahme meist um Minute 60</div><div><span class="k">📋</span>Spielstand, Schüsse aufs Tor, Ecken, Tor-Erwartung vor dem Spiel</div><div><span class="k">🏁</span>Dann warten bis zum Abpfiff: Fällt noch ein Tor?</div></div>
+</div>
+<!-- 2 Sauber zählen -->
+<div class="scene" data-s="40" data-e="66" data-chap="2 · SAUBER ZÄHLEN">
+ <div class="kick" data-at="0.2">KAPITEL 2 · SAUBER ZÄHLEN</div>
+ <div class="h2" data-at="0.6">Jedes Spiel zählt nur <span class="gold">einmal</span></div>
+ <div class="row" data-at="3"><div class="card"><div class="e">👯</div><div class="l">Dasselbe Spiel taucht manchmal mehrfach auf – wir zählen es nur einmal</div></div><div class="card"><div class="e">🕐</div><div class="l">Szenen aus der 1. Halbzeit werten wir getrennt</div></div><div class="card"><div class="n" id="cnt">0</div><div class="l">eindeutige Spiele mit einer Szene bei Minute 55–65</div></div></div>
+</div>
+<!-- 3 Härtetest -->
+<div class="scene" data-s="66" data-e="102" data-chap="3 · DER HÄRTETEST">
+ <div class="kick" data-at="0.2">KAPITEL 3 · DER HÄRTETEST</div>
+ <div class="h2" data-at="0.6">Zeitraum in <span class="gold">zwei Hälften</span> teilen</div>
+ <div class="sub" data-at="2">Nur was in beiden Hälften gleich ausfällt, zeigen wir. Alles andere könnte Zufall sein.</div>
+ <div class="row" data-at="6"><div class="card"><div class="e">✅</div><div class="l" style="color:#fff;font-weight:700">Klare Führung (2+ Tore)</div><div class="half"><span>77 %</span><span>77 %</span></div><div class="l green">bleibt drin</div></div><div class="card"><div class="e">❌</div><div class="l" style="color:#fff;font-weight:700">Spanien</div><div class="half"><span>68 %</span><span>74 %</span></div><div class="l red">fliegt raus</div></div><div class="card"><div class="e">🔍</div><div class="l" style="color:#fff;font-weight:700">Zu wenig Daten</div><div class="half"><span>173</span></div><div class="l red">Szenen – lassen wir weg</div></div></div>
+</div>
+<!-- 4a Grundzahl -->
+<div class="scene" data-s="102" data-e="122" data-chap="4 · ERGEBNISSE">
+ <div class="kick" data-at="0.2">KAPITEL 4 · WAS WIR HERAUSGEFUNDEN HABEN</div>
+ <div class="h1" data-at="0.8"><span class="gold">3 von 4</span></div>
+ <div class="h3" data-at="1.6">Szenen nach Minute 60: Bis zum Abpfiff fällt noch mindestens ein Tor</div>
+ <div class="sub" data-at="4">73 % – in beiden Hälften des Zeitraums (73 / 72 %)</div>
+</div>
+<!-- 4b spät -->
+<div class="scene" data-s="122" data-e="144" data-chap="4 · ERGEBNISSE">
+ <div class="kick" data-at="0.2">TORE FALLEN SPÄT</div>
+ <div class="row" data-at="1"><div class="card"><div class="n">1 von 5</div><div class="l">nächsten Toren fällt nach Minute 85</div></div><div class="card"><div class="n">7 %</div><div class="l">sogar erst in der Nachspielzeit</div></div><div class="card"><div class="n">+31 %</div><div class="l">höhere Torchance pro Minute ab Min. 76 (3,2 statt 2,4 %)</div></div></div>
+ <div class="verdict" data-at="9">Ein Spiel dauert wirklich 90 Minuten – und mehr</div>
+</div>
+<!-- 4c 0:0 -->
+<div class="scene" data-s="144" data-e="164" data-chap="4 · ERGEBNISSE">
+ <div class="kick" data-at="0.2">0:0 NACH 60 MINUTEN</div>
+ <div class="h3" data-at="0.6">Fällt noch ein Tor? Je nach Tor-Erwartung vor dem Spiel</div>
+ <div class="bars" data-at="1.2" id="b1" data-bars="64:low:wenige Tore erwartet|70::alle 0:0-Spiele|82::viele Tore erwartet"></div>
+ <div class="verdict" data-at="8" style="background:#1e8e5a">0:0 ist nicht gleich 0:0</div>
+</div>
+<!-- 4d Spielstand -->
+<div class="scene" data-s="164" data-e="184" data-chap="4 · ERGEBNISSE">
+ <div class="kick" data-at="0.2">SPIELSTAND BEI MINUTE 60</div>
+ <div class="h3" data-at="0.6">Noch ein Tor bis zum Abpfiff:</div>
+ <div class="bars" data-at="1.2" id="b2" data-bars="70:low:0:0|75::Gleichstand mit Toren|73::1 Tor Führung|77::2+ Tore Führung"></div>
+ <div class="verdict" data-at="9">Eine klare Führung lähmt das Spiel nicht</div>
+</div>
+<!-- 4e Länder -->
+<div class="scene" data-s="184" data-e="200" data-chap="4 · ERGEBNISSE">
+ <div class="kick" data-at="0.2">LÄNDER IM VERGLEICH</div>
+ <div class="bars" data-at="0.8" id="b3" data-bars="81::🇫🇮 Finnland|79::🇵🇱 Polen|73:low:Ø alle|68:low:🇧🇷 Brasilien"></div>
+ <div class="sub" data-at="7">Anteil der Szenen mit noch einem Tor nach Minute 60 – nur Länder mit mindestens 250 Szenen</div>
+</div>
+<!-- 5 Mythen -->
+<div class="scene" data-s="200" data-e="218" data-chap="5 · MYTHEN">
+ <div class="kick" data-at="0.2">KAPITEL 5 · MYTHEN, DIE NICHT HALTEN</div>
+ <div class="row" data-at="1"><div class="card"><div class="e">🚩</div><div class="l" style="color:#fff;font-weight:700">„Viele Ecken = viele Tore“</div><div class="half"><span>75</span><span>74</span><span>73 %</span></div><div class="l">kaum Unterschied</div></div><div class="card"><div class="e">⚖️</div><div class="l" style="color:#fff;font-weight:700">„Frauen schießen weniger Tore“</div><div class="half"><span>3,0</span><span>3,1</span></div><div class="l">Tore pro 90 Min. – gleichauf</div></div><div class="card"><div class="e">🔒</div><div class="l" style="color:#fff;font-weight:700">„Die Null muss stehen“</div><div class="half"><span>30 %</span></div><div class="l">der 0:0-Spiele bleiben 0:0</div></div></div>
+</div>
+<!-- 6 Grenzen -->
+<div class="scene" data-s="218" data-e="232" data-chap="6 · EHRLICH BLEIBEN">
+ <div class="kick" data-at="0.2">KAPITEL 6 · EHRLICH BLEIBEN</div>
+ <div class="row" data-at="0.8"><div class="card"><div class="n">27 %</div><div class="l">der Szenen: kein Tor mehr – 73 % ist keine Garantie</div></div><div class="card"><div class="n">8</div><div class="l">Szenen am Stück ohne Tor kamen vor</div></div><div class="card"><div class="e">❓</div><div class="l">Wer trifft, Auswechslungen, Wetter, Platz – das zeigen unsere Daten nicht</div></div></div>
+ <div class="verdict" data-at="8">Statistik beschreibt viele Spiele – nicht das nächste einzelne</div>
+</div>
+<!-- 7 Outro -->
+<div class="scene" data-s="232" data-e="240.5" data-chap="">
+ <div class="h2" data-at="0.2">Welche Frage sollen wir<br>als Nächstes prüfen? 👇</div>
+ <div class="h3" data-at="1.2" style="margin-top:26px">Abonniere <span class="gold">Torminute</span> – jede Woche neue Daten ⚽📊</div>
+ <div class="foot" data-at="2">Eigene Auswertung von Live-Spielszenen (meist untere Ligen), 5.9.–24.10.2026. Grundzahl 73 % und Serien: 11.610 Szenen bis 10.10.; Spielstand und 0:0: 8.680 bzw. 1.186 eindeutige Spiele bis 21.10.; Ecken: 8.620 Spiele bis 17.10.; Tore pro 90 Min. bis zur Szene: 864 Frauen- / 5.847 Männer-Spiele; „Die Null“: 8.153 Spiele bis 17.10.; Länder: mind. 250 Szenen bis 10.10. Jede gezeigte Zahl hält in beiden Hälften des Zeitraums. Keine Aussage darüber, wer ein Tor schießt.</div>
+</div>
+
+<div id="cap"><span id="capt"></span></div>
+<script>
+const T=240;
+const CAP=[
+[0,6,"Kann man einer Fußball-Statistik eigentlich trauen?"],
+[6,14,"Wir zeigen dir unsere Methode – und alles, was wir damit herausgefunden haben."],
+[14,22,"Unsere Basis: über 13.000 Live-Spielszenen aus Hunderten Ligen."],
+[22,31,"Für jede Szene halten wir fest: Minute, Spielstand, Schüsse aufs Tor, Ecken und die Tor-Erwartung vor dem Spiel."],
+[31,40,"Dann warten wir bis zum Abpfiff und schauen: Fällt noch ein Tor?"],
+[40,50,"Wichtig: Dasselbe Spiel kann mehrfach in den Daten stehen. Wir zählen jedes Spiel nur einmal."],
+[50,66,"Szenen aus der ersten Halbzeit werten wir getrennt. So bleiben 8.680 eindeutige Spiele mit einer Szene um Minute 60."],
+[66,76,"Dann kommt der Härtetest: Wir teilen den Zeitraum in zwei Hälften."],
+[76,88,"Nur was in beiden Hälften gleich ausfällt, zeigen wir. Klare Führung: 77 und 77 Prozent – das bleibt."],
+[88,102,"Spanien: 68 gegen 74 Prozent – zu wackelig, fliegt raus. Und zu kleine Gruppen lassen wir ganz weg."],
+[102,112,"Das wichtigste Ergebnis: In 3 von 4 Szenen nach Minute 60 fällt noch ein Tor."],
+[112,122,"73 Prozent – und zwar in beiden Hälften des Zeitraums."],
+[122,133,"Tore fallen spät: Jedes fünfte nächste Tor kommt erst nach Minute 85, sieben Prozent sogar in der Nachspielzeit."],
+[133,144,"Ab Minute 76 steigt die Torchance pro Minute um fast ein Drittel."],
+[144,154,"Steht es nach 60 Minuten 0:0, fällt in 70 Prozent noch ein Tor."],
+[154,164,"Aber: Wurden vorher viele Tore erwartet, sind es 82 Prozent – bei wenigen nur 64."],
+[164,174,"Auch der Spielstand zählt: Bei 0:0 sind es 70 Prozent, bei Gleichstand mit Toren 75."],
+[174,184,"Und eine klare Führung lähmt das Spiel nicht: 77 Prozent."],
+[184,192,"Große Unterschiede zwischen Ländern: Finnland 81 Prozent, Polen 79 …"],
+[192,200,"… Brasilien nur 68. Der Schnitt liegt bei 73."],
+[200,209,"Und Mythen? Viele Ecken bringen kaum mehr Tore. Frauen schießen genauso viele Tore wie Männer."],
+[209,218,"Und 'die Null muss stehen'? Nur 30 Prozent der 0:0-Spiele bleiben auch 0:0."],
+[218,226,"Ganz ehrlich: 73 Prozent heißt auch, dass in 27 Prozent kein Tor mehr fällt. Serien ohne Tor kommen vor."],
+[226,232,"Und wer trifft, zeigen unsere Daten nicht. Statistik beschreibt viele Spiele – nicht das nächste."],
+[232,240.5,"Welche Frage sollen wir als Nächstes prüfen? Schreib's in die Kommentare und abonniere Torminute!"]];
+const scenes=[...document.querySelectorAll(".scene")];
+for(const el of document.querySelectorAll("[data-bars]")){
+ el.innerHTML=el.dataset.bars.split("|").map((b,i)=>{const [v,cl,l]=b.split(":").length>3?[b.split(":")[0],b.split(":")[1],b.split(":").slice(2).join(":")]:b.split(":");return `<div class="bar"><div class="v">0 %</div><div class="b ${cl}" data-v="${v}"></div><div class="l">${l}</div></div>`}).join("");}
+const ease=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);const clamp=x=>Math.max(0,Math.min(1,x));
+function render(t){
+ document.getElementById("prog").style.width=(t/T*1920)+"px";
+ let chap="";
+ for(const sc of scenes){const a=+sc.dataset.s,b=+sc.dataset.e;let o=0;if(t>=a&&t<b){o=Math.min(clamp((t-a)/.4),clamp((b-t)/.4));chap=sc.dataset.chap}
+  sc.style.opacity=o;const k=ease((t-a)/.6);sc.style.transform=`translateY(${(1-k)*40}px)`;
+  if(o<=0)continue;const lt=t-a;
+  for(const el of sc.querySelectorAll("[data-at]")){const kk=ease((lt-+el.dataset.at)/.6);el.style.opacity=kk;el.style.transform=`translateY(${(1-kk)*30}px)`}
+  for(const bars of sc.querySelectorAll("[data-bars]")){const st=+bars.dataset.at;[...bars.querySelectorAll(".b")].forEach((bb,i)=>{const kk=ease((lt-st-0.3-i*.6)/1.2);const v=+bb.dataset.v;bb.style.height=(v/90*330*kk)+"px";bb.previousElementSibling.textContent=Math.round(v*kk)+" %"})}
+ }
+ document.getElementById("chap").textContent=chap;
+ const c=document.getElementById("cnt");if(c){const sc=c.closest(".scene");c.textContent=Math.round(8680*ease((t-(+sc.dataset.s)-4)/2)).toLocaleString("de-DE")}
+ const cp=CAP.find(([a,b])=>t>=a&&t<b);document.getElementById("capt").textContent=cp?cp[2]:"";
+}
+render(0);
+</script></body></html>
