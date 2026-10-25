@@ -225,7 +225,10 @@ then decide per tier on the new days and apply.
   version `marketing/youtube-methode-ton.mp4` (owner wanted it "natürlicher, mit Begeisterung, gern übertrieben" plus fun in
   the background: offline TTS Piper, voice de_DE-thorsten_emotional (amused/surprised), livelier script in
   `marketing/youtube-methode.voice.py`, self-made royalty-free crowd/cheers/groove `youtube-methode.bg.py` ducked under
-  the voice; numbers spelled out as words; burned-in captions keep the calmer original wording) – upload this one.
+  the voice; numbers spelled out as words; burned-in captions keep the calmer original wording). Owner found the Piper
+  voices robotic (25.10.) and chose to voice it in CapCut (in-app TTS): `marketing/youtube-methode-musik.mp4` (picture +
+  background, no voice) and a timed 25-sentence table with steps in `marketing/youtube.md`. Free offline TTS is not good
+  enough; natural alternatives offered: own recording (Claude syncs it) or Azure Speech free tier (key via environment secrets).
 - Meta rules (checked 21.10.): ads that promote or link to online gambling need Meta's written authorization
   with a gambling licence → no paid Instagram/Facebook ads for MoneyBag; offers with "guaranteed win" are
   banned outright; organic gambling posts are a restricted category (possibly 18+ / not recommended,

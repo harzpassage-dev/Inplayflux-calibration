@@ -48,3 +48,43 @@ Sichtbarkeit Öffentlich oder Planen. Optional: Thumbnail = Bild aus Sekunde 2�
 10. Und Mythen? Viele Ecken bringen kaum mehr Tore. Frauen schießen genauso viele Tore wie Männer. / Und „die Null muss stehen“? Nur 30 Prozent der 0:0-Spiele bleiben auch 0:0.
 11. Ganz ehrlich: 73 Prozent heißt auch, dass in 27 Prozent kein Tor mehr fällt. Serien ohne Tor kommen vor. / Und wer trifft, zeigen unsere Daten nicht. Statistik beschreibt viele Spiele – nicht das nächste.
 12. Welche Frage sollen wir als Nächstes prüfen? Schreib's in die Kommentare und abonniere Torminute!
+
+## Vertonung mit CapCut (natürliche Stimme, Wunsch des Besitzers 25.10.)
+
+Video: `youtube-methode-musik.mp4` (Bild + Stadion/Jubel/Beat, **ohne** Sprecher). In CapCut:
+
+1. CapCut öffnen → **Neues Projekt** → `youtube-methode-musik.mp4` wählen → **Hinzufügen**.
+2. Zeitleiste an die Startzeit aus der Tabelle schieben (Zeit steht oben über der Zeitleiste).
+3. Unten **Text** → **Text hinzufügen** → Satz einfügen → Haken.
+4. Textfeld antippen → unten **Text-zu-Sprache** → Stimme wählen (z. B. eine lebhafte deutsche Männerstimme) → Haken.
+5. Das Textfeld danach löschen (das Video hat schon Untertitel) – die Sprachspur bleibt.
+6. Für alle 25 Sätze wiederholen. Danach **Exportieren** (1080p, 30 fps).
+7. Ist ein Satz zu lang für seinen Platz: Sprachspur antippen → **Geschwindigkeit** 1,1–1,2×.
+
+| # | Start | Text |
+|---|---|---|
+| 1 | 0:00 | Leute! Kann man einer Fußball-Statistik eigentlich trauen?! |
+| 2 | 0:06 | Bleib dran! Wir zeigen dir unsere Methode – und alles, was wir damit über Tore rausgefunden haben! |
+| 3 | 0:14 | Unsere Basis: über dreizehntausend Live-Spielszenen! Aus Hunderten Ligen – vom Dorfplatz bis zum Profi-Stadion! |
+| 4 | 0:22 | Bei jeder Szene schreiben wir mit: Minute, Spielstand, Schüsse aufs Tor, Ecken und die Tor-Erwartung vor dem Anpfiff. |
+| 5 | 0:31 | Und dann heißt es: Warten bis zum Abpfiff. Fällt da noch ein Tor? Ja oder nein?! |
+| 6 | 0:40 | Ganz wichtig: Manche Spiele tauchen doppelt auf. Bei uns zählt jedes Spiel nur ein einziges Mal! |
+| 7 | 0:50 | Szenen aus der ersten Halbzeit kommen in einen eigenen Topf. Übrig bleiben achttausendsechshundertachtzig Spiele mit einer Szene rund um Minute sechzig. Sauber gezählt! |
+| 8 | 1:06 | Und jetzt kommt der Härtetest! Wir schneiden den Zeitraum genau in zwei Hälften. |
+| 9 | 1:16 | Nur was in beiden Hälften gleich aussieht, schafft es ins Video! Klare Führung: siebenundsiebzig – und nochmal siebenundsiebzig Prozent. Bestanden! |
+| 10 | 1:28 | Spanien? Achtundsechzig gegen vierundsiebzig. Viel zu wackelig – raus damit! Und zu kleine Gruppen fliegen sowieso. |
+| 11 | 1:42 | Und jetzt der Knaller: In drei von vier Szenen nach Minute sechzig fällt noch ein Tor! |
+| 12 | 1:52 | Dreiundsiebzig Prozent! Und das in beiden Hälften – das ist kein Zufall! |
+| 13 | 2:02 | Tore fallen spät, Leute! Jedes fünfte nächste Tor kommt erst nach Minute fünfundachtzig – sieben Prozent sogar in der Nachspielzeit! |
+| 14 | 2:13 | Ab Minute sechsundsiebzig steigt die Torchance pro Minute um fast ein Drittel. Also: Nie zu früh abschalten! |
+| 15 | 2:24 | Null zu null nach sechzig Minuten? Langweilig? Von wegen! In siebzig Prozent fällt noch ein Tor! |
+| 16 | 2:34 | Und wenn vorher viele Tore erwartet wurden: zweiundachtzig Prozent! Bei wenigen nur vierundsechzig. |
+| 17 | 2:44 | Auch der Spielstand spielt mit: Bei null zu null siebzig Prozent, bei Gleichstand mit Toren fünfundsiebzig. |
+| 18 | 2:54 | Und eine klare Führung? Die macht das Spiel nicht kaputt: siebenundsiebzig Prozent! |
+| 19 | 3:04 | Ab auf Weltreise! Finnland: einundachtzig Prozent! Polen: neunundsiebzig! |
+| 20 | 3:12 | Und Brasilien, das Fußball-Land? Nur achtundsechzig! Der Schnitt liegt bei dreiundsiebzig. |
+| 21 | 3:20 | Mythen-Check! Viele Ecken bringen kaum mehr Tore. Und Frauen schießen genauso viele Tore wie Männer! |
+| 22 | 3:29 | Und die Null muss stehen? Nur dreißig Prozent der Null-zu-null-Spiele bleiben auch null zu null! |
+| 23 | 3:38 | Aber ganz ehrlich: Dreiundsiebzig Prozent heißt auch, in siebenundzwanzig Prozent fällt kein Tor mehr. |
+| 24 | 3:46 | Und wer trifft, wissen wir nicht. Statistik erklärt viele Spiele – nicht das nächste. |
+| 25 | 3:52 | Welche Frage sollen wir als Nächstes prüfen? Ab in die Kommentare – und abonniere Torminute! |
