@@ -222,6 +222,10 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: draft AGB + Widerrufsbelehrung (statutory model for services) + Widerrufsformular in
+  `legal/agb-entwurf.md` (not live; placeholders for VAT/payment; owner to have it checked). Also missing: privacy
+  policy (access cookie, contact form → Telegram, Cloudflare).
+
 - 2026-10-25: Impressum live – owner set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare (plain text vars, kept on
   deploy by `keep_vars`); `/impressum` 200, address in 3 lines, footer links on `/` and `/ergebnisse`. AGB/Widerruf still missing.
 
