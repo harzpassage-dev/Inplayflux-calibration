@@ -230,6 +230,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: 24h-test request form on the start page (`#test`, owner's choice "Formular"): name + Telegram name
+  and/or email + 18+ checkbox → `/api/contact` with `kind: "trial"` (Telegram name alone is enough; normal contact form
+  still needs an email; 60 s per-IP limit) → bot DM "🎁 Neue Anfrage: 24h-Test" with a t.me link to the owner
+  (ADMIN_CHAT_ID). Owner then creates a 24 h access in admin and sends it on Telegram. Privacy policy updated.
+
 - 2026-10-25: start page advertises a free 24-hour Premium test (hero note, price box, FAQ; request by email, ends
   automatically – admin "create" makes 24 h tokens); AGB § 4 (4) covers the free trial (no payment duty, no renewal).
 

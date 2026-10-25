@@ -2063,6 +2063,7 @@ h2{font-size:21px;margin:38px 0 12px}.lead{color:var(--muted);font-size:18px;mar
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
 .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.box h3{margin:0 0 6px;font-size:17px}.box p{margin:0;color:var(--muted)}
 .price{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:20px}.price b{font-size:30px;color:var(--gold)}
+#trial input:not([type=checkbox]){display:block;width:100%;background:#0e1b3a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 10px;font:inherit}.chk{display:flex;gap:8px;align-items:center;margin:4px 0 12px;color:var(--muted)}
 .note{color:var(--muted);font-size:14px}dt{font-weight:600;margin-top:14px}dd{margin:4px 0 0;color:var(--muted)}a{color:var(--gold)}
 footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}footer a{color:var(--muted)}
 @media(max-width:520px){h1{font-size:27px}.lead{font-size:16px}}
@@ -2071,7 +2072,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid va
 <h1>Live-Fußballsignale mit <span>Datenmodell</span> und offener Bilanz</h1>
 <p class="lead">Wir posten keine Bauchgefühl-Tipps. Jedes Signal wird von einem Modell bewertet, das auf über 13.000 ausgewerteten Live-Signalen aufbaut – und jedes Ergebnis wird automatisch veröffentlicht, Treffer und Verluste.</p>
 <a class="btn" href="${freeLink}">📢 Gratis-Kanal öffnen</a><a class="btn alt" href="/ergebnisse">📊 Alle Ergebnisse ansehen</a>
-<p class="note" style="margin-top:12px">🎁 <b>24 Stunden Premium kostenlos testen</b> – Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Endet automatisch, kein Abo.</p>
+<p class="note" style="margin-top:12px">🎁 <b>24 Stunden Premium kostenlos testen</b> – <a href="#test">jetzt anfragen</a>. Endet automatisch, kein Abo.</p>
 <h2>Aktuelle Zahlen</h2>
 <div class="stats">${stat("🔥 High Confidence, gesamt", all.premium)}${stat("Alle Stufen, letzte 30 Tage", d30.all)}${stat("Alle Stufen, gesamt", all.all)}</div>
 <p class="note">Automatisch aus dem Live-Spielstand erfasst, Stand ${updated}. Ungewertete Spiele zählen nicht mit. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
@@ -2085,11 +2086,36 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid va
 <h2>Gratis oder Premium</h2>
 <div class="grid">
 <div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><p style="margin-top:10px"><a href="${freeLink}">Kanal öffnen →</a></p></div>
-<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p style="margin:8px 0 0;color:var(--gold);font-weight:600">🎁 Erst 24 Stunden kostenlos testen</p><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
+<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p style="margin:8px 0 0;font-weight:600"><a href="#test">🎁 Erst 24 Stunden kostenlos testen</a></p><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
 </div>
+<h2 id="test">🎁 24 Stunden kostenlos testen</h2>
+<div class="box"><p style="margin:0 0 12px">Trag deinen Namen und deinen <b>Telegram-Namen</b> ein – wir melden uns bei dir auf Telegram mit dem Testzugang. Der Test endet automatisch, kein Abo.</p>
+<form id="trial"><input id="t-name" placeholder="Dein Name" maxlength="100" autocomplete="name" required>
+<input id="t-tg" placeholder="Telegram-Name, z. B. @max_muster" maxlength="40" autocapitalize="none" autocorrect="off">
+<input id="t-mail" type="email" placeholder="oder E-Mail (optional)" maxlength="150" autocomplete="email">
+<label class="chk"><input type="checkbox" id="t-age" required> Ich bin mindestens 18 Jahre alt.</label>
+<button type="submit" class="btn" style="border:0;cursor:pointer">Test anfragen</button>
+<p id="t-out" class="note" style="margin:10px 0 0"></p></form>
+<p class="note" style="margin:10px 0 0">Deine Angaben nutzen wir nur für diese Anfrage (<a href="/datenschutz">Datenschutz</a>). Lieber per E-Mail? <a href="mailto:${mail}">${mail}</a></p></div>
+<script>
+document.getElementById("trial").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var out = document.getElementById("t-out");
+  if (!document.getElementById("t-age").checked) { out.textContent = "Bitte bestätige, dass du mindestens 18 bist."; return; }
+  out.textContent = "Sende …";
+  try {
+    var r = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      kind: "trial", name: document.getElementById("t-name").value, telegram: document.getElementById("t-tg").value,
+      email: document.getElementById("t-mail").value, message: "Bitte 24h-Testzugang (18+ bestätigt)" }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.ok) { out.textContent = "✅ Danke! Wir melden uns bald bei dir."; e.target.reset(); }
+    else out.textContent = d.error || "Senden fehlgeschlagen, bitte später erneut versuchen.";
+  } catch (err) { out.textContent = "Keine Verbindung, bitte später erneut versuchen."; }
+});
+</script>
 <h2>Häufige Fragen</h2>
 <dl>
-<dt>Kann ich Premium erst testen?</dt><dd>Ja, 24 Stunden kostenlos. Schreib an <a href="mailto:${mail}">${mail}</a>, du bekommst einen Testzugang. Er endet automatisch – kein Abo, keine Kündigung nötig.</dd>
+<dt>Kann ich Premium erst testen?</dt><dd>Ja, 24 Stunden kostenlos. Einfach <a href="#test">oben anfragen</a> – du bekommst den Testzugang auf Telegram. Er endet automatisch – kein Abo, keine Kündigung nötig.</dd>
 <dt>Wie viele Signale gibt es?</dt><dd>Je nach Spieltag mehrere pro Tag, am Wochenende mehr.</dd>
 <dt>Muss ich jedes Signal setzen?</dt><dd>Nein. Nur wenn die Quote über der angegebenen Mindestquote liegt.</dd>
 <dt>Was ist eine Einheit?</dt><dd>Ein fester Betrag, den du selbst festlegst, z. B. 1–2 % deines Budgets.</dd>
@@ -2133,7 +2159,7 @@ function legalPage(env, kind) {
 <h2>2. Das Wichtigste in Kürze</h2><p>Diese Website verwendet <b>keine Analyse- oder Tracking-Tools, keine Werbung und keine Social-Media-Plugins</b>. Es wird nur ein technisch notwendiges Cookie für Premium-Kunden gesetzt. Daten werden nur verarbeitet, soweit es für den Betrieb der Website, die Beantwortung von Anfragen und die Abwicklung des Premium-Abos nötig ist.</p>
 <h2>3. Hosting und Server-Logdaten</h2><p>Die Website läuft bei Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA. Beim Aufruf jeder Seite verarbeitet Cloudflare technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browser- und Gerätetyp. Das dient der Auslieferung der Seiten, der Sicherheit (z. B. Schutz vor Angriffen) und der Fehlersuche. Protokolle werden nur für wenige Tage gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, funktionierenden Angebot). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert (Angemessenheitsbeschluss der EU-Kommission, Art. 45 DSGVO). Mehr: <a href="https://www.cloudflare.com/de-de/privacypolicy/">cloudflare.com/privacypolicy</a>.</p>
 <h2>4. Cookie und lokaler Speicher</h2><p>Öffnet ein Premium-Kunde seinen persönlichen Zugangslink, wird das Cookie <b>mb_access</b> gesetzt. Es enthält nur den Zugangscode und läuft ab, wenn der Zugang endet. Ohne dieses Cookie funktioniert der Zugang nicht; es ist technisch notwendig (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. b DSGVO). Im Premium-Tool werden Einstellungen und der Verlauf nur im lokalen Speicher deines Browsers abgelegt und nicht an uns übertragen. Auf der Startseite, der Ergebnisseite und den Rechtstexten werden keine Cookies gesetzt.</p>
-<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; unser E-Mail-Postfach liegt bei GMX (1&amp;1 Mail &amp; Media GmbH). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
+<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; unser E-Mail-Postfach liegt bei GMX (1&amp;1 Mail &amp; Media GmbH). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
 <h2>6. Premium-Abo und Zahlung</h2><p>Für das Abo verarbeiten wir deinen Namen, deine E-Mail-Adresse, ggf. deinen Telegram-Namen sowie Zahlungsdaten (Art. 6 Abs. 1 lit. b DSGVO). Die Zahlung erfolgt über PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., 22–24 Boulevard Royal, L-2449 Luxemburg); dabei gelten auch die Datenschutzhinweise von PayPal: <a href="https://www.paypal.com/de/legalhub/privacy-full">paypal.com/de/legalhub/privacy-full</a>. Rechnungs- und Zahlungsbelege bewahren wir nach den gesetzlichen Fristen (bis zu 10 Jahre, § 147 AO, § 257 HGB) auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
 <h2>7. Telegram</h2><p>Unsere Kanäle (Gratis- und Premium-Kanal) und unser Bot laufen über den Messenger-Dienst Telegram. Wenn du einem Kanal beitrittst, verarbeitet Telegram deine Daten nach eigenen Bestimmungen: <a href="https://telegram.org/privacy">telegram.org/privacy</a>. Wir sehen dabei nur, was Telegram uns anzeigt (z. B. Profilname und Nutzername von Kanalmitgliedern) und nutzen das nur zur Verwaltung des Zugangs (Art. 6 Abs. 1 lit. b DSGVO). Telegram kann Daten außerhalb der EU verarbeiten.</p>
 <h2>8. Quoten-Abfrage im Premium-Tool (optional)</h2><p>Im Premium-Tool kannst du freiwillig einen eigenen Schlüssel für „The Odds API“ eintragen. Nur dann ruft dein Browser Quoten direkt bei diesem Anbieter ab; dabei werden deine IP-Adresse und dein Schlüssel an ihn übermittelt (Art. 6 Abs. 1 lit. a DSGVO, durch dein Eintragen). Ohne Schlüssel findet keine Verbindung statt.</p>
@@ -3550,8 +3576,13 @@ export default {
       const name = String(body.name || "").trim().slice(0, 100);
       const email = String(body.email || "").trim().slice(0, 150);
       const message = String(body.message || "").trim().slice(0, 500);
-      if (!name || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return jsonResponse({ error: "Bitte Name und eine gültige E-Mail-Adresse angeben." }, 400);
+      // Start page trial form: a Telegram username is enough as contact (email optional there).
+      const trial = body.kind === "trial";
+      const tg = String(body.telegram || "").trim().replace(/^@/, "").slice(0, 40);
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      const tgOk = /^[A-Za-z0-9_]{5,32}$/.test(tg);
+      if (!name || (trial ? !(emailOk || tgOk) || (email && !emailOk) || (tg && !tgOk) : !emailOk)) {
+        return jsonResponse({ error: trial ? "Bitte Name und deinen Telegram-Namen (@…) oder eine E-Mail-Adresse angeben." : "Bitte Name und eine gültige E-Mail-Adresse angeben." }, 400);
       }
       if (!env.TELEGRAM_BOT_TOKEN || !env.ADMIN_CHAT_ID) {
         return jsonResponse({ error: "Kontaktformular ist gerade nicht verfügbar." }, 503);
@@ -3566,9 +3597,10 @@ export default {
       await env.ACCESS_KV.put(rateKey, "1", { expirationTtl: 60 });
 
       const lines = [
-        "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
+        trial ? "🎁 Neue Anfrage: 24h-Test Premium (Startseite)" : "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
         `Name: ${name}`,
-        looksLikeFakeEmail(email) ? `E-Mail: ${email} ⚠️ wirkt wie Fake-/Wegwerf-Adresse` : `E-Mail: ${email}`,
+        tg ? `Telegram: @${tg} → https://t.me/${tg}` : null,
+        !email ? null : looksLikeFakeEmail(email) ? `E-Mail: ${email} ⚠️ wirkt wie Fake-/Wegwerf-Adresse` : `E-Mail: ${email}`,
         message ? `Nachricht: ${message}` : null,
       ].filter(Boolean);
       const sent = await sendTelegramMessage(env, env.ADMIN_CHAT_ID, lines.join("\n"));

@@ -304,3 +304,20 @@ test("privacy policy: 404 without the Impressum variables, shown with them, link
   const fs = await import("node:fs");
   assert.ok(!fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8").includes("fonts.googleapis"));
 });
+
+test("start page trial form: a Telegram name is enough, the request reaches the owner on Telegram", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const html = await (await worker.fetch(new Request("https://x/"), env, {})).text();
+  assert.match(html, /id="trial"/);
+  for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
+  const post = (body, ip) => worker.fetch(new Request("https://x/api/contact", { method: "POST", headers: { "CF-Connecting-IP": ip }, body: JSON.stringify(body) }), env, {});
+  assert.equal((await post({ kind: "trial", name: "Max", telegram: "@ab" }, "1")).status, 400);
+  assert.equal((await post({ kind: "trial", name: "Max" }, "2")).status, 400);
+  const ok = await post({ kind: "trial", name: "Max", telegram: "@max_muster" }, "3");
+  assert.equal(ok.status, 200);
+  const msg = net.sent.find((m) => m.chat_id === "777");
+  assert.match(msg.text, /24h-Test/);
+  assert.match(msg.text, /@max_muster/);
+  assert.equal((await post({ name: "Max", telegram: "max_muster" }, "4")).status, 400, "normal contact form still needs an email");
+});
