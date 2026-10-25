@@ -244,3 +244,15 @@ test("weekly image: admin uploads the PNG, the worker posts it to the free chann
   assert.ok(photo.caption.includes("Wochenbilanz") && photo.caption.includes("Keine Gewinngarantie"));
   assert.ok(photo.photo instanceof Blob);
 });
+
+test("search engines: robots.txt allows only the results page, sitemap lists it", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  const robots = await (await worker.fetch(new Request("https://moneybag-signals.com/robots.txt"), env, {})).text();
+  assert.match(robots, /Allow: \/ergebnisse/);
+  assert.match(robots, /Disallow: \/admin/);
+  assert.match(robots, /Sitemap: https:\/\/moneybag-signals.com\/sitemap.xml/);
+  const sm = await worker.fetch(new Request("https://moneybag-signals.com/sitemap.xml"), env, {});
+  assert.match(sm.headers.get("Content-Type"), /xml/);
+  assert.match(await sm.text(), /<loc>https:\/\/moneybag-signals.com\/ergebnisse<\/loc>/);
+});

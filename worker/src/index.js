@@ -1975,7 +1975,7 @@ function resultsPageHtml(rows, env, nowMs) {
   const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
   const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – Alle Ergebnisse</title><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
+<title>MoneyBag – Alle Ergebnisse</title><link rel="canonical" href="https://moneybag-signals.com/ergebnisse"><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
 <style>
 :root{--bg:#0b1630;--card:#13234a;--line:#24396b;--text:#eef2fb;--muted:#a9b6d3;--gold:#f5c542;--ok:#2ecc71;--no:#ff6b5b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -2827,6 +2827,16 @@ export default {
     if (url.pathname === "/ergebnisse" || url.pathname === "/ergebnisse/") {
       if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
       return resultsPage(request, env, ctx);
+    }
+
+    // --- Search engines: only the public results page is meant to be found ---
+    if (url.pathname === "/robots.txt") {
+      return new Response(`User-agent: *\nAllow: /ergebnisse\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+        { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+    }
+    if (url.pathname === "/sitemap.xml") {
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n</urlset>\n`,
+        { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
 
     // --- Legal notice (Impressum) ---
