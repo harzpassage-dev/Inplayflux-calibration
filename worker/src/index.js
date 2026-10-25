@@ -2035,6 +2035,87 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
 
+// Public start page for visitors without an access link (and for Google). Live hit rates from
+// result:*, cached like the results page. Visitors with a token or cookie still get the tool.
+function landingPageHtml(rows, env, nowMs) {
+  const all = summarize(rows);
+  const d30 = summarize(rows.filter((r) => Date.parse(r.settledAt) >= nowMs - 30 * DAY_MS));
+  const pct = (t) => (t.n ? (Math.round((t.won / t.n) * 1000) / 10).toString().replace(".", ",") + " %" : "–");
+  const stat = (label, t) => `<div class="stat"><b>${pct(t)}</b><span>${label}</span><small>${t.n ? `${t.won} von ${t.n} Signalen` : "noch keine Daten"}</small></div>`;
+  const free = String(freeChannel(env)).replace(/^@/, "");
+  const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
+  const mail = "harzpassage@gmx.de";
+  const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>
+<meta name="description" content="Live-Fußballsignale (Over Tore), bewertet von einem Datenmodell aus über 13.000 Live-Signalen. Mit Mindestquote, Einsatz in Einheiten und offener Ergebnisseite. Gratis-Kanal auf Telegram. 18+.">
+<link rel="canonical" href="https://moneybag-signals.com/">
+<style>
+:root{--bg:#0b1630;--card:#13234a;--line:#24396b;--text:#eef2fb;--muted:#a9b6d3;--gold:#f5c542}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 16px 48px}h1{font-size:34px;line-height:1.15;margin:8px 0 10px}h1 span{color:var(--gold)}
+h2{font-size:21px;margin:38px 0 12px}.lead{color:var(--muted);font-size:18px;margin:0 0 20px}
+.btn{display:inline-block;background:var(--gold);color:#1a1300;font-weight:700;padding:13px 20px;border-radius:12px;text-decoration:none;margin:4px 8px 4px 0}
+.btn.alt{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.stat b{display:block;font-size:30px;color:var(--gold)}
+.stat span{display:block;font-weight:600}.stat small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.box h3{margin:0 0 6px;font-size:17px}.box p{margin:0;color:var(--muted)}
+.price{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:20px}.price b{font-size:30px;color:var(--gold)}
+.note{color:var(--muted);font-size:14px}dt{font-weight:600;margin-top:14px}dd{margin:4px 0 0;color:var(--muted)}a{color:var(--gold)}
+footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}footer a{color:var(--muted)}
+@media(max-width:520px){h1{font-size:27px}.lead{font-size:16px}}
+</style></head><body><main>
+<div>💰 <b>MoneyBag</b></div>
+<h1>Live-Fußballsignale mit <span>Datenmodell</span> und offener Bilanz</h1>
+<p class="lead">Wir posten keine Bauchgefühl-Tipps. Jedes Signal wird von einem Modell bewertet, das auf über 13.000 ausgewerteten Live-Signalen aufbaut – und jedes Ergebnis wird automatisch veröffentlicht, Treffer und Verluste.</p>
+<a class="btn" href="${freeLink}">📢 Gratis-Kanal öffnen</a><a class="btn alt" href="/ergebnisse">📊 Alle Ergebnisse ansehen</a>
+<h2>Aktuelle Zahlen</h2>
+<div class="stats">${stat("🔥 High Confidence, gesamt", all.premium)}${stat("Alle Stufen, letzte 30 Tage", d30.all)}${stat("Alle Stufen, gesamt", all.all)}</div>
+<p class="note">Automatisch aus dem Live-Spielstand erfasst, Stand ${updated}. Ungewertete Spiele zählen nicht mit. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
+<h2>So funktioniert MoneyBag</h2>
+<div class="grid">
+<div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Es wird jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>
+<div class="box"><h3>💶 Mindestquote</h3><p>Bei jedem Signal steht, ab welcher Quote es sich auf Dauer rechnet. Liegt die Quote darunter: nicht setzen.</p></div>
+<div class="box"><h3>📏 Einsatz in Einheiten</h3><p>0,5 bis 2 Einheiten je nach Stärke des Signals – nie mehr setzen, als man verlieren kann.</p></div>
+<div class="box"><h3>📊 Offene Bilanz</h3><p>Jedes Ergebnis steht auf der <a href="/ergebnisse">Ergebnisseite</a>. Nichts gelöscht, nichts ausgewählt.</p></div>
+</div>
+<h2>Gratis oder Premium</h2>
+<div class="grid">
+<div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><p style="margin-top:10px"><a href="${freeLink}">Kanal öffnen →</a></p></div>
+<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>.</p></div>
+</div>
+<h2>Häufige Fragen</h2>
+<dl>
+<dt>Wie viele Signale gibt es?</dt><dd>Je nach Spieltag mehrere pro Tag, am Wochenende mehr.</dd>
+<dt>Muss ich jedes Signal setzen?</dt><dd>Nein. Nur wenn die Quote über der angegebenen Mindestquote liegt.</dd>
+<dt>Was ist eine Einheit?</dt><dd>Ein fester Betrag, den du selbst festlegst, z. B. 1–2 % deines Budgets.</dd>
+<dt>Gibt es eine Garantie?</dt><dd>Nein. Sportwetten bleiben ein Risiko, auch mit Daten. Darum zeigen wir jedes Ergebnis offen.</dd>
+<dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
+</dl>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a>' : ""}</footer>
+</main></body></html>`;
+}
+
+async function landingPage(request, env, ctx) {
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const cacheKey = new Request(new URL("/__start", request.url).toString());
+  if (cache) {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+  }
+  const res = new Response(landingPageHtml(await listResults(env), env, Date.now()), {
+    headers: { "content-type": "text/html; charset=utf-8", "Cache-Control": `public, max-age=${RESULTS_CACHE_S}`, ...SECURITY_HEADERS },
+  });
+  if (cache) {
+    const put = cache.put(cacheKey, res.clone());
+    if (ctx && ctx.waitUntil) ctx.waitUntil(put);
+    else await put;
+  }
+  return res;
+}
+
 async function resultsPage(request, env, ctx) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const cacheKey = new Request(new URL("/ergebnisse", request.url).toString());
@@ -2831,11 +2912,11 @@ export default {
 
     // --- Search engines: only the public results page is meant to be found ---
     if (url.pathname === "/robots.txt") {
-      return new Response(`User-agent: *\nAllow: /ergebnisse\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
         { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
     if (url.pathname === "/sitemap.xml") {
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n</urlset>\n`,
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n</urlset>\n`,
         { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
 
@@ -3452,6 +3533,9 @@ export default {
 
     // --- Public access-gated page ---
     const resolved = await resolveAccess(request, env);
+    if (!resolved.ok && resolved.reason === "missing" && url.pathname === "/" && (request.method === "GET" || request.method === "HEAD")) {
+      return landingPage(request, env, ctx);
+    }
     if (!resolved.ok) {
       return deniedPage({ reason: resolved.reason });
     }

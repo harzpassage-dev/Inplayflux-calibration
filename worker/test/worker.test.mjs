@@ -256,3 +256,21 @@ test("search engines: robots.txt allows only the results page, sitemap lists it"
   assert.match(sm.headers.get("Content-Type"), /xml/);
   assert.match(await sm.text(), /<loc>https:\/\/moneybag-signals.com\/ergebnisse<\/loc>/);
 });
+
+test("start page: visitors without a link get the public page with live numbers, a bad link still gets the access page", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  seedResults(env, 10, 0);
+  const res = await worker.fetch(new Request("https://moneybag-signals.com/"), env, {});
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /20 € \/ Monat/);
+  assert.match(html, /harzpassage@gmx.de/);
+  assert.match(html, /18\+/);
+  assert.match(html, /von 10 Signalen/);
+  for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
+  const bad = await worker.fetch(new Request("https://moneybag-signals.com/?t=premium:pending"), env, {});
+  assert.equal(bad.status, 403);
+  const sm = await (await worker.fetch(new Request("https://moneybag-signals.com/sitemap.xml"), env, {})).text();
+  assert.match(sm, /<loc>https:\/\/moneybag-signals.com\/<\/loc>/);
+});

@@ -222,9 +222,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: public start page at `/` for visitors without an access link (`landingPage`/`landingPageHtml`, cached 5 min,
+  live hit rates from `result:*`, how it works, free channel, Premium 20 €/month + email, FAQ, 18+ footer); a link with
+  `?t=` or the cookie still opens the tool, an invalid/expired link still gets the 403 access page. `/` added to
+  robots.txt (`Allow: /$`) and the sitemap.
+
 - 2026-10-25: Google search: `/robots.txt` (only `/ergebnisse` allowed, admin/api/webhook blocked) and `/sitemap.xml`
   (lists `/ergebnisse`), canonical link on the results page. Domain verified in Google Search Console the same day
-  (owner's Google account); sitemap to be submitted there. `/` answers 403 (access page), so only `/ergebnisse` can rank.
+  (owner's Google account); sitemap to be submitted there. 
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
