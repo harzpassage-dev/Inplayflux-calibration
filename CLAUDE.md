@@ -230,6 +230,9 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: start page advertises a free 24-hour Premium test (hero note, price box, FAQ; request by email, ends
+  automatically – admin "create" makes 24 h tokens); AGB § 4 (4) covers the free trial (no payment duty, no renewal).
+
 - 2026-10-25: privacy policy `/datenschutz` (`legalPage` kind "datenschutz": Cloudflare hosting/logs, cookie `mb_access`,
   local storage, contact form → Telegram + IP 60 s, GMX email, PayPal, Telegram channels, optional The Odds API key,
   rights, BayLDA); footer links everywhere. Google Fonts removed from the tool (`worker/public/index.html` =

@@ -265,6 +265,7 @@ test("start page: visitors without a link get the public page with live numbers,
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.match(html, /20 € \/ Monat/);
+  assert.match(html, /24 Stunden Premium kostenlos testen/);
   assert.match(html, /harzpassage@gmx.de/);
   assert.match(html, /18\+/);
   assert.match(html, /von 10 Signalen/);
@@ -283,6 +284,7 @@ test("AGB and Widerruf: 404 without the Impressum variables, shown (escaped) wit
   const agb = await (await worker.fetch(new Request("https://x/agb"), env, {})).text();
   assert.match(agb, /§ 19 UStG/);
   assert.match(agb, /PayPal/);
+  assert.match(agb, /Testzugang für 24 Stunden/);
   assert.match(agb, /Max &lt;M&gt;, Weg 1, 12345 Ort/);
   const w = await (await worker.fetch(new Request("https://x/widerruf"), env, {})).text();
   assert.match(w, /Muster-Widerrufsformular/);

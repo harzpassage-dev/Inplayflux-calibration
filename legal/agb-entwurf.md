@@ -34,6 +34,8 @@ Kunde, volljährig zu sein.
 (2) Der Kunde fragt den Zugang per E-Mail an [E-MAIL] an. Der Anbieter antwortet mit den Zahlungsdaten und diesen AGB
 (verbindliches Angebot). Der Vertrag kommt zustande, wenn der Kunde das Angebot per E-Mail annimmt oder bezahlt.
 (3) Nach Zahlungseingang erhält der Kunde einen persönlichen Einladungslink. Vertragssprache ist Deutsch.
+(4) Auf Anfrage erhält der Kunde einmalig einen kostenlosen Testzugang für 24 Stunden. Er endet automatisch,
+verlängert sich nicht und begründet keine Zahlungspflicht.
 
 ### § 5 Preis und Zahlung
 (1) Der Preis beträgt **20 € pro Monat**. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmer).
