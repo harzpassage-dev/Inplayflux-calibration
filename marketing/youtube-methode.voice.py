@@ -1,3 +1,9 @@
+# Natural voice-over for youtube-methode-ton.mp4 (25.10., owner could not do it in CapCut):
+# Chatterbox multilingual TTS (Resemble AI, MIT licence, CPU, venv with torch 2.6.0 cpu + chatterbox-tts 0.1.7),
+# language_id='de', exaggeration 0.6-0.75, cfg_weight 0.35-0.4; each take checked with faster-whisper 'small'
+# (garbled tails re-generated with seeds 2-4; chosen takes: 0 s3, 6 s4, 12 s2, 20 s2, 21 s3, 22 s3, rest seed 1),
+# silence trimmed, placed at the segment start, mixed over youtube-methode.bg.py (volume 0.42, ducked), loudnorm -15 LUFS.
+
 # (start, end, speaker, text) – speaker: 0 amused, 6 surprised, 4 neutral
 SEGS=[
 (0.3,6,6,"Leute! Kann man einer Fußball-Statistik eigentlich trauen?!"),
@@ -27,6 +33,16 @@ SEGS=[
 (232.3,240,6,"Welche Frage sollen wir als Nächstes prüfen? Ab in die Kommentare – und abonniere Torminute!"),
 ]
 
-# Voice: Piper de_DE-thorsten_emotional-medium (speakers 0 amused / 6 surprised / 4 neutral), --length-scale 0.9,
-# --noise-scale 0.8 --noise-w-scale 1.0 (livelier). Background: youtube-methode.bg.py (self-made crowd + cheers + 120 BPM
-# groove, royalty-free), volume 0.42, ducked under the voice (sidechaincompress), loudnorm -15 LUFS.
+import os, torch, torchaudio as ta, subprocess, sys
+os.environ["TQDM_DISABLE"]="1"
+from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+exec(open("segs2.py").read())
+torch.manual_seed(1)
+m=ChatterboxMultilingualTTS.from_pretrained(device="cpu")
+for i,(a,b,spk,t) in enumerate(SEGS):
+    ex=0.55 if spk==4 else 0.75
+    w=m.generate(t, language_id="de", exaggeration=ex, cfg_weight=0.35, temperature=0.8)
+    ta.save(f"c{i}_raw.wav", w, m.sr)
+    subprocess.run(["ffmpeg","-loglevel","error","-y","-i",f"c{i}_raw.wav","-af","silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse",f"c{i}.wav"],check=True)
+    d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","csv=p=0",f"c{i}.wav"]))
+    print(i,round(d,2),round(b-a,2),flush=True)

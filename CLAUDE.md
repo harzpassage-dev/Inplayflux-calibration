@@ -226,9 +226,10 @@ then decide per tier on the new days and apply.
   the background: offline TTS Piper, voice de_DE-thorsten_emotional (amused/surprised), livelier script in
   `marketing/youtube-methode.voice.py`, self-made royalty-free crowd/cheers/groove `youtube-methode.bg.py` ducked under
   the voice; numbers spelled out as words; burned-in captions keep the calmer original wording). Owner found the Piper
-  voices robotic (25.10.) and chose to voice it in CapCut (in-app TTS): `marketing/youtube-methode-musik.mp4` (picture +
-  background, no voice) and a timed 25-sentence table with steps in `marketing/youtube.md`. Free offline TTS is not good
-  enough; natural alternatives offered: own recording (Claude syncs it) or Azure Speech free tier (key via environment secrets).
+  voices robotic (25.10.); CapCut was too fiddly for them, so the final `youtube-methode-ton.mp4` uses **Chatterbox**
+  multilingual TTS (Resemble AI, MIT licence, runs on CPU in a venv, ~40 s per sentence; German, exaggeration ~0.7),
+  every take checked by faster-whisper and garbled tails re-generated (recipe in `marketing/youtube-methode.voice.py`).
+  Use Chatterbox, not Piper, for future voice-overs. `youtube-methode-musik.mp4` = picture + background without voice.
 - Meta rules (checked 21.10.): ads that promote or link to online gambling need Meta's written authorization
   with a gambling licence → no paid Instagram/Facebook ads for MoneyBag; offers with "guaranteed win" are
   banned outright; organic gambling posts are a restricted category (possibly 18+ / not recommended,
@@ -242,8 +243,8 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
-- 2026-10-25: narrated YouTube video `marketing/youtube-methode-ton.mp4` (Piper TTS, enthusiastic emotional voice +
-  self-made stadium/groove background).
+- 2026-10-25: narrated YouTube video `marketing/youtube-methode-ton.mp4` (final: Chatterbox natural German voice,
+  Whisper-checked, over the self-made stadium/groove background).
 
 - 2026-10-25: YouTube long video `marketing/youtube-methode.mp4` (4 min: data, counting, stability test, results,
   myths, limits) + `marketing/youtube.md` (title, chapters, narration script).
