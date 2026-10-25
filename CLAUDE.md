@@ -222,6 +222,9 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: Impressum live – owner set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare (plain text vars, kept on
+  deploy by `keep_vars`); `/impressum` 200, address in 3 lines, footer links on `/` and `/ergebnisse`. AGB/Widerruf still missing.
+
 - 2026-10-25: public start page at `/` for visitors without an access link (`landingPage`/`landingPageHtml`, cached 5 min,
   live hit rates from `result:*`, how it works, free channel, Premium 20 €/month + email, FAQ, 18+ footer); a link with
   `?t=` or the cookie still opens the tool, an invalid/expired link still gets the 403 access page. `/` added to
@@ -394,7 +397,7 @@ then decide per tier on the new days and apply.
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
   - Waiting for the owner: switch "MoneyBag 0-0 → Goal" back on at InPlayFlux (24.10.); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
-    22.10.); set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare; terms (AGB/Widerruf) via e-recht24 or a lawyer;
+    22.10.); terms (AGB/Widerruf) via e-recht24 or a lawyer;
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
   minute + score, tip, shots on target, "Druck-Index", pre-match goal expectation, live quote; a version with the
@@ -452,8 +455,7 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Owner to-dos (25.10.): set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare soon (the public start page now shows
-  the paid offer); upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
+- Owner to-dos (25.10.): upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
   (W) – SC Ell (W) posts (17.10.) in the free and premium channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
