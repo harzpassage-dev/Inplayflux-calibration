@@ -58,6 +58,14 @@ total, 14-day bars, newest 150 rows; edge-cached 5 min (`RESULTS_CACHE_S`). Resu
 also stored as KV **metadata** so listing needs no per-key `get` (old keys get metadata
 lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
+**Public pages** (no token, all in `worker/src/index.js`, since 2026-10-25): `/` start page for visitors without an access
+link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, FAQ; a `?t=` link or the `mb_access` cookie still
+opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
+(`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
+are noindex), `/robots.txt` + `/sitemap.xml` (`/` and `/ergebnisse`; site verified in Google Search Console). The
+privacy policy lists every data flow (Cloudflare, cookie, contact form → Telegram, GMX, PayPal, Telegram, optional
+The Odds API key): any new external resource, cookie or tracker needs an update there first.
+
 ## Data and feed facts (learned the hard way)
 
 - **Live feed** `https://inplayflux.com/maclarv8/GETAllMatches.php?inplay=inplay&v=<ts>` needs
@@ -467,6 +475,11 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
+- Next (from 25.10.): Mon 26.10. bot "Wochen-Check" → owner exports a new CSV → weekly routine (skill `wochen-routine`);
+  market comparison and profit check once ≥ 50 tips; first auto video Sun 25.10. 17:37; Google indexing check
+  (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
+  legal advice); per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
+  email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (25.10.): upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
