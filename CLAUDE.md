@@ -229,7 +229,9 @@ then decide per tier on the new days and apply.
 
 - 2026-10-25: Google search: `/robots.txt` (only `/ergebnisse` allowed, admin/api/webhook blocked) and `/sitemap.xml`
   (lists `/ergebnisse`), canonical link on the results page. Domain verified in Google Search Console the same day
-  (owner's Google account); sitemap to be submitted there. 
+  (owner's Google account); sitemap submitted as full URL
+  `https://moneybag-signals.com/sitemap.xml` (a domain property rejects the bare file name), live test of `/ergebnisse`
+  green, indexing requested for `/` and `/ergebnisse` the same day. Check with `site:moneybag-signals.com` in ~1–2 weeks. 
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
@@ -381,7 +383,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-24)
+## Open items (as of 2026-10-25)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -450,7 +452,10 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Owner to-dos: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
+- Owner to-dos (25.10.): set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare soon (the public start page now shows
+  the paid offer); upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
+  advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
+  Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
   (W) – SC Ell (W) posts (17.10.) in the free and premium channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
   under the article (never on TikTok).
 - Check the first auto-marked premium posts (WIN/LOST edit, 17291bb). If a post stays
