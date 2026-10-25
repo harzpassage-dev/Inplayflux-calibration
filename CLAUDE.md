@@ -221,7 +221,9 @@ then decide per tier on the new days and apply.
   except TikTok/Instagram @torminute (YouTube also restricts gambling promotion). Long video 1 (owner's request "4 min
   about our method"): `marketing/youtube-methode.mp4` (4:00, 1920×1080, silent, source `youtube-methode.video.html` with
   `data-s/data-e/data-at` scene timing + `youtube-methode.render.mjs`); only numbers already verified for TikTok
-  videos 1–12; title, description with chapter timestamps and a narration script in `marketing/youtube.md`.
+  videos 1–12; title, description with chapter timestamps and a narration script in `marketing/youtube.md`. Narrated
+  version `marketing/youtube-methode-ton.mp4` (offline TTS Piper, voice de_DE-thorsten-high, segments + timing in
+  `marketing/youtube-methode.voice.py`; numbers spelled out as words) – upload this one.
 - Meta rules (checked 21.10.): ads that promote or link to online gambling need Meta's written authorization
   with a gambling licence → no paid Instagram/Facebook ads for MoneyBag; offers with "guaranteed win" are
   banned outright; organic gambling posts are a restricted category (possibly 18+ / not recommended,
@@ -234,6 +236,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-25: narrated YouTube video `marketing/youtube-methode-ton.mp4` (Piper TTS, German voice "Thorsten").
 
 - 2026-10-25: YouTube long video `marketing/youtube-methode.mp4` (4 min: data, counting, stability test, results,
   myths, limits) + `marketing/youtube.md` (title, chapters, narration script).

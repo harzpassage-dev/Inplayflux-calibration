@@ -1,0 +1,32 @@
+SEGS=[
+(0.4,6,"Kann man einer Fußball-Statistik eigentlich trauen?"),
+(6,14,"Wir zeigen dir unsere Methode – und alles, was wir damit herausgefunden haben."),
+(14.3,22,"Unsere Basis: über dreizehntausend Live-Spielszenen aus Hunderten Ligen."),
+(22,31,"Für jede Szene halten wir fest: Minute, Spielstand, Schüsse aufs Tor, Ecken und die Tor-Erwartung vor dem Spiel."),
+(31,40,"Dann warten wir bis zum Abpfiff und schauen: Fällt noch ein Tor?"),
+(40.3,50,"Wichtig: Dasselbe Spiel kann mehrfach in den Daten stehen. Wir zählen jedes Spiel nur einmal."),
+(50,66,"Szenen aus der ersten Halbzeit werten wir getrennt. So bleiben achttausendsechshundertachtzig eindeutige Spiele mit einer Szene um Minute sechzig."),
+(66.3,76,"Dann kommt der Härtetest: Wir teilen den Zeitraum in zwei Hälften."),
+(76,88,"Nur was in beiden Hälften gleich ausfällt, zeigen wir. Klare Führung: siebenundsiebzig und siebenundsiebzig Prozent. Das bleibt."),
+(88,102,"Spanien: achtundsechzig gegen vierundsiebzig Prozent. Zu wackelig, fliegt raus. Und zu kleine Gruppen lassen wir ganz weg."),
+(102.3,112,"Das wichtigste Ergebnis: In drei von vier Szenen nach Minute sechzig fällt noch ein Tor."),
+(112,122,"Dreiundsiebzig Prozent – und zwar in beiden Hälften des Zeitraums."),
+(122.3,133,"Tore fallen spät: Jedes fünfte nächste Tor kommt erst nach Minute fünfundachtzig, sieben Prozent sogar in der Nachspielzeit."),
+(133,144,"Ab Minute sechsundsiebzig steigt die Torchance pro Minute um fast ein Drittel."),
+(144.3,154,"Steht es nach sechzig Minuten null zu null, fällt in siebzig Prozent noch ein Tor."),
+(154,164,"Aber: Wurden vorher viele Tore erwartet, sind es zweiundachtzig Prozent. Bei wenigen nur vierundsechzig."),
+(164.3,174,"Auch der Spielstand zählt: Bei null zu null sind es siebzig Prozent, bei Gleichstand mit Toren fünfundsiebzig."),
+(174,184,"Und eine klare Führung lähmt das Spiel nicht: siebenundsiebzig Prozent."),
+(184.3,192,"Große Unterschiede zwischen Ländern: Finnland einundachtzig Prozent, Polen neunundsiebzig."),
+(192,200,"Brasilien nur achtundsechzig. Der Schnitt liegt bei dreiundsiebzig."),
+(200.3,209,"Und Mythen? Viele Ecken bringen kaum mehr Tore. Frauen schießen genauso viele Tore wie Männer."),
+(209,218,"Und: Die Null muss stehen? Nur dreißig Prozent der Null-zu-null-Spiele bleiben auch null zu null."),
+(218.3,226,"Ganz ehrlich: Dreiundsiebzig Prozent heißt auch, dass in siebenundzwanzig Prozent kein Tor mehr fällt. Serien ohne Tor kommen vor."),
+(226,232,"Und wer trifft, zeigen unsere Daten nicht. Statistik beschreibt viele Spiele – nicht das nächste."),
+(232.3,240,"Welche Frage sollen wir als Nächstes prüfen? Schreib's in die Kommentare und abonniere Torminute!"),
+]
+
+# Narration for youtube-methode.mp4 (owner's request "Vertone das Video", 25.10.):
+# offline TTS Piper (pip install piper-tts), voice de_DE-thorsten-high (huggingface.co/rhasspy/piper-voices, free),
+# --length-scale 0.95, each segment placed at its start time with ffmpeg adelay + amix, loudnorm -16 LUFS,
+# muxed into youtube-methode-ton.mp4. Numbers are written as words so the voice reads them correctly.

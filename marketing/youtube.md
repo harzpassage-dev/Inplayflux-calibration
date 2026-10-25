@@ -2,7 +2,7 @@
 
 Regeln wie TikTok: nur Fußball-Statistik, keine Wett-Wörter, keine Links zu MoneyBag/Telegram.
 
-## Langes Video 1: `youtube-methode.mp4` (4:00, 1920×1080, ohne Ton)
+## Langes Video 1: `youtube-methode-ton.mp4` (4:00, 1920×1080, **mit Sprecher**; stumme Fassung `youtube-methode.mp4`)
 
 Quelle `youtube-methode.video.html`, Frames mit `youtube-methode.render.mjs`, dann ffmpeg wie bei TikTok.
 Nur Zahlen, die in früheren Videos schon in beiden Hälften des Zeitraums geprüft wurden.
