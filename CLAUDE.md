@@ -206,6 +206,9 @@ then decide per tier on the new days and apply.
   warum? / 🔍 Mythen im Daten-Check / 🔔 Neue Reels jede Woche". First post: intro carousel
   `marketing/instagram-intro-{1,2,3}.png` (1080×1350, source `instagram-intro.html?s=N`; 3 of 4 matches another
   goal after 60', 1 of 5 goals after 85', median 15 min; 8,680 matches, both halves stable).
+- **YouTube Torminute @torminute-analyst** (since 2026-10-25, Shorts): same profile picture and rules, banner
+  `marketing/youtube-banner.jpg` (2560×1440, text in the 1546×423 safe area, source `youtube-banner.html`); no links
+  except TikTok/Instagram @torminute (YouTube also restricts gambling promotion).
 - Meta rules (checked 21.10.): ads that promote or link to online gambling need Meta's written authorization
   with a gambling licence → no paid Instagram/Facebook ads for MoneyBag; offers with "guaranteed win" are
   banned outright; organic gambling posts are a restricted category (possibly 18+ / not recommended,
@@ -218,6 +221,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
 - 2026-10-24: TikTok video 12 `marketing/tiktok-nutzen.mp4` ("Bauchgefühl oder Daten?", benefit of the analyses).
 
