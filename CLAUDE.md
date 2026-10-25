@@ -223,8 +223,8 @@ then decide per tier on the new days and apply.
 ## Change log (latest first)
 
 - 2026-10-25: Google search: `/robots.txt` (only `/ergebnisse` allowed, admin/api/webhook blocked) and `/sitemap.xml`
-  (lists `/ergebnisse`), canonical link on the results page. Owner verifies the domain in Google Search Console via
-  Cloudflare DNS (TXT record) and submits the sitemap. `/` answers 403 (access page), so only `/ergebnisse` can rank.
+  (lists `/ergebnisse`), canonical link on the results page. Domain verified in Google Search Console the same day
+  (owner's Google account); sitemap to be submitted there. `/` answers 403 (access page), so only `/ergebnisse` can rank.
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
