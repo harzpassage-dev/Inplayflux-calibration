@@ -59,7 +59,8 @@ also stored as KV **metadata** so listing needs no per-key `get` (old keys get m
 lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 **Public pages** (no token, all in `worker/src/index.js`, since 2026-10-25): `/` start page for visitors without an access
-link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, FAQ; a `?t=` link or the `mb_access` cookie still
+link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, free 24 h test with request form `#test` → bot DM to
+the owner, FAQ; a `?t=` link or the `mb_access` cookie still
 opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
 (`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
 are noindex), `/robots.txt` + `/sitemap.xml` (`/` and `/ergebnisse`; site verified in Google Search Console). The
@@ -486,7 +487,8 @@ then decide per tier on the new days and apply.
 - Next (from 25.10.): Mon 26.10. bot "Wochen-Check" → owner exports a new CSV → weekly routine (skill `wochen-routine`);
   market comparison and profit check once ≥ 50 tips; first auto video Sun 25.10. 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
-  legal advice); per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
+  legal advice); owner to send one test request through the start-page form to see the bot DM; trial flow: DM → admin
+  "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (25.10.): upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
