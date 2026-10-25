@@ -2003,7 +2003,7 @@ ${profit}
 <h2>Selbst verfolgen</h2>
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a>' : ""}</footer>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</footer>
 </main></body></html>`;
 }
 
@@ -2030,7 +2030,7 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
 <p>MoneyBag veröffentlicht statistische Auswertungen und Einschätzungen zu Fußballspielen. MoneyBag ist kein Wettanbieter, nimmt keine Wetten an und vermittelt keine Wetten. Jede Wette erfolgt auf eigenes Risiko bei einem Anbieter der eigenen Wahl. Vergangene Ergebnisse sagen nichts über künftige aus; es gibt keine Gewinngarantie. Teilnahme erst ab 18 Jahren. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00.</p>
 <h2>Verbraucherstreitbeilegung</h2>
 <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
-<p><a href="/ergebnisse">← Zur Ergebnisseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a></p>
+<p><a href="/ergebnisse">← Zur Ergebnisseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></p>
 </main></body></html>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
@@ -2094,11 +2094,11 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid va
 <dt>Gibt es eine Garantie?</dt><dd>Nein. Sportwetten bleiben ein Risiko, auch mit Daten. Darum zeigen wir jedes Ergebnis offen.</dd>
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a>' : ""}</footer>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</footer>
 </main></body></html>`;
 }
 
-// AGB and withdrawal policy (owner chose Kleinunternehmer § 19 UStG and PayPal, 25.10.). Name and address come from
+// AGB, withdrawal policy and privacy policy (owner chose Kleinunternehmer § 19 UStG and PayPal, 25.10.). Name and address come from
 // the same Cloudflare variables as the Impressum; without them both pages are 404.
 function legalPage(env, kind) {
   if (!env.IMPRESSUM_NAME || !env.IMPRESSUM_ADDRESS) return new Response("Not found", { status: 404 });
@@ -2126,13 +2126,24 @@ function legalPage(env, kind) {
 <p>Haben Sie verlangt, dass die Dienstleistungen während der Widerrufsfrist beginnen sollen, so haben Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem Sie uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichten, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.</p>
 <h2>Muster-Widerrufsformular</h2><p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
 <p>– An ${who}:<br>– Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung: MoneyBag Premium<br>– Bestellt am (*) / erhalten am (*)<br>– Name des/der Verbraucher(s)<br>– Anschrift des/der Verbraucher(s)<br>– Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)<br>– Datum</p><p class="note">(*) Unzutreffendes streichen.</p>`;
-  const title = kind === "agb" ? "AGB" : "Widerrufsbelehrung";
+  const datenschutz = `<h1>Datenschutzerklärung</h1><p class="note">Stand: 25.10.2026</p>
+<h2>1. Verantwortlicher</h2><p>${who}</p>
+<h2>2. Das Wichtigste in Kürze</h2><p>Diese Website verwendet <b>keine Analyse- oder Tracking-Tools, keine Werbung und keine Social-Media-Plugins</b>. Es wird nur ein technisch notwendiges Cookie für Premium-Kunden gesetzt. Daten werden nur verarbeitet, soweit es für den Betrieb der Website, die Beantwortung von Anfragen und die Abwicklung des Premium-Abos nötig ist.</p>
+<h2>3. Hosting und Server-Logdaten</h2><p>Die Website läuft bei Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA. Beim Aufruf jeder Seite verarbeitet Cloudflare technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browser- und Gerätetyp. Das dient der Auslieferung der Seiten, der Sicherheit (z. B. Schutz vor Angriffen) und der Fehlersuche. Protokolle werden nur für wenige Tage gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, funktionierenden Angebot). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert (Angemessenheitsbeschluss der EU-Kommission, Art. 45 DSGVO). Mehr: <a href="https://www.cloudflare.com/de-de/privacypolicy/">cloudflare.com/privacypolicy</a>.</p>
+<h2>4. Cookie und lokaler Speicher</h2><p>Öffnet ein Premium-Kunde seinen persönlichen Zugangslink, wird das Cookie <b>mb_access</b> gesetzt. Es enthält nur den Zugangscode und läuft ab, wenn der Zugang endet. Ohne dieses Cookie funktioniert der Zugang nicht; es ist technisch notwendig (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. b DSGVO). Im Premium-Tool werden Einstellungen und der Verlauf nur im lokalen Speicher deines Browsers abgelegt und nicht an uns übertragen. Auf der Startseite, der Ergebnisseite und den Rechtstexten werden keine Cookies gesetzt.</p>
+<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; unser E-Mail-Postfach liegt bei GMX (1&amp;1 Mail &amp; Media GmbH). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
+<h2>6. Premium-Abo und Zahlung</h2><p>Für das Abo verarbeiten wir deinen Namen, deine E-Mail-Adresse, ggf. deinen Telegram-Namen sowie Zahlungsdaten (Art. 6 Abs. 1 lit. b DSGVO). Die Zahlung erfolgt über PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., 22–24 Boulevard Royal, L-2449 Luxemburg); dabei gelten auch die Datenschutzhinweise von PayPal: <a href="https://www.paypal.com/de/legalhub/privacy-full">paypal.com/de/legalhub/privacy-full</a>. Rechnungs- und Zahlungsbelege bewahren wir nach den gesetzlichen Fristen (bis zu 10 Jahre, § 147 AO, § 257 HGB) auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
+<h2>7. Telegram</h2><p>Unsere Kanäle (Gratis- und Premium-Kanal) und unser Bot laufen über den Messenger-Dienst Telegram. Wenn du einem Kanal beitrittst, verarbeitet Telegram deine Daten nach eigenen Bestimmungen: <a href="https://telegram.org/privacy">telegram.org/privacy</a>. Wir sehen dabei nur, was Telegram uns anzeigt (z. B. Profilname und Nutzername von Kanalmitgliedern) und nutzen das nur zur Verwaltung des Zugangs (Art. 6 Abs. 1 lit. b DSGVO). Telegram kann Daten außerhalb der EU verarbeiten.</p>
+<h2>8. Quoten-Abfrage im Premium-Tool (optional)</h2><p>Im Premium-Tool kannst du freiwillig einen eigenen Schlüssel für „The Odds API“ eintragen. Nur dann ruft dein Browser Quoten direkt bei diesem Anbieter ab; dabei werden deine IP-Adresse und dein Schlüssel an ihn übermittelt (Art. 6 Abs. 1 lit. a DSGVO, durch dein Eintragen). Ohne Schlüssel findet keine Verbindung statt.</p>
+<h2>9. Deine Rechte</h2><p>Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21). Eine Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen. Schreib dazu einfach an ${email}. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Bayerischen Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.</p>
+<h2>10. Sonstiges</h2><p>Eine automatisierte Entscheidungsfindung oder ein Profiling findet nicht statt. Alle Seiten werden verschlüsselt (HTTPS) übertragen. Wir passen diese Erklärung an, wenn sich das Angebot oder die Rechtslage ändert.</p>`;
+  const title = { agb: "AGB", widerruf: "Widerrufsbelehrung", datenschutz: "Datenschutzerklärung" }[kind];
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – ${title}</title><meta name="robots" content="noindex">
 <style>body{margin:0;background:#0b1630;color:#eef2fb;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{font-size:18px;margin-top:28px;color:#f5c542}a{color:#f5c542}p{color:#d5ddef}.note{color:#a9b6d3;font-size:14px}</style></head><body><main>
-${kind === "agb" ? agb : widerruf}
-<p class="note"><a href="/">Startseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/impressum">Impressum</a></p>
+${{ agb, widerruf, datenschutz }[kind]}
+<p class="note"><a href="/">Startseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/impressum">Impressum</a></p>
 </main></body></html>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
@@ -2962,6 +2973,7 @@ export default {
     // --- Terms and withdrawal policy ---
     if (url.pathname === "/agb" || url.pathname === "/agb/") return legalPage(env, "agb");
     if (url.pathname === "/widerruf" || url.pathname === "/widerruf/") return legalPage(env, "widerruf");
+    if (url.pathname === "/datenschutz" || url.pathname === "/datenschutz/") return legalPage(env, "datenschutz");
 
     // --- Legal notice (Impressum) ---
     if (url.pathname === "/impressum" || url.pathname === "/impressum/") {

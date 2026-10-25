@@ -222,6 +222,12 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-25: privacy policy `/datenschutz` (`legalPage` kind "datenschutz": Cloudflare hosting/logs, cookie `mb_access`,
+  local storage, contact form → Telegram + IP 60 s, GMX email, PayPal, Telegram channels, optional The Odds API key,
+  rights, BayLDA); footer links everywhere. Google Fonts removed from the tool (`worker/public/index.html` =
+  `tools/moneybag-analyst.html`, system monospace fallback) so no IP goes to Google. Never add external fonts/scripts/
+  trackers without updating `/datenschutz`.
+
 - 2026-10-25: AGB + Widerrufsbelehrung (statutory model for services) + Widerrufsformular live at `/agb` and
   `/widerruf` (`legalPage`, name/address from the Impressum variables, 404 without them, noindex; owner chose
   Kleinunternehmer § 19 UStG and PayPal; source text + operator notes `legal/agb-entwurf.md`); footer links on `/`,
@@ -403,7 +409,7 @@ then decide per tier on the new days and apply.
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
   - Waiting for the owner: switch "MoneyBag 0-0 → Goal" back on at InPlayFlux (24.10.); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
-    22.10.); legal check of `/agb` + `/widerruf`, privacy policy (Datenschutzerklärung);
+    22.10.); legal check of `/agb`, `/widerruf`, `/datenschutz`;
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
   minute + score, tip, shots on target, "Druck-Index", pre-match goal expectation, live quote; a version with the

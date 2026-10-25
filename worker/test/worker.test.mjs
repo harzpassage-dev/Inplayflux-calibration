@@ -290,3 +290,15 @@ test("AGB and Widerruf: 404 without the Impressum variables, shown (escaped) wit
   assert.match(start, /href="\/agb"/);
   assert.match(start, /href="\/widerruf"/);
 });
+
+test("privacy policy: 404 without the Impressum variables, shown with them, linked from the start page; tool loads no Google Fonts", async () => {
+  mockNet({ feed: [] });
+  assert.equal((await worker.fetch(new Request("https://x/datenschutz"), makeEnv(), {})).status, 404);
+  const env = makeEnv({ IMPRESSUM_NAME: "Max", IMPRESSUM_ADDRESS: "Weg 1|12345 Ort" });
+  const ds = await (await worker.fetch(new Request("https://x/datenschutz"), env, {})).text();
+  for (const w of ["Cloudflare", "mb_access", "Kontaktformular", "PayPal", "Telegram", "BayLDA"]) assert.ok(ds.includes(w), w);
+  const start = await (await worker.fetch(new Request("https://x/"), env, {})).text();
+  assert.match(start, /href="\/datenschutz"/);
+  const fs = await import("node:fs");
+  assert.ok(!fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8").includes("fonts.googleapis"));
+});
