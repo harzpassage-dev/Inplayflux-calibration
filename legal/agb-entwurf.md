@@ -1,6 +1,6 @@
 # Entwurf – AGB, Widerrufsbelehrung, Widerrufsformular (MoneyBag Premium)
 
-Stand: 25.10.2026 · **Entwurf, keine Rechtsberatung.** Vor dem Freischalten von einem Anwalt oder über einen
+Stand: 25.10.2026 · live unter /agb und /widerruf (Text in `legalPage`, worker/src/index.js) · **Entwurf, keine Rechtsberatung.** Vor dem Freischalten von einem Anwalt oder über einen
 Rechtstexte-Dienst (z. B. e-recht24, IT-Recht Kanzlei, Händlerbund) prüfen lassen. Platzhalter in [ECKIGEN KLAMMERN].
 
 ---
@@ -36,8 +36,8 @@ Kunde, volljährig zu sein.
 (3) Nach Zahlungseingang erhält der Kunde einen persönlichen Einladungslink. Vertragssprache ist Deutsch.
 
 ### § 5 Preis und Zahlung
-(1) Der Preis beträgt **20 € pro Monat**. [Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. / inkl. 19 % USt.]
-(2) Die Zahlung erfolgt monatlich im Voraus per [Überweisung / PayPal].
+(1) Der Preis beträgt **20 € pro Monat**. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmer).
+(2) Die Zahlung erfolgt monatlich im Voraus per PayPal.
 
 ### § 6 Laufzeit und Kündigung
 (1) Der Vertrag läuft einen Monat und verlängert sich jeweils um einen weiteren Monat, wenn er nicht gekündigt wird.

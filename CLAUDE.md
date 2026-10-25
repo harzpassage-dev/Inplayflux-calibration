@@ -222,12 +222,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
-- 2026-10-25: draft AGB + Widerrufsbelehrung (statutory model for services) + Widerrufsformular in
-  `legal/agb-entwurf.md` (not live; placeholders for VAT/payment; owner to have it checked). Also missing: privacy
+- 2026-10-25: AGB + Widerrufsbelehrung (statutory model for services) + Widerrufsformular live at `/agb` and
+  `/widerruf` (`legalPage`, name/address from the Impressum variables, 404 without them, noindex; owner chose
+  Kleinunternehmer § 19 UStG and PayPal; source text + operator notes `legal/agb-entwurf.md`); footer links on `/`,
+  `/ergebnisse`, `/impressum`. Owner should still have them checked (lawyer / e-recht24). Also missing: privacy
   policy (access cookie, contact form → Telegram, Cloudflare).
 
 - 2026-10-25: Impressum live – owner set IMPRESSUM_NAME / IMPRESSUM_ADDRESS in Cloudflare (plain text vars, kept on
-  deploy by `keep_vars`); `/impressum` 200, address in 3 lines, footer links on `/` and `/ergebnisse`. AGB/Widerruf still missing.
+  deploy by `keep_vars`); `/impressum` 200, address in 3 lines, footer links on `/` and `/ergebnisse`. 
 
 - 2026-10-25: public start page at `/` for visitors without an access link (`landingPage`/`landingPageHtml`, cached 5 min,
   live hit rates from `result:*`, how it works, free channel, Premium 20 €/month + email, FAQ, 18+ footer); a link with
@@ -401,7 +403,7 @@ then decide per tier on the new days and apply.
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
   - Waiting for the owner: switch "MoneyBag 0-0 → Goal" back on at InPlayFlux (24.10.); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
-    22.10.); terms (AGB/Widerruf) via e-recht24 or a lawyer;
+    22.10.); legal check of `/agb` + `/widerruf`, privacy policy (Datenschutzerklärung);
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
   minute + score, tip, shots on target, "Druck-Index", pre-match goal expectation, live quote; a version with the

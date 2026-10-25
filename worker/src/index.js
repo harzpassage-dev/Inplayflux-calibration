@@ -2003,7 +2003,7 @@ ${profit}
 <h2>Selbst verfolgen</h2>
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a>' : ""}</footer>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a>' : ""}</footer>
 </main></body></html>`;
 }
 
@@ -2030,7 +2030,7 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
 <p>MoneyBag veröffentlicht statistische Auswertungen und Einschätzungen zu Fußballspielen. MoneyBag ist kein Wettanbieter, nimmt keine Wetten an und vermittelt keine Wetten. Jede Wette erfolgt auf eigenes Risiko bei einem Anbieter der eigenen Wahl. Vergangene Ergebnisse sagen nichts über künftige aus; es gibt keine Gewinngarantie. Teilnahme erst ab 18 Jahren. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00.</p>
 <h2>Verbraucherstreitbeilegung</h2>
 <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
-<p><a href="/ergebnisse">← Zur Ergebnisseite</a></p>
+<p><a href="/ergebnisse">← Zur Ergebnisseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a></p>
 </main></body></html>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
@@ -2084,7 +2084,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid va
 <h2>Gratis oder Premium</h2>
 <div class="grid">
 <div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><p style="margin-top:10px"><a href="${freeLink}">Kanal öffnen →</a></p></div>
-<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>.</p></div>
+<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
 </div>
 <h2>Häufige Fragen</h2>
 <dl>
@@ -2094,8 +2094,47 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid va
 <dt>Gibt es eine Garantie?</dt><dd>Nein. Sportwetten bleiben ein Risiko, auch mit Daten. Darum zeigen wir jedes Ergebnis offen.</dd>
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a>' : ""}</footer>
+<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a>' : ""}</footer>
 </main></body></html>`;
+}
+
+// AGB and withdrawal policy (owner chose Kleinunternehmer § 19 UStG and PayPal, 25.10.). Name and address come from
+// the same Cloudflare variables as the Impressum; without them both pages are 404.
+function legalPage(env, kind) {
+  if (!env.IMPRESSUM_NAME || !env.IMPRESSUM_ADDRESS) return new Response("Not found", { status: 404 });
+  const name = htmlEsc(env.IMPRESSUM_NAME);
+  const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join(", ");
+  const email = htmlEsc(env.IMPRESSUM_EMAIL || "harzpassage@gmx.de");
+  const who = `${name}, ${addr}, E-Mail: <a href="mailto:${email}">${email}</a>`;
+  const agb = `<h1>Allgemeine Geschäftsbedingungen</h1><p class="note">MoneyBag Premium · Stand: 25.10.2026</p>
+<h2>§ 1 Geltungsbereich, Anbieter</h2><p>(1) Diese AGB gelten für alle Verträge über den Premium-Zugang „MoneyBag Premium“ zwischen ${who} (im Folgenden „Anbieter“) und den Kunden.<br>(2) Abweichende Bedingungen des Kunden gelten nicht.</p>
+<h2>§ 2 Leistung</h2><p>(1) Der Anbieter gewährt für die Vertragslaufzeit Zugang zu einem privaten Telegram-Kanal, in dem statistische Einschätzungen zu laufenden Fußballspielen („Signale“) veröffentlicht werden.<br>(2) Die Signale sind unverbindliche Informationen auf Grundlage statistischer Auswertungen. Der Anbieter ist <b>kein Wettanbieter</b>, nimmt keine Wetten an und vermittelt keine Wetten. Ob und wie der Kunde wettet, entscheidet er allein und auf eigenes Risiko.<br>(3) Es besteht <b>keine Gewinngarantie</b>. Vergangene Ergebnisse (veröffentlicht auf <a href="/ergebnisse">moneybag-signals.com/ergebnisse</a>) sagen nichts über künftige Ergebnisse aus.<br>(4) Die Anzahl der Signale hängt vom Spielplan ab und schwankt; ein Anspruch auf eine Mindestzahl besteht nicht.<br>(5) Der Dienst nutzt Telegram und externe Datenquellen. Kurzzeitige Ausfälle, die der Anbieter nicht zu vertreten hat, begründen keinen Anspruch auf Preisminderung. Fällt der Dienst länger als 3 zusammenhängende Tage aus, wird die Laufzeit entsprechend verlängert.</p>
+<h2>§ 3 Voraussetzungen</h2><p>Der Kunde muss mindestens <b>18 Jahre</b> alt sein und ein Telegram-Konto besitzen. Mit der Bestellung bestätigt der Kunde, volljährig zu sein.</p>
+<h2>§ 4 Vertragsschluss</h2><p>(1) Die Darstellung des Angebots auf der Website und in Telegram ist kein verbindliches Angebot.<br>(2) Der Kunde fragt den Zugang per E-Mail an ${email} an. Der Anbieter antwortet mit den Zahlungsdaten und diesen AGB (verbindliches Angebot). Der Vertrag kommt zustande, wenn der Kunde das Angebot per E-Mail annimmt oder bezahlt.<br>(3) Nach Zahlungseingang erhält der Kunde einen persönlichen Einladungslink. Vertragssprache ist Deutsch.</p>
+<h2>§ 5 Preis und Zahlung</h2><p>(1) Der Preis beträgt <b>20 € pro Monat</b>. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmer).<br>(2) Die Zahlung erfolgt monatlich im Voraus per PayPal.</p>
+<h2>§ 6 Laufzeit und Kündigung</h2><p>(1) Der Vertrag läuft einen Monat und verlängert sich jeweils um einen weiteren Monat, wenn er nicht gekündigt wird.<br>(2) Beide Seiten können <b>jederzeit zum Ende des laufenden Monats</b> kündigen. Eine Kündigung per E-Mail an ${email} genügt.<br>(3) Das Recht zur fristlosen Kündigung aus wichtigem Grund bleibt unberührt. Ein wichtiger Grund für den Anbieter liegt insbesondere vor, wenn der Kunde gegen § 7 verstößt.</p>
+<h2>§ 7 Pflichten des Kunden</h2><p>Der Zugang ist persönlich. Der Kunde darf Einladungslinks, Signale oder Inhalte des Premium-Kanals <b>nicht weitergeben, weiterverkaufen oder veröffentlichen</b>, auch nicht in Auszügen oder als Screenshot.</p>
+<h2>§ 8 Haftung</h2><p>(1) Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit sowie nach dem Produkthaftungsgesetz.<br>(2) Bei leichter Fahrlässigkeit haftet der Anbieter nur bei Verletzung einer wesentlichen Vertragspflicht (Kardinalpflicht), begrenzt auf den vorhersehbaren, vertragstypischen Schaden.<br>(3) Für Verluste aus Wetten, die der Kunde auf Grundlage der Signale abschließt, haftet der Anbieter nicht; der Kunde entscheidet über jede Wette selbst (§ 2 Abs. 2).</p>
+<h2>§ 9 Verantwortungsvolles Spielen</h2><p>Wetten kann süchtig machen. Setze nur Geld, dessen Verlust du verkraften kannst. Hilfe: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a>, BZgA-Hotline 0800 1 37 27 00.</p>
+<h2>§ 10 Widerrufsrecht</h2><p>Verbrauchern steht ein Widerrufsrecht nach der <a href="/widerruf">Widerrufsbelehrung</a> zu.</p>
+<h2>§ 11 Streitbeilegung, Schlussbestimmungen</h2><p>(1) Der Anbieter ist nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.<br>(2) Es gilt deutsches Recht. Gegenüber Verbrauchern gilt diese Rechtswahl nur, soweit dadurch nicht zwingende Verbraucherschutzvorschriften des Staates entzogen werden, in dem der Verbraucher seinen gewöhnlichen Aufenthalt hat.<br>(3) Sind einzelne Bestimmungen unwirksam, bleibt der Vertrag im Übrigen wirksam.</p>`;
+  const widerruf = `<h1>Widerrufsbelehrung</h1>
+<h2>Widerrufsrecht</h2><p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.</p><p>Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.</p>
+<p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (${who}) mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das unten stehende Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
+<p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+<h2>Folgen des Widerrufs</h2><p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.</p>
+<p>Haben Sie verlangt, dass die Dienstleistungen während der Widerrufsfrist beginnen sollen, so haben Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem Sie uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichten, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.</p>
+<h2>Muster-Widerrufsformular</h2><p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
+<p>– An ${who}:<br>– Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung: MoneyBag Premium<br>– Bestellt am (*) / erhalten am (*)<br>– Name des/der Verbraucher(s)<br>– Anschrift des/der Verbraucher(s)<br>– Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)<br>– Datum</p><p class="note">(*) Unzutreffendes streichen.</p>`;
+  const title = kind === "agb" ? "AGB" : "Widerrufsbelehrung";
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – ${title}</title><meta name="robots" content="noindex">
+<style>body{margin:0;background:#0b1630;color:#eef2fb;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{font-size:18px;margin-top:28px;color:#f5c542}a{color:#f5c542}p{color:#d5ddef}.note{color:#a9b6d3;font-size:14px}</style></head><body><main>
+${kind === "agb" ? agb : widerruf}
+<p class="note"><a href="/">Startseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/impressum">Impressum</a></p>
+</main></body></html>`;
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
 
 async function landingPage(request, env, ctx) {
@@ -2919,6 +2958,10 @@ export default {
       return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n</urlset>\n`,
         { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
+
+    // --- Terms and withdrawal policy ---
+    if (url.pathname === "/agb" || url.pathname === "/agb/") return legalPage(env, "agb");
+    if (url.pathname === "/widerruf" || url.pathname === "/widerruf/") return legalPage(env, "widerruf");
 
     // --- Legal notice (Impressum) ---
     if (url.pathname === "/impressum" || url.pathname === "/impressum/") {

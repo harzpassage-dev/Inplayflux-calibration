@@ -274,3 +274,19 @@ test("start page: visitors without a link get the public page with live numbers,
   const sm = await (await worker.fetch(new Request("https://moneybag-signals.com/sitemap.xml"), env, {})).text();
   assert.match(sm, /<loc>https:\/\/moneybag-signals.com\/<\/loc>/);
 });
+
+test("AGB and Widerruf: 404 without the Impressum variables, shown (escaped) with them, linked from the footers", async () => {
+  mockNet({ feed: [] });
+  const bare = makeEnv();
+  assert.equal((await worker.fetch(new Request("https://x/agb"), bare, {})).status, 404);
+  const env = makeEnv({ IMPRESSUM_NAME: "Max <M>", IMPRESSUM_ADDRESS: "Weg 1|12345 Ort" });
+  const agb = await (await worker.fetch(new Request("https://x/agb"), env, {})).text();
+  assert.match(agb, /§ 19 UStG/);
+  assert.match(agb, /PayPal/);
+  assert.match(agb, /Max &lt;M&gt;, Weg 1, 12345 Ort/);
+  const w = await (await worker.fetch(new Request("https://x/widerruf"), env, {})).text();
+  assert.match(w, /Muster-Widerrufsformular/);
+  const start = await (await worker.fetch(new Request("https://x/"), env, {})).text();
+  assert.match(start, /href="\/agb"/);
+  assert.match(start, /href="\/widerruf"/);
+});
