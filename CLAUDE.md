@@ -202,6 +202,7 @@ then decide per tier on the new days and apply.
 | 10 | `tiktok-knapp.mp4` (31 s) | "Knapp oder klar – wann fällt das nächste Tor?" | `scripts/margin_stats.py`, 8,680 unique matches (earliest scene at 55–65', median 60', 05.09.–21.10., halves split 01.10.): another goal 0:0 70 %, level with goals 75 %, 1-goal lead 73 %, 2+ lead 77 % (halves 72/69, 75.5/75.4, 74/71, 77/77); next goal after 75' 49 % at a 1-goal lead vs 41 % at 2+ (48/50, 40/43); in stoppage time 7.7 vs 5.4 % (7.5/8.1, 5.5/5.2). Who scores is unknown (footnote) |
 | 11 | `tiktok-methode.mp4` (31 s) | "Wie entstehen unsere Zahlen?" (method / behind the scenes, owner's topic) | steps: scene at ~60', wait for full time, count 8,680 unique matches; stability test shown with clear lead 77/77 % (kept) vs Spain 68/74 % (dropped, country check to 10.10.); example `scripts/method_stats.py`: 0:0 at 55–65' by pre-match goal expectation ≤ 2.5 64 % (182, halves 59/67) vs ≥ 3.75 82 % (131, halves 82/83); 'what we don't know': who scores, substitutions, weather/pitch |
 | 12 | `tiktok-nutzen.mp4` (31 s) | "Bauchgefühl oder Daten?" (what such analyses are good for, owner's topic) | only numbers already checked for earlier videos: (1) myth – corners 75/74/73 % (video 8), (2) 0:0 by pre-match goal expectation 64 vs 82 % (video 11), (3) 1 in 5 next goals after 85', 7 % in stoppage time (video 9), (4) honesty – 73 % means 27 % no goal, runs of up to 8 scenes without a goal (video 6) |
+| 13 | `tiktok-abseits.mp4` (31 s) | "Abseits!" (owner's topic "Abseits und Tore") | the exports have **no offside data**, so rule facts from IFAB Law 11 (no offside in own half, level with the second-last opponent, directly from throw-in/goal kick/corner; hands/arms not counted; position alone not an offence), VAR Bundesliga since 2017/18, semi-automated offside at the 2022 World Cup; data part reuses video 8: no offside from a corner, yet corners barely matter – another goal 75/74/73 % (8,620 matches); footnote says the data has no offside decisions |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -230,6 +231,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-25: TikTok video 13 `marketing/tiktok-abseits.mp4` (offside rules + corner myth; no offside data in the exports).
 
 - 2026-10-25: 24h-test request form on the start page (`#test`, owner's choice "Formular"): name + Telegram name
   and/or email + 18+ checkbox → `/api/contact` with `kind: "trial"` (Telegram name alone is enough; normal contact form
@@ -518,7 +521,7 @@ then decide per tier on the new days and apply.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute (videos 1–12 ready, see table above): owner uploads videos 1–12 (one per evening, with sound in the app), sets
+- TikTok @torminute (videos 1–13 ready, see table above): owner uploads videos 1–13 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: price set 22.10.: **Premium 20 € per month, requests by email to harzpassage@gmx.de** (owner's choice);
