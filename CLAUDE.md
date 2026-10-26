@@ -247,7 +247,7 @@ then decide per tier on the new days and apply.
   `marketing/designs/` (`gen.py` → `design-1..6.html/.png`, `uebersicht.jpg`; system fonts only, live numbers of 26.10.):
   1 Stadion bei Nacht, 2 Frischer Rasen, 3 Anzeigetafel, 4 Taktiktafel, 5 Klar & vertrauenswürdig, 6 Sport-Magazin.
   Owner picked **6 (Sport-Magazin)** the same day: `landingPageHtml` rebuilt in that style (red/black/white, diagonal
-  stripe hero "Zahlen statt Gefühl.", live numbers bar, 14-day hit/lost SVG chart from `result:*`, red-edged info boxes,
+  stripe hero "Analysen statt Gefühl." (was "Zahlen …", owner: sounds like paying), live numbers bar, 14-day hit/lost SVG chart from `result:*`, red-edged info boxes,
   black price + trial blocks; same content, trial form, FAQ, 18+ footer and legal links; still no external resources).
   `/ergebnisse` (`resultsPageHtml`) restyled the same way (black/red hero "Alle Ergebnisse", black table heads, black =
   hit / red = lost day bars, CTAs free channel + 24 h test; same data, texts and tests). Then all other public pages too:

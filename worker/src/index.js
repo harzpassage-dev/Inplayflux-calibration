@@ -2129,7 +2129,7 @@ footer{margin-top:48px;background:#111;color:#aaa;font-size:13px;padding:22px 0 
 </style></head><body>
 <header class="hero"><div class="wrap">
 ${LOGO_HTML}
-<h1>Zahlen<br>statt <b>Gefühl.</b></h1>
+<h1>Analysen<br>statt <b>Gefühl.</b></h1>
 <p class="lead">Live-Fußballsignale mit Datenmodell aus über 13.000 ausgewerteten Live-Signalen. Jedes Ergebnis wird automatisch veröffentlicht – Treffer wie Pleiten.</p>
 <a class="btn" href="#test">🎁 24 h gratis testen</a><a class="btn w" href="/ergebnisse">📊 Alle Ergebnisse</a>
 </div></header>

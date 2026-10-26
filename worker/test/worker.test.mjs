@@ -269,6 +269,7 @@ test("logo: favicon is served as SVG and every public page links it and shows th
     assert.match(html, /<link rel="icon" href="\/favicon.svg"/, path);
     assert.match(html, /class="logo"[^>]*><i><\/i>MONEY<span>BAG<\/span>/, path);
     assert.doesNotMatch(html, /💰 MONEY/, path);
+    if (path === "/") assert.match(html, /<h1>Analysen<br>statt <b>Gefühl.<\/b><\/h1>/);
   }
 });
 
