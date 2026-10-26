@@ -249,6 +249,8 @@ then decide per tier on the new days and apply.
   Owner picked **6 (Sport-Magazin)** the same day: `landingPageHtml` rebuilt in that style (red/black/white, diagonal
   stripe hero "Zahlen statt Gefühl.", live numbers bar, 14-day hit/lost SVG chart from `result:*`, red-edged info boxes,
   black price + trial blocks; same content, trial form, FAQ, 18+ footer and legal links; still no external resources).
+  `/ergebnisse` (`resultsPageHtml`) restyled the same way (black/red hero "Alle Ergebnisse", black table heads, black =
+  hit / red = lost day bars, CTAs free channel + 24 h test; same data, texts and tests).
 
 - 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
   owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start

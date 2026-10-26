@@ -1977,34 +1977,44 @@ function resultsPageHtml(rows, env, nowMs) {
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Alle Ergebnisse</title><link rel="canonical" href="https://moneybag-signals.com/ergebnisse"><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
 <style>
-:root{--bg:#0b1630;--card:#13234a;--line:#24396b;--text:#eef2fb;--muted:#a9b6d3;--gold:#f5c542;--ok:#2ecc71;--no:#ff6b5b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:860px;margin:0 auto;padding:24px 16px 48px}h1{font-size:28px;margin:0 0 4px}h1 span{color:var(--gold)}h2{font-size:19px;margin:32px 0 10px}
-.sub{color:var(--muted);margin:0 0 20px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 0;overflow-x:auto}
+:root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8;--ok:#14853b;--no:#e0262f}
+*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
+a{color:var(--red)}.wrap{max-width:900px;margin:0 auto;padding:0 18px}
+.hero{background:linear-gradient(115deg,#111 0 62%,var(--red) 62% 73%,#111 73%);color:#fff;padding:22px 0 40px}
+.logo{font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none}.logo span{color:#ff4b52}
+h1{font-size:52px;line-height:1;margin:22px 0 12px;text-transform:uppercase;font-weight:900;letter-spacing:-1px}h1 span{color:#ff4b52}
+.sub{color:#ddd;margin:0;max-width:600px}
+h2{font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:3px;margin:40px 0 12px;display:flex;align-items:center;gap:12px}
+h2:before{content:"";width:28px;height:6px;background:var(--red);display:inline-block;transform:skewX(-20deg)}
+.card{border:2px solid var(--ink);overflow-x:auto}
 table{width:100%;border-collapse:collapse}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}
-th{color:var(--muted);font-weight:600;font-size:14px}td small{display:block;color:var(--muted);font-size:13px}td b{font-size:17px}
-.rates td:not(:first-child),.rates th:not(:first-child){text-align:right}.total td{background:rgba(245,197,66,.08)}
-.ok{color:var(--ok);font-weight:600}.no{color:var(--no);font-weight:600}.void{color:var(--muted)}
+th{background:#111;color:#fff;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px}td small{display:block;color:var(--muted);font-size:13px}td b{font-size:18px;font-weight:900;color:var(--red)}
+.rates td:not(:first-child),.rates th:not(:first-child){text-align:right}.total td{background:#f6f6f7;font-weight:800}
+.ok{color:var(--ok);font-weight:800}.no{color:var(--no);font-weight:800}.void{color:var(--muted)}
 .days{display:flex;gap:6px;align-items:flex-end;padding:14px 12px}.day{flex:1;text-align:center;min-width:0}.day small{display:block;color:var(--muted);font-size:11px;white-space:nowrap}
-.stack{height:90px;display:flex;flex-direction:column-reverse;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.04)}.stack .w{background:var(--ok)}.stack .l{background:var(--no)}
-.note{color:var(--muted);font-size:14px}.cta{display:inline-block;margin-top:8px;background:var(--gold);color:#1a1300;font-weight:700;padding:12px 18px;border-radius:12px;text-decoration:none}
-footer{margin-top:36px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}footer a{color:var(--muted)}
-@media(max-width:520px){h1{font-size:23px}th,td{padding:9px 6px;font-size:14px}td b{font-size:15px}.rates b,.rates small{white-space:nowrap}.day small:first-of-type{display:none}}
-</style></head><body><main>
-<h1>💰 MoneyBag <span>Ergebnisse</span></h1>
-<p class="sub">Jedes Premium-Signal mit Ergebnis – automatisch aus dem Live-Spielstand erfasst. Nichts gelöscht, nichts ausgewählt. Stand: ${updated}</p>
+.stack{height:110px;display:flex;flex-direction:column-reverse;background:#f2f2f4}.stack .w{background:#111}.stack .l{background:var(--red)}
+.note{color:var(--muted);font-size:14px}.cta{display:inline-block;margin-top:8px;background:var(--red);color:#fff;font-weight:900;padding:14px 20px;text-decoration:none;text-transform:uppercase;letter-spacing:1px}
+.cta.k{background:#111}
+footer{margin-top:44px;background:#111;color:#aaa;font-size:13px;padding:22px 0 30px}footer a{color:#ddd}
+@media(max-width:520px){h1{font-size:31px}.hero{background:linear-gradient(115deg,#111 0 74%,var(--red) 74% 84%,#111 84%)}th,td{padding:9px 6px;font-size:14px}td b{font-size:15px}.rates b,.rates small{white-space:nowrap}.day small:first-of-type{display:none}}
+</style></head><body>
+<header class="hero"><div class="wrap"><a class="logo" href="/">💰 MONEY<span>BAG</span></a>
+<h1>Alle <span>Ergebnisse</span></h1>
+<p class="sub">Jedes Premium-Signal mit Ergebnis – automatisch aus dem Live-Spielstand erfasst. Nichts gelöscht, nichts ausgewählt. Stand: ${updated}</p></div></header>
+<main class="wrap">
 <h2>Trefferquote</h2><div class="card"><table class="rates">${head}${body}</table></div>
 ${profit}
 <p class="note">Treffer = das gesuchte Tor fiel (bei „Under 3.5“: kein weiteres Tor). Ungewertete Spiele (Abbruch, Daten fehlen) zählen nicht mit.</p>
 <h2>Letzte 14 Tage</h2><div class="card"><div class="days">${bars}</div></div>
-<p class="note">Grün = Treffer, Rot = verloren. Zahl = Treffer/Signale.</p>
+<p class="note">Schwarz = Treffer, Rot = verloren. Zahl = Treffer/Signale.</p>
 <h2>Alle Signale${rows.length > RESULTS_PAGE_ROWS ? ` (neueste ${RESULTS_PAGE_ROWS} von ${rows.length})` : ""}</h2>
 <div class="card"><table><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th></tr>${list || '<tr><td colspan="3">Noch keine abgeschlossenen Signale.</td></tr>'}</table></div>
 <h2>Selbst verfolgen</h2>
-<p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal:</p>
-<a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? '<br><a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</footer>
-</main></body></html>`;
+<p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal – oder Premium 24 Stunden kostenlos testen:</p>
+<a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a> <a class="cta k" href="/#test">🎁 24 h gratis testen</a>
+</main>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+</body></html>`;
 }
 
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
