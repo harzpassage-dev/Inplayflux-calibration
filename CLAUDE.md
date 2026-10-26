@@ -243,6 +243,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-26: six start-page design drafts (owner: people want more graphics, "erfrischend und seriös") in
+  `marketing/designs/` (`gen.py` → `design-1..6.html/.png`, `uebersicht.jpg`; system fonts only, live numbers of 26.10.):
+  1 Stadion bei Nacht, 2 Frischer Rasen, 3 Anzeigetafel, 4 Taktiktafel, 5 Klar & vertrauenswürdig, 6 Sport-Magazin.
+  Waiting for the owner's pick; then build it into `landingPageHtml` (keep live numbers, 18+ footer, trial form).
+
 - 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
   owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start
   page, Impressum, AGB, Widerruf, Datenschutz (mentions the forwarding) and `marketing/werbetexte.md`. `IMPRESSUM_EMAIL`

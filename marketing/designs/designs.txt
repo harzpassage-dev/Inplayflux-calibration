@@ -1,0 +1,6 @@
+1|Stadion bei Nacht|dunkel, Flutlicht, Gold – Weiterentwicklung des jetzigen Looks
+2|Frischer Rasen|hell, Weiß + Rasengrün, Streifen wie ein frisch gemähter Platz
+3|Anzeigetafel|Stadion-Scoreboard: schwarz, LED-Orange, große Ziffern
+4|Taktiktafel|Trainer-Tafel: dunkelgrün, Kreidelinien, Pfeile – erklärt das System wie eine Taktik
+5|Klar & vertrauenswürdig|hell, Weiß + ruhiges Blau, viel Luft, Vertrauens-Siegel – wirkt am seriösesten
+6|Sport-Magazin|kräftig: Rot/Schwarz/Weiß, schräge Trikot-Streifen, große Schlagzeilen
