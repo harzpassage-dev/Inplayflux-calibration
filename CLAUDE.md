@@ -259,6 +259,8 @@ then decide per tier on the new days and apply.
   Owner picked **1 (Speed)** the same day: `LOGO_CSS`/`LOGO_HTML` (pure CSS: three red speed lines + italic MONEY white /
   BAG red, no font files) in every public page header, tool hero h1 styled the same; favicon `FAVICON_SVG` (black square,
   speed lines, italic "MB") at `/favicon.svg` (+ `/favicon.ico`), linked via `ICON_LINK` on all pages incl. admin.
+  Telegram profile pictures in the same logo: `marketing/telegram-profil-{free,premium}.png` (1024², source
+  `telegram-profil.html?v=free|premium`, round-crop safe); the owner sets them in the channels (replace the old money-bag logos).
 
 - 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
   owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start
