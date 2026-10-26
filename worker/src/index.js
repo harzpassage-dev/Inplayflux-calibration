@@ -1975,13 +1975,13 @@ function resultsPageHtml(rows, env, nowMs) {
   const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
   const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – Alle Ergebnisse</title><link rel="canonical" href="https://moneybag-signals.com/ergebnisse"><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
+<title>MoneyBag – Alle Ergebnisse</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/ergebnisse"><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
 <style>
 :root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8;--ok:#14853b;--no:#e0262f}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
 a{color:var(--red)}.wrap{max-width:900px;margin:0 auto;padding:0 18px}
 .hero{background:linear-gradient(115deg,#111 0 62%,var(--red) 62% 73%,#111 73%);color:#fff;padding:22px 0 40px}
-.logo{font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none}.logo span{color:#ff4b52}
+${LOGO_CSS}
 h1{font-size:52px;line-height:1;margin:22px 0 12px;text-transform:uppercase;font-weight:900;letter-spacing:-1px}h1 span{color:#ff4b52}
 .sub{color:#ddd;margin:0;max-width:600px}
 h2{font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:3px;margin:40px 0 12px;display:flex;align-items:center;gap:12px}
@@ -1998,7 +1998,7 @@ th{background:#111;color:#fff;font-weight:800;font-size:13px;text-transform:uppe
 footer{margin-top:44px;background:#111;color:#aaa;font-size:13px;padding:22px 0 30px}footer a{color:#ddd}
 @media(max-width:520px){h1{font-size:31px}.hero{background:linear-gradient(115deg,#111 0 74%,var(--red) 74% 84%,#111 84%)}th,td{padding:9px 6px;font-size:14px}td b{font-size:15px}.rates b,.rates small{white-space:nowrap}.day small:first-of-type{display:none}}
 </style></head><body>
-<header class="hero"><div class="wrap"><a class="logo" href="/">💰 MONEY<span>BAG</span></a>
+<header class="hero"><div class="wrap">${LOGO_HTML}
 <h1>Alle <span>Ergebnisse</span></h1>
 <p class="sub">Jedes Premium-Signal mit Ergebnis – automatisch aus dem Live-Spielstand erfasst. Nichts gelöscht, nichts ausgewählt. Stand: ${updated}</p></div></header>
 <main class="wrap">
@@ -2018,18 +2018,25 @@ ${profit}
 }
 
 // Shared "Sport-Magazin" look (design 6, 26.10.) for the simple text pages: Impressum, AGB, Widerruf, Datenschutz, access page.
+// Logo "Speed" (owner's pick 26.10.): three red speed lines + italic MONEY (white) BAG (red), plain CSS, no font files
+const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 26px/1 Arial,"Liberation Sans",Helvetica,sans-serif;letter-spacing:-1px;color:#fff;text-decoration:none;text-transform:uppercase}.logo span{color:#ff4b52}
+.logo i{width:34px;height:15px;margin-right:4px;flex:none;background:linear-gradient(#ff4b52,#ff4b52) 6px 0/26px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 0 6px/34px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 10px 12px/22px 3px no-repeat}`;
+const LOGO_HTML = `<a class="logo" href="/" aria-label="MoneyBag Startseite"><i></i>MONEY<span>BAG</span></a>`;
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#111"/><g fill="#e0262f"><rect x="4" y="18" width="14" height="5"/><rect x="0" y="29" width="18" height="5"/><rect x="6" y="40" width="12" height="5"/></g><text x="40" y="45" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="31" fill="#fff" letter-spacing="-2">M<tspan fill="#e0262f">B</tspan></text></svg>`;
+const ICON_LINK = `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`;
+
 const MAG_CSS = `:root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
 a{color:var(--red)}.wrap{max-width:780px;margin:0 auto;padding:0 18px}
 .hero{background:linear-gradient(115deg,#111 0 64%,var(--red) 64% 75%,#111 75%);color:#fff;padding:20px 0 30px}
-.logo{font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none}.logo span{color:#ff4b52}
+${LOGO_CSS}
 .hero h1{font-size:38px;line-height:1.05;margin:18px 0 0;text-transform:uppercase;font-weight:900;letter-spacing:-.5px}
 main h1{display:none}main h2{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin:32px 0 8px;display:flex;align-items:center;gap:10px}
 main h2:before{content:"";width:22px;height:5px;background:var(--red);display:inline-block;transform:skewX(-20deg);flex:none}
 main p{color:#222}.note{color:var(--muted);font-size:14px}
 footer{margin-top:40px;background:#111;color:#aaa;font-size:13px;padding:20px 0 28px}footer a{color:#ddd}
 @media(max-width:520px){.hero h1{font-size:28px}.hero{background:linear-gradient(115deg,#111 0 76%,var(--red) 76% 86%,#111 86%)}}`;
-const magHead = (title) => `<header class="hero"><div class="wrap"><a class="logo" href="/">💰 MONEY<span>BAG</span></a><h1>${title}</h1></div></header>`;
+const magHead = (title) => `<header class="hero"><div class="wrap">${LOGO_HTML}<h1>${title}</h1></div></header>`;
 const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
 
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
@@ -2041,7 +2048,7 @@ function impressumPage(env) {
   const email = env.IMPRESSUM_EMAIL || CONTACT_EMAIL;
   const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join("<br>");
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – Impressum</title><meta name="robots" content="noindex">
+<title>MoneyBag – Impressum</title>${ICON_LINK}<meta name="robots" content="noindex">
 <style>${MAG_CSS}</style></head><body>${magHead("Impressum")}<main class="wrap">
 <h1>Impressum</h1>
 <h2>Angaben gemäß § 5 DDG</h2>
@@ -2091,7 +2098,7 @@ function landingPageHtml(rows, env, nowMs) {
       + (i % 2 === 0 ? `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#666">${d.label}</text>` : "");
   }).join("");
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>
+<title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>${ICON_LINK}
 <meta name="description" content="Live-Fußballsignale (Over Tore), bewertet von einem Datenmodell aus über 13.000 Live-Signalen. Mit Mindestquote, Einsatz in Einheiten und offener Ergebnisseite. Gratis-Kanal auf Telegram. 18+.">
 <link rel="canonical" href="https://moneybag-signals.com/">
 <style>
@@ -2099,7 +2106,7 @@ function landingPageHtml(rows, env, nowMs) {
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
 a{color:var(--red)}.wrap{max-width:980px;margin:0 auto;padding:0 20px}
 .hero{background:linear-gradient(115deg,#111 0 60%,var(--red) 60% 71%,#111 71%);color:#fff;padding:26px 0 54px}
-.logo{font-weight:900;letter-spacing:3px}.logo span{color:#ff4b52}
+${LOGO_CSS}
 h1{font-size:64px;line-height:.98;margin:26px 0 16px;text-transform:uppercase;font-weight:900;max-width:640px;letter-spacing:-1px}h1 b{color:#ff4b52}
 .lead{font-size:19px;color:#ddd;max-width:560px;margin:0}
 .btn{display:inline-block;background:var(--red);color:#fff;font-weight:900;padding:15px 22px;margin:24px 10px 0 0;text-transform:uppercase;letter-spacing:1px;text-decoration:none;border:0;font-size:15px;cursor:pointer}
@@ -2121,7 +2128,7 @@ footer{margin-top:48px;background:#111;color:#aaa;font-size:13px;padding:22px 0 
 @media(max-width:600px){h1{font-size:42px}.lead{font-size:17px}.hero{background:linear-gradient(115deg,#111 0 72%,var(--red) 72% 82%,#111 82%)}.n{border-right:0;border-bottom:1px solid var(--line)}.n b{font-size:38px}}
 </style></head><body>
 <header class="hero"><div class="wrap">
-<div class="logo">💰 MONEY<span>BAG</span></div>
+${LOGO_HTML}
 <h1>Zahlen<br>statt <b>Gefühl.</b></h1>
 <p class="lead">Live-Fußballsignale mit Datenmodell aus über 13.000 ausgewerteten Live-Signalen. Jedes Ergebnis wird automatisch veröffentlicht – Treffer wie Pleiten.</p>
 <a class="btn" href="#test">🎁 24 h gratis testen</a><a class="btn w" href="/ergebnisse">📊 Alle Ergebnisse</a>
@@ -2224,7 +2231,7 @@ function legalPage(env, kind) {
 <h2>10. Sonstiges</h2><p>Eine automatisierte Entscheidungsfindung oder ein Profiling findet nicht statt. Alle Seiten werden verschlüsselt (HTTPS) übertragen. Wir passen diese Erklärung an, wenn sich das Angebot oder die Rechtslage ändert.</p>`;
   const title = { agb: "AGB", widerruf: "Widerrufsbelehrung", datenschutz: "Datenschutzerklärung" }[kind];
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – ${title}</title><meta name="robots" content="noindex">
+<title>MoneyBag – ${title}</title>${ICON_LINK}<meta name="robots" content="noindex">
 <style>${MAG_CSS}</style></head><body>${magHead(title)}<main class="wrap">
 ${{ agb, widerruf, datenschutz }[kind]}
 </main>${MAG_FOOT}</body></html>`;
@@ -2367,7 +2374,7 @@ function deniedPage({ reason }) {
   return htmlResponse(`<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MoneyBag – Zugang</title>
+<title>MoneyBag – Zugang</title>${ICON_LINK}
 <style>${MAG_CSS}
   .box{border-left:6px solid var(--red);background:#f6f6f7;padding:18px;margin-top:16px}
   input,textarea{width:100%;background:#fff;color:#111;border:1px solid #d4d4da;padding:12px;margin-bottom:10px;font:inherit}
@@ -2431,7 +2438,7 @@ async function handleAdminPage() {
   return htmlResponse(`<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zugangsverwaltung</title>
+<title>Zugangsverwaltung</title>${ICON_LINK}
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; background:#12151c; color:#e6e9f0; max-width:640px; margin:0 auto; padding:20px 14px 60px; }
   h1 { font-size:1.1rem; }
@@ -3037,6 +3044,9 @@ export default {
       return resultsPage(request, env, ctx);
     }
 
+    if (url.pathname === "/favicon.svg" || url.pathname === "/favicon.ico") {
+      return new Response(FAVICON_SVG, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" } });
+    }
     // --- Search engines: only the public results page is meant to be found ---
     if (url.pathname === "/robots.txt") {
       return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,

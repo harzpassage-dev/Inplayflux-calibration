@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MoneyBag Analyst</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --bg: #12151c;
@@ -310,6 +311,10 @@
   .hero::after { content: none; }
   h1 { font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; line-height: 1.05; color: #fff; }
   h1 .accent { color: #ff4b52; }
+  /* logo "Speed" (owner's pick 26.10.): italic wordmark with three red speed lines */
+  .hero h1 { font-family: Arial, "Liberation Sans", Helvetica, sans-serif; font-style: italic; letter-spacing: -1px; }
+  .hero h1::before { content: ""; display: inline-block; vertical-align: middle; width: 38px; height: 17px; margin: -4px 6px 0 0;
+    background: linear-gradient(#ff4b52,#ff4b52) 7px 0/29px 3px no-repeat, linear-gradient(#ff4b52,#ff4b52) 0 7px/38px 3px no-repeat, linear-gradient(#ff4b52,#ff4b52) 11px 14px/25px 3px no-repeat; }
   .subtitle { color: #ddd; font-size: 0.85rem; margin-top: 6px; }
   .calib-badge { background: #e0262f !important; color: #fff !important; border: 0 !important; border-radius: 0 !important; font-weight: 800; }
   h2 { font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }

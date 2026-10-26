@@ -257,6 +257,21 @@ test("search engines: robots.txt allows only the results page, sitemap lists it"
   assert.match(await sm.text(), /<loc>https:\/\/moneybag-signals.com\/ergebnisse<\/loc>/);
 });
 
+test("logo: favicon is served as SVG and every public page links it and shows the speed wordmark", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv({ IMPRESSUM_NAME: "Max Muster", IMPRESSUM_ADDRESS: "Str. 1|12345 Ort" });
+  const fav = await worker.fetch(new Request("https://moneybag-signals.com/favicon.svg"), env, {});
+  assert.equal(fav.status, 200);
+  assert.equal(fav.headers.get("Content-Type"), "image/svg+xml");
+  assert.match(await fav.text(), /^<svg[\s\S]*<\/svg>$/);
+  for (const path of ["/", "/ergebnisse", "/impressum", "/agb", "/datenschutz", "/?t=" + "a".repeat(32)]) {
+    const html = await (await worker.fetch(new Request("https://moneybag-signals.com" + path), env, {})).text();
+    assert.match(html, /<link rel="icon" href="\/favicon.svg"/, path);
+    assert.match(html, /class="logo"[^>]*><i><\/i>MONEY<span>BAG<\/span>/, path);
+    assert.doesNotMatch(html, /💰 MONEY/, path);
+  }
+});
+
 test("start page: visitors without a link get the public page with live numbers, a bad link still gets the access page", async () => {
   mockNet({ feed: [] });
   const env = makeEnv();
