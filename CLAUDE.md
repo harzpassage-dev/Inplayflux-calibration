@@ -243,6 +243,12 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-26: weekly routine with export 10-26 (`data/inplayflux_sinyaller_2026-10-26.csv`, 14,432 signals, shift 0),
+  models refitted, thresholds unchanged, badge "Kalibriert: 26.10.2026 · 14.432 Signale", report
+  `reports/2026-10-26-recalibration.md`. Unseen 24.–26.10.: O2.5 79.5 % (117) vs raw 78.5 %, O3.5 88.0 % (108) vs 79.8 %,
+  O0.5 82.4 % (17) vs 72.7 %, O1.5 model 68.7 % (67, stays off); O1.5 test rule 73.5 % (291; Money Bag 75 %, Value 72 %,
+  ValueShots15 70 % (43)); O0.5 line ≥ 4 6/8; no 68–69' cards; all 0:0 cards still "Over 0.5 Value".
+
 - 2026-10-26: six start-page design drafts (owner: people want more graphics, "erfrischend und seriös") in
   `marketing/designs/` (`gen.py` → `design-1..6.html/.png`, `uebersicht.jpg`; system fonts only, live numbers of 26.10.):
   1 Stadion bei Nacht, 2 Frischer Rasen, 3 Anzeigetafel, 4 Taktiktafel, 5 Klar & vertrauenswürdig, 6 Sport-Magazin.
