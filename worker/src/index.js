@@ -2013,7 +2013,7 @@ ${profit}
 // optional. Without name and address the page does not exist (404).
 function impressumPage(env) {
   if (!env.IMPRESSUM_NAME || !env.IMPRESSUM_ADDRESS) return new Response("Not found", { status: 404 });
-  const email = env.IMPRESSUM_EMAIL || "harzpassage@gmx.de";
+  const email = env.IMPRESSUM_EMAIL || CONTACT_EMAIL;
   const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join("<br>");
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Impressum</title><meta name="robots" content="noindex">
@@ -2037,6 +2037,9 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
 
 // Public start page for visitors without an access link (and for Google). Live hit rates from
 // result:*, cached like the results page. Visitors with a token or cookie still get the tool.
+// Public contact address (Cloudflare Email Routing on the domain forwards it to the owner's mailbox, since 26.10.).
+const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
+
 function landingPageHtml(rows, env, nowMs) {
   const all = summarize(rows);
   const d30 = summarize(rows.filter((r) => Date.parse(r.settledAt) >= nowMs - 30 * DAY_MS));
@@ -2044,7 +2047,7 @@ function landingPageHtml(rows, env, nowMs) {
   const stat = (label, t) => `<div class="stat"><b>${pct(t)}</b><span>${label}</span><small>${t.n ? `${t.won} von ${t.n} Signalen` : "noch keine Daten"}</small></div>`;
   const free = String(freeChannel(env)).replace(/^@/, "");
   const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
-  const mail = "harzpassage@gmx.de";
+  const mail = CONTACT_EMAIL;
   const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>
@@ -2132,7 +2135,7 @@ function legalPage(env, kind) {
   if (!env.IMPRESSUM_NAME || !env.IMPRESSUM_ADDRESS) return new Response("Not found", { status: 404 });
   const name = htmlEsc(env.IMPRESSUM_NAME);
   const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join(", ");
-  const email = htmlEsc(env.IMPRESSUM_EMAIL || "harzpassage@gmx.de");
+  const email = htmlEsc(env.IMPRESSUM_EMAIL || CONTACT_EMAIL);
   const who = `${name}, ${addr}, E-Mail: <a href="mailto:${email}">${email}</a>`;
   const agb = `<h1>Allgemeine Geschäftsbedingungen</h1><p class="note">MoneyBag Premium · Stand: 25.10.2026</p>
 <h2>§ 1 Geltungsbereich, Anbieter</h2><p>(1) Diese AGB gelten für alle Verträge über den Premium-Zugang „MoneyBag Premium“ zwischen ${who} (im Folgenden „Anbieter“) und den Kunden.<br>(2) Abweichende Bedingungen des Kunden gelten nicht.</p>
@@ -2159,7 +2162,7 @@ function legalPage(env, kind) {
 <h2>2. Das Wichtigste in Kürze</h2><p>Diese Website verwendet <b>keine Analyse- oder Tracking-Tools, keine Werbung und keine Social-Media-Plugins</b>. Es wird nur ein technisch notwendiges Cookie für Premium-Kunden gesetzt. Daten werden nur verarbeitet, soweit es für den Betrieb der Website, die Beantwortung von Anfragen und die Abwicklung des Premium-Abos nötig ist.</p>
 <h2>3. Hosting und Server-Logdaten</h2><p>Die Website läuft bei Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA. Beim Aufruf jeder Seite verarbeitet Cloudflare technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browser- und Gerätetyp. Das dient der Auslieferung der Seiten, der Sicherheit (z. B. Schutz vor Angriffen) und der Fehlersuche. Protokolle werden nur für wenige Tage gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, funktionierenden Angebot). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert (Angemessenheitsbeschluss der EU-Kommission, Art. 45 DSGVO). Mehr: <a href="https://www.cloudflare.com/de-de/privacypolicy/">cloudflare.com/privacypolicy</a>.</p>
 <h2>4. Cookie und lokaler Speicher</h2><p>Öffnet ein Premium-Kunde seinen persönlichen Zugangslink, wird das Cookie <b>mb_access</b> gesetzt. Es enthält nur den Zugangscode und läuft ab, wenn der Zugang endet. Ohne dieses Cookie funktioniert der Zugang nicht; es ist technisch notwendig (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. b DSGVO). Im Premium-Tool werden Einstellungen und der Verlauf nur im lokalen Speicher deines Browsers abgelegt und nicht an uns übertragen. Auf der Startseite, der Ergebnisseite und den Rechtstexten werden keine Cookies gesetzt.</p>
-<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; unser E-Mail-Postfach liegt bei GMX (1&amp;1 Mail &amp; Media GmbH). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
+<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; Mails an ${email} werden über Cloudflare (Email Routing) an unser Postfach bei GMX (1&amp;1 Mail &amp; Media GmbH) weitergeleitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
 <h2>6. Premium-Abo und Zahlung</h2><p>Für das Abo verarbeiten wir deinen Namen, deine E-Mail-Adresse, ggf. deinen Telegram-Namen sowie Zahlungsdaten (Art. 6 Abs. 1 lit. b DSGVO). Die Zahlung erfolgt über PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., 22–24 Boulevard Royal, L-2449 Luxemburg); dabei gelten auch die Datenschutzhinweise von PayPal: <a href="https://www.paypal.com/de/legalhub/privacy-full">paypal.com/de/legalhub/privacy-full</a>. Rechnungs- und Zahlungsbelege bewahren wir nach den gesetzlichen Fristen (bis zu 10 Jahre, § 147 AO, § 257 HGB) auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
 <h2>7. Telegram</h2><p>Unsere Kanäle (Gratis- und Premium-Kanal) und unser Bot laufen über den Messenger-Dienst Telegram. Wenn du einem Kanal beitrittst, verarbeitet Telegram deine Daten nach eigenen Bestimmungen: <a href="https://telegram.org/privacy">telegram.org/privacy</a>. Wir sehen dabei nur, was Telegram uns anzeigt (z. B. Profilname und Nutzername von Kanalmitgliedern) und nutzen das nur zur Verwaltung des Zugangs (Art. 6 Abs. 1 lit. b DSGVO). Telegram kann Daten außerhalb der EU verarbeiten.</p>
 <h2>8. Quoten-Abfrage im Premium-Tool (optional)</h2><p>Im Premium-Tool kannst du freiwillig einen eigenen Schlüssel für „The Odds API“ eintragen. Nur dann ruft dein Browser Quoten direkt bei diesem Anbieter ab; dabei werden deine IP-Adresse und dein Schlüssel an ihn übermittelt (Art. 6 Abs. 1 lit. a DSGVO, durch dein Eintragen). Ohne Schlüssel findet keine Verbindung statt.</p>

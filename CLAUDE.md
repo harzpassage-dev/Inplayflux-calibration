@@ -243,6 +243,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
+  owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start
+  page, Impressum, AGB, Widerruf, Datenschutz (mentions the forwarding) and `marketing/werbetexte.md`. `IMPRESSUM_EMAIL`
+  still overrides it. The GMX MCP connector failed (SMTP/IMAP login rejected), so no test mail could be sent from here.
+
 - 2026-10-25: narrated YouTube video `marketing/youtube-methode-ton.mp4` (final: Chatterbox natural German voice,
   Whisper-checked, over the self-made stadium/groove background).
 
@@ -541,7 +546,7 @@ then decide per tier on the new days and apply.
 - TikTok @torminute (videos 1–13 ready, see table above): owner uploads videos 1–13 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
-- Marketing: price set 22.10.: **Premium 20 € per month, requests by email to harzpassage@gmx.de** (owner's choice);
+- Marketing: price set 22.10.: **Premium 20 € per month, requests by email to kontakt@moneybag-signals.com** (since 26.10.; before harzpassage@gmx.de);
   `marketing/werbetexte.md` rewritten 22.10. (no 2-minute live check claim any more, Under 3.5/Risiko removed, link =
   free channel t.me/MoneyBagAnalyst or a per-source invite link, results page linked). Paid ads (Telega.io) only after
   the market comparison shows an edge (≥ 50 tips) and InPlayFlux has answered (plan item 12). Owner told: a paid

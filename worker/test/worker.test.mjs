@@ -222,7 +222,7 @@ test("impressum: hidden without the Cloudflare variables, shown (escaped) with t
   assert.equal(r.status, 200);
   assert.equal(r.headers.get("x-frame-options"), "DENY");
   const html = await r.text();
-  for (const want of ["Max &lt;Muster&gt;", "Musterweg 1<br>12345 Musterstadt", "harzpassage@gmx.de", "§ 5 DDG", "kein Wettanbieter"]) {
+  for (const want of ["Max &lt;Muster&gt;", "Musterweg 1<br>12345 Musterstadt", "kontakt@moneybag-signals.com", "§ 5 DDG", "kein Wettanbieter"]) {
     assert.ok(html.includes(want), want);
   }
   assert.ok((await (await worker.fetch(new Request("https://x/ergebnisse"), env, {})).text()).includes('href="/impressum"'));
@@ -266,7 +266,7 @@ test("start page: visitors without a link get the public page with live numbers,
   const html = await res.text();
   assert.match(html, /20 € \/ Monat/);
   assert.match(html, /24 Stunden Premium kostenlos testen/);
-  assert.match(html, /harzpassage@gmx.de/);
+  assert.match(html, /kontakt@moneybag-signals.com/);
   assert.match(html, /18\+/);
   assert.match(html, /von 10 Signalen/);
   for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);

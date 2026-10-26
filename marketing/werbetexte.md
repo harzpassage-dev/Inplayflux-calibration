@@ -1,6 +1,6 @@
 # MoneyBag – Werbetexte zum Selbstposten
 
-Stand 22.10.2026. Preis: **20 € pro Monat**, Anfrage per E-Mail an **harzpassage@gmx.de**.
+Stand 22.10.2026. Preis: **20 € pro Monat**, Anfrage per E-Mail an **kontakt@moneybag-signals.com**.
 Link für alle Werbetexte: der Gratis-Kanal **https://t.me/MoneyBagAnalyst** (für bezahlte Werbung
 den eigenen Einladungslink der Quelle nehmen, z. B. „Telega“, damit wir messen können, woher die Leute kommen).
 Platzhalter in [ECKIGEN KLAMMERN] vor dem Posten ersetzen.
@@ -36,7 +36,7 @@ moneybag-signals.com/ergebnisse – Treffer *und* Verluste, nichts gelöscht.
 
 🔥 High Confidence · 🟠 Half-Risiko · 🧪 Over 1.5 (Testphase, eigene Bilanz)
 
-Zugang zum Premium-Kanal: **20 € pro Monat** – Anfrage per E-Mail an harzpassage@gmx.de
+Zugang zum Premium-Kanal: **20 € pro Monat** – Anfrage per E-Mail an kontakt@moneybag-signals.com
 
 18+ · Keine Gewinngarantie · Wetten kann süchtig machen. Hilfe: check-dein-spiel.de
 
@@ -100,7 +100,7 @@ und offen gezeigt: moneybag-signals.com/ergebnisse · Gratis-Kanal: https://t.me
 
 ## 6. FAQ (als Beitrag oder für die Bilanz-Seite)
 
-**Was kostet Premium?** 20 € pro Monat. Anfrage per E-Mail an harzpassage@gmx.de.
+**Was kostet Premium?** 20 € pro Monat. Anfrage per E-Mail an kontakt@moneybag-signals.com.
 **Wie viele Signale gibt es?** Je nach Spieltag mehrere pro Tag, am Wochenende mehr.
 **Muss ich jedes Signal setzen?** Nein. Nur wenn die Quote über der Mindestquote liegt.
 **Was ist eine Einheit?** Ein fester Betrag, den du selbst festlegst, z. B. 1–2 % deines
