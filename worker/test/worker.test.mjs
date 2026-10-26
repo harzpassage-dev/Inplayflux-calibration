@@ -265,7 +265,8 @@ test("start page: visitors without a link get the public page with live numbers,
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.match(html, /20 € \/ Monat/);
-  assert.match(html, /24 Stunden Premium kostenlos testen/);
+  assert.match(html, /24 Stunden kostenlos testen/);
+  assert.match(html, /<svg viewBox="0 0 700 200"/);
   assert.match(html, /kontakt@moneybag-signals.com/);
   assert.match(html, /18\+/);
   assert.match(html, /von 10 Signalen/);

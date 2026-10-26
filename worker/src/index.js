@@ -2041,64 +2041,94 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
 const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
 
 function landingPageHtml(rows, env, nowMs) {
+  // Design 6 "Sport-Magazin" (owner's pick of six drafts, 26.10.; drafts in marketing/designs/): red/black/white,
+  // diagonal shirt stripe, big headlines, live numbers and a 14-day chart drawn as inline SVG (no external resources).
   const all = summarize(rows);
   const d30 = summarize(rows.filter((r) => Date.parse(r.settledAt) >= nowMs - 30 * DAY_MS));
   const pct = (t) => (t.n ? (Math.round((t.won / t.n) * 1000) / 10).toString().replace(".", ",") + " %" : "–");
-  const stat = (label, t) => `<div class="stat"><b>${pct(t)}</b><span>${label}</span><small>${t.n ? `${t.won} von ${t.n} Signalen` : "noch keine Daten"}</small></div>`;
+  const num = (label, t, sub) => `<div class="n"><b>${pct(t)}</b><span>${label}</span><small>${t.n ? `${t.won} von ${t.n} ${sub}` : "noch keine Daten"}</small></div>`;
   const free = String(freeChannel(env)).replace(/^@/, "");
   const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
   const mail = CONTACT_EMAIL;
   const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  // Last 14 days: black = hit, red = lost (same day split as the results page).
+  const dayKey = (iso) => berlin(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const iso = new Date(nowMs - i * DAY_MS).toISOString();
+    const list = rows.filter((r) => dayKey(r.settledAt) === dayKey(iso));
+    days.push({ label: berlin(iso, { day: "2-digit", month: "2-digit" }), won: list.filter((r) => r.result === "won").length, lost: list.filter((r) => r.result === "lost").length });
+  }
+  const maxDay = Math.max(1, ...days.map((d) => d.won + d.lost));
+  const W = 700, H = 200, gap = W / days.length, bw = gap * 0.62;
+  const svgBars = days.map((d, i) => {
+    const x = i * gap + (gap - bw) / 2, hw = (d.won / maxDay) * (H - 34), hl = (d.lost / maxDay) * (H - 34);
+    return `<rect x="${x.toFixed(1)}" y="${(H - 22 - hw - hl).toFixed(1)}" width="${bw.toFixed(1)}" height="${hl.toFixed(1)}" fill="#e0262f"/>`
+      + `<rect x="${x.toFixed(1)}" y="${(H - 22 - hw).toFixed(1)}" width="${bw.toFixed(1)}" height="${hw.toFixed(1)}" fill="#111"/>`
+      + (i % 2 === 0 ? `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#666">${d.label}</text>` : "");
+  }).join("");
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>
 <meta name="description" content="Live-Fußballsignale (Over Tore), bewertet von einem Datenmodell aus über 13.000 Live-Signalen. Mit Mindestquote, Einsatz in Einheiten und offener Ergebnisseite. Gratis-Kanal auf Telegram. 18+.">
 <link rel="canonical" href="https://moneybag-signals.com/">
 <style>
-:root{--bg:#0b1630;--card:#13234a;--line:#24396b;--text:#eef2fb;--muted:#a9b6d3;--gold:#f5c542}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:860px;margin:0 auto;padding:28px 16px 48px}h1{font-size:34px;line-height:1.15;margin:8px 0 10px}h1 span{color:var(--gold)}
-h2{font-size:21px;margin:38px 0 12px}.lead{color:var(--muted);font-size:18px;margin:0 0 20px}
-.btn{display:inline-block;background:var(--gold);color:#1a1300;font-weight:700;padding:13px 20px;border-radius:12px;text-decoration:none;margin:4px 8px 4px 0}
-.btn.alt{background:transparent;color:var(--gold);border:1px solid var(--gold)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.stat b{display:block;font-size:30px;color:var(--gold)}
-.stat span{display:block;font-weight:600}.stat small{color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
-.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.box h3{margin:0 0 6px;font-size:17px}.box p{margin:0;color:var(--muted)}
-.price{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:20px}.price b{font-size:30px;color:var(--gold)}
-#trial input:not([type=checkbox]){display:block;width:100%;background:#0e1b3a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 10px;font:inherit}.chk{display:flex;gap:8px;align-items:center;margin:4px 0 12px;color:var(--muted)}
-.note{color:var(--muted);font-size:14px}dt{font-weight:600;margin-top:14px}dd{margin:4px 0 0;color:var(--muted)}a{color:var(--gold)}
-footer{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}footer a{color:var(--muted)}
-@media(max-width:520px){h1{font-size:27px}.lead{font-size:16px}}
-</style></head><body><main>
-<div>💰 <b>MoneyBag</b></div>
-<h1>Live-Fußballsignale mit <span>Datenmodell</span> und offener Bilanz</h1>
-<p class="lead">Wir posten keine Bauchgefühl-Tipps. Jedes Signal wird von einem Modell bewertet, das auf über 13.000 ausgewerteten Live-Signalen aufbaut – und jedes Ergebnis wird automatisch veröffentlicht, Treffer und Verluste.</p>
-<a class="btn" href="${freeLink}">📢 Gratis-Kanal öffnen</a><a class="btn alt" href="/ergebnisse">📊 Alle Ergebnisse ansehen</a>
-<p class="note" style="margin-top:12px">🎁 <b>24 Stunden Premium kostenlos testen</b> – <a href="#test">jetzt anfragen</a>. Endet automatisch, kein Abo.</p>
-<h2>Aktuelle Zahlen</h2>
-<div class="stats">${stat("🔥 High Confidence, gesamt", all.premium)}${stat("Alle Stufen, letzte 30 Tage", d30.all)}${stat("Alle Stufen, gesamt", all.all)}</div>
-<p class="note">Automatisch aus dem Live-Spielstand erfasst, Stand ${updated}. Ungewertete Spiele zählen nicht mit. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
+:root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8}
+*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
+a{color:var(--red)}.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+.hero{background:linear-gradient(115deg,#111 0 60%,var(--red) 60% 71%,#111 71%);color:#fff;padding:26px 0 54px}
+.logo{font-weight:900;letter-spacing:3px}.logo span{color:#ff4b52}
+h1{font-size:64px;line-height:.98;margin:26px 0 16px;text-transform:uppercase;font-weight:900;max-width:640px;letter-spacing:-1px}h1 b{color:#ff4b52}
+.lead{font-size:19px;color:#ddd;max-width:560px;margin:0}
+.btn{display:inline-block;background:var(--red);color:#fff;font-weight:900;padding:15px 22px;margin:24px 10px 0 0;text-transform:uppercase;letter-spacing:1px;text-decoration:none;border:0;font-size:15px;cursor:pointer}
+.btn.w{background:#fff;color:#111}.btn.k{background:#111;color:#fff}
+.nums{display:flex;flex-wrap:wrap;border-bottom:5px solid var(--ink)}.n{flex:1 1 220px;padding:24px 20px;border-right:1px solid var(--line)}
+.n b{display:block;font-size:46px;font-weight:900;color:var(--red);line-height:1}.n span{display:block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-top:6px}.n small{color:var(--muted)}
+h2{font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:3px;margin:44px 0 14px;display:flex;align-items:center;gap:12px}
+h2:before{content:"";width:28px;height:6px;background:var(--red);display:inline-block;transform:skewX(-20deg)}
+.chart{border:2px solid var(--ink);padding:16px}.legend{font-size:13px;color:var(--muted);margin-top:6px}.legend i{display:inline-block;width:12px;height:12px;vertical-align:-1px;margin:0 4px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.box{border-left:6px solid var(--red);background:#f6f6f7;padding:18px}.box h3{margin:0 0 6px;font-size:18px;font-weight:900}.box p{margin:0;color:#333}
+.price{background:#111;color:#fff;padding:22px;position:relative;overflow:hidden}.price:after{content:"";position:absolute;right:-40px;top:0;bottom:0;width:90px;background:var(--red);transform:skewX(-20deg)}
+.price b{display:block;font-size:44px;font-weight:900;color:#ff4b52;line-height:1.1}.price p{color:#ccc;margin:8px 0 0;position:relative;z-index:1;max-width:85%}.price a{color:#fff}
+.trial{background:#111;color:#fff;padding:24px}.trial p{color:#ccc}
+#trial input:not([type=checkbox]){display:block;width:100%;background:#fff;color:#111;border:0;padding:14px;margin:0 0 10px;font:inherit}
+.chk{display:flex;gap:8px;align-items:center;margin:4px 0 4px;color:#ccc}.trial .note{color:#aaa}.trial a{color:#ff6b72}
+.note{color:var(--muted);font-size:14px}dt{font-weight:900;margin-top:16px}dd{margin:4px 0 0;color:#333}
+footer{margin-top:48px;background:#111;color:#aaa;font-size:13px;padding:22px 0 30px}footer a{color:#ddd}
+@media(max-width:600px){h1{font-size:42px}.lead{font-size:17px}.hero{background:linear-gradient(115deg,#111 0 72%,var(--red) 72% 82%,#111 82%)}.n{border-right:0;border-bottom:1px solid var(--line)}.n b{font-size:38px}}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="logo">💰 MONEY<span>BAG</span></div>
+<h1>Zahlen<br>statt <b>Gefühl.</b></h1>
+<p class="lead">Live-Fußballsignale mit Datenmodell aus über 13.000 ausgewerteten Live-Signalen. Jedes Ergebnis wird automatisch veröffentlicht – Treffer wie Pleiten.</p>
+<a class="btn" href="#test">🎁 24 h gratis testen</a><a class="btn w" href="/ergebnisse">📊 Alle Ergebnisse</a>
+</div></header>
+<section class="nums wrap">${num("🔥 High Confidence, gesamt", all.premium, "Signalen")}${num("Alle Stufen, 30 Tage", d30.all, "Signalen")}<div class="n"><b>20 €</b><span>pro Monat</span><small>monatlich kündbar</small></div></section>
+<main class="wrap">
+<h2>Die letzten 14 Tage</h2>
+<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Treffer und verlorene Signale der letzten 14 Tage">${svgBars}</svg>
+<div class="legend"><i style="background:#111;margin-left:0"></i>Treffer<i style="background:#e0262f"></i>verloren · Stand ${updated} · alle Stufen ${pct(all.all)} (${all.all.won} von ${all.all.n})</div></div>
+<p class="note">Automatisch aus dem Live-Spielstand erfasst. Ungewertete Spiele zählen nicht mit. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
 <h2>So funktioniert MoneyBag</h2>
 <div class="grid">
-<div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Es wird jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>
+<div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>
 <div class="box"><h3>💶 Mindestquote</h3><p>Bei jedem Signal steht, ab welcher Quote es sich auf Dauer rechnet. Liegt die Quote darunter: nicht setzen.</p></div>
 <div class="box"><h3>📏 Einsatz in Einheiten</h3><p>0,5 bis 2 Einheiten je nach Stärke des Signals – nie mehr setzen, als man verlieren kann.</p></div>
 <div class="box"><h3>📊 Offene Bilanz</h3><p>Jedes Ergebnis steht auf der <a href="/ergebnisse">Ergebnisseite</a>. Nichts gelöscht, nichts ausgewählt.</p></div>
 </div>
 <h2>Gratis oder Premium</h2>
 <div class="grid">
-<div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><p style="margin-top:10px"><a href="${freeLink}">Kanal öffnen →</a></p></div>
-<div class="price"><h3 style="margin:0 0 6px">🔒 Premium</h3><b>20 € / Monat</b><p style="margin:8px 0 0;font-weight:600"><a href="#test">🎁 Erst 24 Stunden kostenlos testen</a></p><p class="note" style="margin:8px 0 0">Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
+<div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><a class="btn k" href="${freeLink}" style="margin-top:14px">Kanal öffnen</a></div>
+<div class="price"><h3 style="margin:0 0 6px;position:relative;z-index:1">🔒 PREMIUM</h3><b style="position:relative;z-index:1">20 € / Monat</b><p><a href="#test">🎁 Erst 24 Stunden kostenlos testen</a></p><p>Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
 </div>
-<h2 id="test">🎁 24 Stunden kostenlos testen</h2>
-<div class="box"><p style="margin:0 0 12px">Trag deinen Namen und deinen <b>Telegram-Namen</b> ein – wir melden uns bei dir auf Telegram mit dem Testzugang. Der Test endet automatisch, kein Abo.</p>
+<h2 id="test">24 Stunden kostenlos testen</h2>
+<div class="trial"><p style="margin:0 0 14px">Trag deinen Namen und deinen <b style="color:#fff">Telegram-Namen</b> ein – wir melden uns bei dir auf Telegram mit dem Testzugang. Der Test endet automatisch, kein Abo.</p>
 <form id="trial"><input id="t-name" placeholder="Dein Name" maxlength="100" autocomplete="name" required>
 <input id="t-tg" placeholder="Telegram-Name, z. B. @max_muster" maxlength="40" autocapitalize="none" autocorrect="off">
 <input id="t-mail" type="email" placeholder="oder E-Mail (optional)" maxlength="150" autocomplete="email">
 <label class="chk"><input type="checkbox" id="t-age" required> Ich bin mindestens 18 Jahre alt.</label>
-<button type="submit" class="btn" style="border:0;cursor:pointer">Test anfragen</button>
-<p id="t-out" class="note" style="margin:10px 0 0"></p></form>
+<button type="submit" class="btn">Test anfragen</button>
+<p id="t-out" class="note" style="margin:12px 0 0"></p></form>
 <p class="note" style="margin:10px 0 0">Deine Angaben nutzen wir nur für diese Anfrage (<a href="/datenschutz">Datenschutz</a>). Lieber per E-Mail? <a href="mailto:${mail}">${mail}</a></p></div>
 <script>
 document.getElementById("trial").addEventListener("submit", async function (e) {
@@ -2125,8 +2155,9 @@ document.getElementById("trial").addEventListener("submit", async function (e) {
 <dt>Gibt es eine Garantie?</dt><dd>Nein. Sportwetten bleiben ein Risiko, auch mit Daten. Darum zeigen wir jedes Ergebnis offen.</dd>
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
-<footer>18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</footer>
-</main></body></html>`;
+</main>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+</body></html>`;
 }
 
 // AGB, withdrawal policy and privacy policy (owner chose Kleinunternehmer § 19 UStG and PayPal, 25.10.). Name and address come from
