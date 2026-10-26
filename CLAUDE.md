@@ -252,8 +252,11 @@ then decide per tier on the new days and apply.
   `/ergebnisse` (`resultsPageHtml`) restyled the same way (black/red hero "Alle Ergebnisse", black table heads, black =
   hit / red = lost day bars, CTAs free channel + 24 h test; same data, texts and tests). Then all other public pages too:
   `MAG_CSS` + `magHead(title)` + `MAG_FOOT` shared by `impressumPage`, `legalPage` (AGB/Widerruf/Datenschutz) and
-  `deniedPage` (403 access page, now with a link to the start page's 24 h test). Not restyled: the customer tool
-  (`worker/public/index.html`) and the admin page.
+  `deniedPage` (403 access page, now with a link to the start page's 24 h test). Customer tool restyled too (design-6
+  override block before `</style>` in `worker/public/index.html` = `tools/moneybag-analyst.html`); admin page not.
+  10 logo drafts ("cool und jung") in `marketing/logos/` (`logos.html` → `logo-1..10.png`, `logos-uebersicht.png`):
+  1 Speed-Kursiv, 2 Ball-O, 3 Trikot-MB, 4 Badge, 5 Chart, 6 Stencil, 7 Neon, 8 Split, 9 Tornetz, 10 Sticker;
+  owner's pick to be built into the page headers + favicon.
 
 - 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
   owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start
