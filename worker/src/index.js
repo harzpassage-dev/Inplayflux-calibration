@@ -2017,6 +2017,21 @@ ${profit}
 </body></html>`;
 }
 
+// Shared "Sport-Magazin" look (design 6, 26.10.) for the simple text pages: Impressum, AGB, Widerruf, Datenschutz, access page.
+const MAG_CSS = `:root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8}
+*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
+a{color:var(--red)}.wrap{max-width:780px;margin:0 auto;padding:0 18px}
+.hero{background:linear-gradient(115deg,#111 0 64%,var(--red) 64% 75%,#111 75%);color:#fff;padding:20px 0 30px}
+.logo{font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none}.logo span{color:#ff4b52}
+.hero h1{font-size:38px;line-height:1.05;margin:18px 0 0;text-transform:uppercase;font-weight:900;letter-spacing:-.5px}
+main h1{display:none}main h2{font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin:32px 0 8px;display:flex;align-items:center;gap:10px}
+main h2:before{content:"";width:22px;height:5px;background:var(--red);display:inline-block;transform:skewX(-20deg);flex:none}
+main p{color:#222}.note{color:var(--muted);font-size:14px}
+footer{margin-top:40px;background:#111;color:#aaa;font-size:13px;padding:20px 0 28px}footer a{color:#ddd}
+@media(max-width:520px){.hero h1{font-size:28px}.hero{background:linear-gradient(115deg,#111 0 76%,var(--red) 76% 86%,#111 86%)}}`;
+const magHead = (title) => `<header class="hero"><div class="wrap"><a class="logo" href="/">💰 MONEY<span>BAG</span></a><h1>${title}</h1></div></header>`;
+const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
+
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
 // variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (address lines separated by
 // "|"), so the owner's address is never in the repository; IMPRESSUM_EMAIL is
@@ -2027,8 +2042,7 @@ function impressumPage(env) {
   const addr = String(env.IMPRESSUM_ADDRESS).split("|").map((l) => htmlEsc(l.trim())).join("<br>");
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Impressum</title><meta name="robots" content="noindex">
-<style>body{margin:0;background:#0b1630;color:#eef2fb;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{font-size:18px;margin-top:28px;color:#f5c542}a{color:#f5c542}p{color:#d5ddef}</style></head><body><main>
+<style>${MAG_CSS}</style></head><body>${magHead("Impressum")}<main class="wrap">
 <h1>Impressum</h1>
 <h2>Angaben gemäß § 5 DDG</h2>
 <p>${htmlEsc(env.IMPRESSUM_NAME)}<br>${addr}</p>
@@ -2040,8 +2054,7 @@ main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{f
 <p>MoneyBag veröffentlicht statistische Auswertungen und Einschätzungen zu Fußballspielen. MoneyBag ist kein Wettanbieter, nimmt keine Wetten an und vermittelt keine Wetten. Jede Wette erfolgt auf eigenes Risiko bei einem Anbieter der eigenen Wahl. Vergangene Ergebnisse sagen nichts über künftige aus; es gibt keine Gewinngarantie. Teilnahme erst ab 18 Jahren. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00.</p>
 <h2>Verbraucherstreitbeilegung</h2>
 <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
-<p><a href="/ergebnisse">← Zur Ergebnisseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></p>
-</main></body></html>`;
+</main>${MAG_FOOT}</body></html>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
 
@@ -2212,11 +2225,9 @@ function legalPage(env, kind) {
   const title = { agb: "AGB", widerruf: "Widerrufsbelehrung", datenschutz: "Datenschutzerklärung" }[kind];
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – ${title}</title><meta name="robots" content="noindex">
-<style>body{margin:0;background:#0b1630;color:#eef2fb;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{font-size:26px}h2{font-size:18px;margin-top:28px;color:#f5c542}a{color:#f5c542}p{color:#d5ddef}.note{color:#a9b6d3;font-size:14px}</style></head><body><main>
+<style>${MAG_CSS}</style></head><body>${magHead(title)}<main class="wrap">
 ${{ agb, widerruf, datenschutz }[kind]}
-<p class="note"><a href="/">Startseite</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a> · <a href="/impressum">Impressum</a></p>
-</main></body></html>`;
+</main>${MAG_FOOT}</body></html>`;
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", ...SECURITY_HEADERS } });
 }
 
@@ -2356,29 +2367,23 @@ function deniedPage({ reason }) {
   return htmlResponse(`<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zugang</title>
-<style>
-  body { font-family: -apple-system, system-ui, sans-serif; background:#12151c; color:#e6e9f0; max-width:480px; margin:0 auto; padding:40px 20px; line-height:1.5; }
-  h1 { font-size:1.2rem; }
-  .box { background:#1a1f2b; border:1px solid #2c3444; border-radius:6px; padding:18px; margin-top:16px; }
-  a { color:#c9a227; }
-  input, textarea { width:100%; box-sizing:border-box; background:#202634; color:#e6e9f0; border:1px solid #2c3444; border-radius:4px; padding:9px; margin-bottom:10px; font-family:inherit; font-size:0.95rem; }
-  textarea { resize:vertical; min-height:70px; }
-  button { background:#c9a227; color:#1a1200; border:none; border-radius:4px; padding:10px 16px; font-weight:600; cursor:pointer; font-size:0.95rem; }
-  button:disabled { opacity:0.6; cursor:default; }
-  .status { margin-top:10px; font-size:0.85rem; }
-  .status.ok { color:#4caf7a; }
-  .status.err { color:#d9614f; }
-  label { display:block; font-size:0.8rem; color:#8891a3; margin-bottom:4px; }
-</style></head>
-<body>
-  <h1>Zugang erforderlich</h1>
-  <p>${message}</p>
+<title>MoneyBag – Zugang</title>
+<style>${MAG_CSS}
+  .box{border-left:6px solid var(--red);background:#f6f6f7;padding:18px;margin-top:16px}
+  input,textarea{width:100%;background:#fff;color:#111;border:1px solid #d4d4da;padding:12px;margin-bottom:10px;font:inherit}
+  textarea{resize:vertical;min-height:70px}
+  button{background:var(--red);color:#fff;border:0;padding:14px 20px;font-weight:900;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-size:15px}
+  button:disabled{opacity:.6;cursor:default}
+  .status{margin-top:10px;font-size:.9rem}.status.ok{color:#14853b}.status.err{color:var(--red)}
+  label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;font-weight:700}</style></head>
+<body>${magHead("Zugang erforderlich")}<main class="wrap">
+  <p style="margin-top:22px;font-weight:700">${message}</p>
+  <p>Noch kein Zugang? <a href="/">Zur Startseite</a> – dort kannst du Premium 24 Stunden kostenlos testen.</p>
   <div class="box">
     <p><strong>Weiter nutzen?</strong><br>
     Am schnellsten geht's direkt über Telegram — oder per Formular, wenn du kein Telegram nutzt.</p>
-    <a href="https://t.me/harzpassage_bot" target="_blank" rel="noopener" style="display:block; text-align:center; background:#4caf7a; color:#0d1310; text-decoration:none; font-weight:700; padding:12px 16px; border-radius:6px; margin-bottom:16px;">💬 Direkt über Telegram schreiben</a>
-    <p style="text-align:center; color:#8891a3; font-size:0.85rem; margin:-8px 0 16px;">— oder —</p>
+    <a href="https://t.me/harzpassage_bot" target="_blank" rel="noopener" style="display:block;text-align:center;background:#111;color:#fff;text-decoration:none;font-weight:900;padding:14px 16px;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">💬 Direkt über Telegram schreiben</a>
+    <p style="text-align:center;color:#5d5d66;font-size:.85rem;margin:-8px 0 16px">— oder —</p>
     <form id="contact-form">
       <label>Name</label>
       <input type="text" id="c-name" required maxlength="100">
@@ -2419,7 +2424,7 @@ function deniedPage({ reason }) {
       }
     });
   </script>
-</body></html>`, 403);
+</main>${MAG_FOOT}</body></html>`, 403);
 }
 
 async function handleAdminPage() {
