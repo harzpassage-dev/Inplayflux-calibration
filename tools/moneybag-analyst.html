@@ -297,6 +297,30 @@
   }
 
   label.inline { font-size: 0.78rem; color: var(--text-dim); display: block; margin-bottom: 3px; }
+
+  /* ===== Design 6 "Sport-Magazin" (26.10., same look as the public pages): white/black/red, square corners ===== */
+  html:root:not([data-theme="none"]) {
+    --bg: #ffffff; --panel: #f6f6f7; --panel-2: #ffffff; --line: #e4e4e8;
+    --text: #111111; --text-dim: #5d5d66; --gold: #e0262f; --green: #14853b; --red: #e0262f; --blue: #2563eb;
+    --radius: 0px; color-scheme: light;
+  }
+  body { max-width: 720px; }
+  .hero { border: 0; border-radius: 0; margin: -16px -14px 18px; padding: 22px 18px 26px;
+    background: linear-gradient(115deg, #111 0 64%, #e0262f 64% 75%, #111 75%) !important; }
+  .hero::after { content: none; }
+  h1 { font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; line-height: 1.05; color: #fff; }
+  h1 .accent { color: #ff4b52; }
+  .subtitle { color: #ddd; font-size: 0.85rem; margin-top: 6px; }
+  .calib-badge { background: #e0262f !important; color: #fff !important; border: 0 !important; border-radius: 0 !important; font-weight: 800; }
+  h2 { font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+  h2::before { content: ""; width: 22px; height: 5px; background: #e0262f; display: inline-block; transform: skewX(-20deg); flex: none; }
+  section h2 { color: #111 !important; }
+  section h2::before { background: #e0262f !important; width: 22px !important; height: 5px !important; border-radius: 0 !important; transform: skewX(-20deg); }
+  section { border-radius: 0 !important; }
+  button { font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #fff; }
+  button.secondary { background: #111; color: #fff; border: 0; font-weight: 700; }
+  button.win { color: #fff; } button.lose { color: #fff; }
+  .warn-box { border-left: 6px solid #e0262f !important; border-radius: 0 !important; background: #f6f6f7 !important; color: #222 !important; }
 </style>
 </head>
 <body>
