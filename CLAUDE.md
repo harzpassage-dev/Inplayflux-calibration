@@ -246,7 +246,8 @@ then decide per tier on the new days and apply.
 - 2026-10-26: public contact address `kontakt@moneybag-signals.com` (`CONTACT_EMAIL`; Cloudflare Email Routing set up by the
   owner: rule kontakt@ → harzpassage@gmx.de, catch-all present, MX route1-3.mx.cloudflare.net + SPF checked) on the start
   page, Impressum, AGB, Widerruf, Datenschutz (mentions the forwarding) and `marketing/werbetexte.md`. `IMPRESSUM_EMAIL`
-  still overrides it. The GMX MCP connector failed (SMTP/IMAP login rejected), so no test mail could be sent from here.
+  still overrides it. Owner confirmed a test mail to kontakt@ arrived in GMX (26.10.). The GMX MCP connector in Claude
+  sessions fails (SMTP/IMAP login rejected) – it cannot be used to send or read mail.
 
 - 2026-10-25: narrated YouTube video `marketing/youtube-methode-ton.mp4` (final: Chatterbox natural German voice,
   Whisper-checked, over the self-made stadium/groove background).
