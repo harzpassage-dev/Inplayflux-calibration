@@ -466,7 +466,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-25)
+## Open items (as of 2026-10-26)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -497,8 +497,11 @@ then decide per tier on the new days and apply.
 - Profit check (from 22.10.): once ≥ 20 tips with a signal quote are settled, `/ergebnisse` shows the profit lines.
   Compare per tier: average signal quote vs hit rate (break-even = 1 / hit rate). Tiers whose quotes sit below
   their Mindestquote lose money even at good hit rates → raise thresholds or switch off.
-- Recalibration 21.10. (`reports/2026-10-21-recalibration.md`, 13,237 signals). Unseen 17.–21.10.: O2.5
-  78.0 % (82) vs raw 81.2 % – filter does not beat the raw rate, watch it; O3.5 74.7 % (87) vs raw 69.1 %.
+- Recalibration 26.10. (`reports/2026-10-26-recalibration.md`, 14,432 signals, models refitted, thresholds unchanged).
+  Unseen 24.–26.10.: O2.5 79.5 % (117) vs raw 78.5 % – filter only ~1 pp above raw, wait for the market comparison;
+  O3.5 88.0 % (108) vs raw 79.8 %; O0.5 82.4 % (17). O1.5 test rule 73.5 % (291) – only 1.5 pp above the 72 % cut;
+  "Over 1.5 ValueShots15" 69.8 % (43) is the first to drop (decide at ~100 tips). Earlier (21.10., 13,237 signals):
+  O2.5 78.0 % (82) vs raw 81.2 %, O3.5 74.7 % (87) vs raw 69.1 %.
 - O1.5 model tier (High Confidence / Half-Risiko) is off: re-enable only if a new export shows ≥ 75 % on unseen days. 21.10.: model 71.4 % (21);
   simple rule minute ≤ 61 + pre-match line ≥ 2.75 gives 76.1 % (522, halves 80.9/73.0), unseen 75.8 % (91)
   → borderline; owner said yes 21.10.: running as 🧪 Over 1.5 Test (0.5 units). Check it at ≥ 100 tips on
@@ -535,13 +538,15 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Next (from 25.10.): Mon 26.10. bot "Wochen-Check" → owner exports a new CSV → weekly routine (skill `wochen-routine`);
-  market comparison and profit check once ≥ 50 tips; first auto video Sun 25.10. 17:37; Google indexing check
+- Next (from 26.10.): weekly routine done 26.10.; next Mon 02.11. bot "Wochen-Check" → new CSV → skill `wochen-routine`;
+  market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
   legal advice); owner to send one test request through the start-page form to see the bot DM; trial flow: DM → admin
   "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
-- Owner to-dos (25.10.): upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
+- Owner to-dos (26.10.): set the new Telegram profile pictures (`marketing/telegram-profil-{free,premium}.png`) in both
+  channels; switch "MoneyBag 0-0 → Goal" back on (all 77 0:0 cards 24.–26.10. still came from "Over 0.5 Value").
+  From 25.10.: upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
   (W) – SC Ell (W) posts (17.10.) in the free and premium channels; put https://moneybag-signals.com/ergebnisse into the free channel description and
