@@ -315,6 +315,8 @@ then decide per tier on the new days and apply.
   (owner's Google account); sitemap submitted as full URL
   `https://moneybag-signals.com/sitemap.xml` (a domain property rejects the bare file name), live test of `/ergebnisse`
   green, indexing requested for `/` and `/ergebnisse` the same day. Check with `site:moneybag-signals.com` in ~1–2 weeks. 
+  27.10.: coverage export (state 23.10.) showed 2 pages "blocked by 403" (before the start page existed; `/` and
+  `/ergebnisse` answer Googlebot 200 now); owner started "Fehlerbehebung validieren" the same day.
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
