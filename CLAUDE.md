@@ -555,7 +555,7 @@ then decide per tier on the new days and apply.
   "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (26.10.): (new Telegram profile pictures set in both channels 27.10., done; auto WIN banner seen working
-  on an Over 1.5 Test post) send a screenshot of the first new "MoneyBag 0-0 → Goal" card (re-created 26.10.).
+  on an Over 1.5 Test post; site link in the free channel description 27.10., done) send a screenshot of the first new "MoneyBag 0-0 → Goal" card (re-created 26.10.).
   From 25.10.: upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
