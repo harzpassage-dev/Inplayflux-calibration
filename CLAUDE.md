@@ -243,6 +243,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-27: SEO check after the owner pasted generic SEO tips: title, description, canonical, h1, lang, mobile, HTTPS,
+  sitemap and Search Console were already in place. Added link previews: `ogMeta(title, desc, path)` (Open Graph +
+  twitter card) on `/` and `/ergebnisse`, image `worker/public/og.png` (1200×630, source `marketing/og-bild.html`, no live
+  numbers so it never goes stale) served publicly at `/og.png`, JSON-LD WebSite + Organization on `/`.
+
 - 2026-10-26: weekly routine with export 10-26 (`data/inplayflux_sinyaller_2026-10-26.csv`, 14,432 signals, shift 0),
   models refitted, thresholds unchanged, badge "Kalibriert: 26.10.2026 · 14.432 Signale", report
   `reports/2026-10-26-recalibration.md`. Unseen 24.–26.10.: O2.5 79.5 % (117) vs raw 78.5 %, O3.5 88.0 % (108) vs 79.8 %,

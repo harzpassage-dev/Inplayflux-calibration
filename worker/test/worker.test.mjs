@@ -273,6 +273,22 @@ test("logo: favicon is served as SVG and every public page links it and shows th
   }
 });
 
+test("seo: start page and results page carry link-preview tags, the preview image is public", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv({ ASSETS: { fetch: (req) => new Response(new URL(req.url).pathname === "/og.png" ? "PNG" : "tool") } });
+  const home = await (await worker.fetch(new Request("https://moneybag-signals.com/"), env, {})).text();
+  assert.match(home, /<meta property="og:image" content="https:\/\/moneybag-signals.com\/og.png">/);
+  assert.match(home, /<meta property="og:url" content="https:\/\/moneybag-signals.com\/">/);
+  const ld = JSON.parse(home.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
+  assert.equal(ld["@graph"][0].url, "https://moneybag-signals.com/");
+  const res = await (await worker.fetch(new Request("https://moneybag-signals.com/ergebnisse"), env, {})).text();
+  assert.match(res, /og:url" content="https:\/\/moneybag-signals.com\/ergebnisse"/);
+  const img = await worker.fetch(new Request("https://moneybag-signals.com/og.png"), env, {});
+  assert.equal(img.status, 200);
+  assert.equal(img.headers.get("Content-Type"), "image/png");
+  assert.equal(await img.text(), "PNG");
+});
+
 test("start page: visitors without a link get the public page with live numbers, a bad link still gets the access page", async () => {
   mockNet({ feed: [] });
   const env = makeEnv();

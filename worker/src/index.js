@@ -1976,7 +1976,7 @@ function resultsPageHtml(rows, env, nowMs) {
   const freeLink = /^-?\d+$/.test(free) ? "https://t.me/MoneyBagAnalyst" : `https://t.me/${htmlEsc(free)}`;
   const updated = berlin(new Date(nowMs).toISOString(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MoneyBag – Alle Ergebnisse</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/ergebnisse"><meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
+<title>MoneyBag – Alle Ergebnisse</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/ergebnisse">${ogMeta("MoneyBag – Alle Ergebnisse", "Alle abgeschlossenen Live-Fußballsignale mit Ergebnis – automatisch erfasst, nichts gelöscht.", "/ergebnisse")}<meta name="description" content="Alle abgeschlossenen MoneyBag-Signale mit Ergebnis – automatisch erfasst, nichts gelöscht.">
 <style>
 :root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8;--ok:#14853b;--no:#e0262f}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
@@ -2025,6 +2025,12 @@ const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 2
 const LOGO_HTML = `<a class="logo" href="/" aria-label="MoneyBag Startseite"><i></i>MONEY<span>BAG</span></a>`;
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#111"/><g fill="#e0262f"><rect x="4" y="18" width="14" height="5"/><rect x="0" y="29" width="18" height="5"/><rect x="6" y="40" width="12" height="5"/></g><text x="40" y="45" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="31" fill="#fff" letter-spacing="-2">M<tspan fill="#e0262f">B</tspan></text></svg>`;
 const ICON_LINK = `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`;
+// Link previews (Telegram, WhatsApp, Google): Open Graph tags + the 1200x630 image worker/public/og.png
+// (source marketing/og-bild.html). Only public, indexable pages use this.
+const ogMeta = (title, desc, path) => `<meta property="og:type" content="website"><meta property="og:site_name" content="MoneyBag">
+<meta property="og:locale" content="de_DE"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}">
+<meta property="og:url" content="https://moneybag-signals.com${path}"><meta property="og:image" content="https://moneybag-signals.com/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">`;
 
 const MAG_CSS = `:root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
@@ -2101,7 +2107,8 @@ function landingPageHtml(rows, env, nowMs) {
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MoneyBag – Live-Fußballsignale mit Datenmodell und offener Bilanz</title>${ICON_LINK}
 <meta name="description" content="Live-Fußballsignale (Over Tore), bewertet von einem Datenmodell aus über 13.000 Live-Signalen. Mit Mindestquote, Einsatz in Einheiten und offener Ergebnisseite. Gratis-Kanal auf Telegram. 18+.">
-<link rel="canonical" href="https://moneybag-signals.com/">
+<link rel="canonical" href="https://moneybag-signals.com/">${ogMeta("MoneyBag – Analysen statt Gefühl", "Live-Fußballsignale mit Datenmodell und offener Bilanz – Treffer wie Pleiten. Gratis-Kanal auf Telegram. 18+.", "/")}
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":"MoneyBag","url":"https://moneybag-signals.com/","inLanguage":"de"},{"@type":"Organization","name":"MoneyBag","url":"https://moneybag-signals.com/","logo":"https://moneybag-signals.com/og.png","email":"${CONTACT_EMAIL}"}]}</script>
 <style>
 :root{--red:#e0262f;--ink:#111;--muted:#5d5d66;--line:#e4e4e8}
 *{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif}
@@ -3045,6 +3052,10 @@ export default {
       return resultsPage(request, env, ctx);
     }
 
+    if (url.pathname === "/og.png") {
+      const img = await env.ASSETS.fetch(new Request(new URL("/og.png", url.origin)));
+      return new Response(img.body, { status: img.status, headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
+    }
     if (url.pathname === "/favicon.svg" || url.pathname === "/favicon.ico") {
       return new Response(FAVICON_SVG, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" } });
     }
