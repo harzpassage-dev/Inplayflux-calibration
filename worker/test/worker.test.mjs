@@ -53,6 +53,17 @@ test("O0.5 at 0:0: 2 units from pre-match line 4.0, 1 unit below", async () => {
   }
 });
 
+test("0:0 card with the new target wording \"Any goal scored\" is read as O0.5", async () => {
+  for (const target of ["Any goal scored", "Any Goal", "Goal"]) {
+    const net = mockNet({ feed: [] });
+    const env = makeEnv();
+    await webhook(worker, env, card({ header: "💰 MoneyBag 0-0 → Goal", score: "0-0", target, minute: 61, sot: [3, 2], radar: 380, pre: "4.0", live: "1.5", over: "2.10", under: "1.70" }));
+    await cron(worker, env);
+    assert.equal(tracked(env)[0]?.line, 0.5, target);
+    assert.equal(premiumPosts(net).length, 1, target);
+  }
+});
+
 test("Over 1.5 Test: rule minute <= 61 and line >= 2.75, rejected after a goal", async () => {
   const cases = [
     { minute: 58, pre: "3.0", feed: [], posts: 1 },

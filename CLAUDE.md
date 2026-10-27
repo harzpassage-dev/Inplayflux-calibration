@@ -247,6 +247,9 @@ then decide per tier on the new days and apply.
   sitemap and Search Console were already in place. Added link previews: `ogMeta(title, desc, path)` (Open Graph +
   twitter card) on `/` and `/ergebnisse`, image `worker/public/og.png` (1200×630, source `marketing/og-bild.html`, no live
   numbers so it never goes stale) served publicly at `/og.png`, JSON-LD WebSite + Organization on `/`.
+  Same day: owner re-created the deleted "MoneyBag 0-0 → Goal" at InPlayFlux (minute 61–71, total goals = 0, money-bag rule
+  now called "Goal Line Signal (VU)" ≥ Yes, success criterion "Any goal scored"); worker parser and tool accept
+  "Target: Any goal …" as well as "Target: Goal" (test), in case the card text changed with the new criterion.
 
 - 2026-10-26: weekly routine with export 10-26 (`data/inplayflux_sinyaller_2026-10-26.csv`, 14,432 signals, shift 0),
   models refitted, thresholds unchanged, badge "Kalibriert: 26.10.2026 · 14.432 Signale", report
@@ -483,7 +486,7 @@ then decide per tier on the new days and apply.
     `/impressum`, (14) weekly video task (Sundays), (15) weekly image to the free channel (one tap in admin).
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
-  - Waiting for the owner: switch "MoneyBag 0-0 → Goal" back on at InPlayFlux (24.10.); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
+  - "MoneyBag 0-0 → Goal" re-created by the owner 26.10. evening (check the first new 0:0 cards arrive and post); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
     22.10.); legal check of `/agb`, `/widerruf`, `/datenschutz`;
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
@@ -552,7 +555,7 @@ then decide per tier on the new days and apply.
   "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (26.10.): set the new Telegram profile pictures (`marketing/telegram-profil-{free,premium}.png`) in both
-  channels; switch "MoneyBag 0-0 → Goal" back on (all 77 0:0 cards 24.–26.10. still came from "Over 0.5 Value").
+  channels; send a screenshot of the first new "MoneyBag 0-0 → Goal" card (re-created 26.10.).
   From 25.10.: upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange

@@ -250,7 +250,9 @@ function parseForConfidenceScore(text) {
   }
   // Generic "Target: Goal" cards (MoneyBag 0-0 -> Goal): every strategy needs
   // exactly one more goal, so the line is the current goals + 0.5.
-  if (out.targetLine == null && out.goals != null && /Target:\s*Goal\b/i.test(text)) {
+  // InPlayFlux renamed the success criterion "Any goal scored" (26.10.), so accept
+  // "Target: Any goal ..." too.
+  if (out.targetLine == null && out.goals != null && /Target:\s*(?:Any\s+)?Goals?\b/i.test(text)) {
     out.targetLine = out.goals + 0.5;
   }
   m = text.match(/Strike Rate:\s*(\d+)%/i);

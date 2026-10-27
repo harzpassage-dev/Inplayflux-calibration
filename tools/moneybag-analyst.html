@@ -616,7 +616,7 @@
     // exactly one more goal, so the line is the current goals + 0.5.
     if (r.homeScore != null && r.awayScore != null) {
       if (r.goalsAtSignal == null) r.goalsAtSignal = r.homeScore + r.awayScore;
-      if (r.targetLine == null && /^Goal\b/i.test(r.targetRaw || "")) r.targetLine = r.goalsAtSignal + 0.5;
+      if (r.targetLine == null && /^(?:Any\s+)?Goals?\b/i.test(r.targetRaw || "")) r.targetLine = r.goalsAtSignal + 0.5;
     }
 
     return r;
