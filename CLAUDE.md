@@ -551,7 +551,7 @@ then decide per tier on the new days and apply.
 - Next (from 26.10.): weekly routine done 26.10.; next Mon 02.11. bot "Wochen-Check" → new CSV → skill `wochen-routine`;
   market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
-  legal advice); owner to send one test request through the start-page form to see the bot DM; trial flow: DM → admin
+  legal advice); start-page trial form tested by the owner 27.10. (bot DM arrived); trial flow: DM → admin
   "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (26.10.): (new Telegram profile pictures set in both channels 27.10., done; auto WIN banner seen working
