@@ -486,7 +486,7 @@ then decide per tier on the new days and apply.
     `/impressum`, (14) weekly video task (Sundays), (15) weekly image to the free channel (one tap in admin).
   - Checked, deliberately unchanged: (4) O2.5 rule, (5) score as O3.5 feature, (7) Under 3.5 stays off,
     (11) live check not worth ~19 $/month now.
-  - "MoneyBag 0-0 → Goal" re-created by the owner 26.10. evening (check the first new 0:0 cards arrive and post); (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
+  - "MoneyBag 0-0 → Goal" re-created by the owner 26.10. evening, first card 28.10. parsed fine; (12) **InPlayFlux permission** for forwarding to paying subscribers (email text given
     22.10.); legal check of `/agb`, `/widerruf`, `/datenschutz`;
     invite links per source in the free channel; paid ads only after an edge (≥ 50 tips) and InPlayFlux's answer.
 - Own premium post format ("MoneyBag format", owner asked twice on 22.10.): built and tested (match, league,
@@ -555,7 +555,9 @@ then decide per tier on the new days and apply.
   "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (26.10.): (new Telegram profile pictures set in both channels 27.10., done; auto WIN banner seen working
-  on an Over 1.5 Test post; site link in the free channel description 27.10., done) send a screenshot of the first new "MoneyBag 0-0 → Goal" card (re-created 26.10.).
+  on an Over 1.5 Test post; site link in the free channel description 27.10., done). First new "MoneyBag 0-0 → Goal" card arrived 28.10.
+  (Alianza FC – CD Marathon, 61', line 2.75): header unchanged, still "Target: Goal", parsed fine (O0.5, SoT 1, radar 428),
+  model 0.689 < 0.75 → correctly not posted.
   From 25.10.: upload the TikTok videos as YouTube Shorts (one per day; the YouTube app crashed on upload 25.10. –
   advised: title without emojis, update/restart the app, or upload via studio.youtube.com in Chrome desktop mode;
   Shorts titles max. 100 chars incl. hashtags, the app has no description field). Earlier: delete the duplicate Aston Villa U19 posts (14.10.) and the triple Swift Hesperange
