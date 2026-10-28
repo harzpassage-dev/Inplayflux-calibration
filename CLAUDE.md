@@ -203,6 +203,7 @@ then decide per tier on the new days and apply.
 | 11 | `tiktok-methode.mp4` (31 s) | "Wie entstehen unsere Zahlen?" (method / behind the scenes, owner's topic) | steps: scene at ~60', wait for full time, count 8,680 unique matches; stability test shown with clear lead 77/77 % (kept) vs Spain 68/74 % (dropped, country check to 10.10.); example `scripts/method_stats.py`: 0:0 at 55–65' by pre-match goal expectation ≤ 2.5 64 % (182, halves 59/67) vs ≥ 3.75 82 % (131, halves 82/83); 'what we don't know': who scores, substitutions, weather/pitch |
 | 12 | `tiktok-nutzen.mp4` (31 s) | "Bauchgefühl oder Daten?" (what such analyses are good for, owner's topic) | only numbers already checked for earlier videos: (1) myth – corners 75/74/73 % (video 8), (2) 0:0 by pre-match goal expectation 64 vs 82 % (video 11), (3) 1 in 5 next goals after 85', 7 % in stoppage time (video 9), (4) honesty – 73 % means 27 % no goal, runs of up to 8 scenes without a goal (video 6) |
 | 13 | `tiktok-abseits.mp4` (31 s) | "Abseits!" (owner's topic "Abseits und Tore") | the exports have **no offside data**, so rule facts from IFAB Law 11 (no offside in own half, level with the second-last opponent, directly from throw-in/goal kick/corner; hands/arms not counted; position alone not an offence), VAR Bundesliga since 2017/18, semi-automated offside at the 2022 World Cup; data part reuses video 8: no offside from a corner, yet corners barely matter – another goal 75/74/73 % (8,620 matches); footnote says the data has no offside decisions |
+| 14 | `tiktok-jugend.mp4` (31 s) | "Jugend gegen Herren: Wer trifft öfter?" (owner's topic "U18 U20 U21 mehr Tore?") | `scripts/youth_stats.py`, unique matches with a scene at 55–65', 05.09.–26.10., halves split 01.10.; the data has **no U18** (only U19, U20, U21, U23): goals per 90 up to the scene U19 3.0 / U20–U23 3.0 / men 3.0 (halves 3.36/3.22/3.29, 2.56/2.67/2.57); another goal U19 79 % (595, halves 78/80) vs men 75 % (6,729, halves 75/74); U20–U23 75 % (580) but not stable (77/71, said in the footnote); share of next goals in stoppage time U19 5 % (5.0/4.8) vs men 7 % (6.6/7.9) |
 
 - Ideas for next videos (check the numbers first with `scripts/myth_stats.py`-style splits):
   myths suggested in comments; 0:0: shots on target did not hold in both halves (7+ SoT 77 %
@@ -242,6 +243,8 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-28: TikTok video 14 `marketing/tiktok-jugend.mp4` (youth vs men: same goals up to 60', U19 more often another goal).
 
 - 2026-10-27: SEO check after the owner pasted generic SEO tips: title, description, canonical, h1, lang, mobile, HTTPS,
   sitemap and Search Console were already in place. Added link previews: `ogMeta(title, desc, path)` (Open Graph +
@@ -586,7 +589,7 @@ then decide per tier on the new days and apply.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
-- TikTok @torminute (videos 1–13 ready, see table above): owner uploads videos 1–13 (one per evening, with sound in the app), sets
+- TikTok @torminute (videos 1–14 ready, see table above): owner uploads videos 1–14 (one per evening, with sound in the app), sets
   lamp videos private, posts the same videos as Instagram Reels / YouTube Shorts; next video from comment suggestions. Track followers/views per video in
   `marketing/tiktok.md`.
 - Marketing: price set 22.10.: **Premium 20 € per month, requests by email to kontakt@moneybag-signals.com** (since 26.10.; before harzpassage@gmx.de);

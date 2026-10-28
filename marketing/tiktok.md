@@ -29,6 +29,7 @@ erwähnen – weder im Video noch in Beschreibung, Bio, Kommentaren oder Nachric
 | 11 | `tiktok-methode.mp4` | Wie entstehen unsere Zahlen? 🔬⚽ Ein Blick hinter die Kulissen: 8.680 Live-Spiele, ein Härtetest – und was wir ehrlich nicht wissen. Welche Frage sollen wir als Nächstes prüfen? 👇 #fußball #fussball #statistik #datenanalyse #football #datencheck | | | |
 | 12 | `tiktok-nutzen.mp4` | Bauchgefühl oder Daten? 🧠⚽ 4 Gründe, warum sich Fußball-Statistik lohnt – von Ecken-Mythos bis Nachspielzeit. Wo lag dein Bauchgefühl schon daneben? 👇 #fußball #fussball #statistik #datenanalyse #football #bauchgefühl | | | |
 | 13 | `tiktok-abseits.mp4` | Abseits! 🚩 Kennst du die Regel wirklich? 3 Fälle, in denen es NIE Abseits ist – und warum viele Ecken trotzdem kaum mehr Tore bringen ⚽📊 Welches Abseitstor hat dich am meisten geärgert? 👇 #fußball #fussball #abseits #regeln #statistik #football | | | |
+| 14 | `tiktok-jugend.mp4` | Jugend gegen Herren – wer trifft öfter? 🧒⚽🧔 Fast 8.000 Live-Spiele verglichen: bis Minute 60 gleich viele Tore, danach legt die U19 nach! Hättest du das gedacht? 👇 #fußball #jugendfußball #u19 #statistik #football #datencheck | | | |
 
 ## So lädst du hoch (iPad)
 
