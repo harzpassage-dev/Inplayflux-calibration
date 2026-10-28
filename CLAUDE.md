@@ -245,6 +245,11 @@ then decide per tier on the new days and apply.
 ## Change log (latest first)
 
 - 2026-10-28: TikTok video 14 `marketing/tiktok-jugend.mp4` (youth vs men: same goals up to 60', U19 more often another goal).
+- 2026-10-28: 24-hour check on the owner's request ("wir waren schlecht?", export 10-28 looked at only, not added to
+  `data/`): `/ergebnisse` 27.10. 08:00 → 28.10.: High Confidence 29/35 = 83 % (O2.5 12/14, O3.5 16/19, O0.5 1/2), Over 1.5
+  Test 22/32 = 69 % (9 losses in English/N. Irish non-league games around 22:00), all 51/67 = 76 %; O1.5 test since start
+  205/270 = 75.9 % → kept. Export 27.10. 05:00–28.10.: test rule 74 % (54; Value 82 % (17), Money Bag Over 1.5 69 % (35)).
+  Watch Money Bag Over 1.5 at the next weekly routine. Same day: Whop checked (see Marketing), video 14.
 
 - 2026-10-27: SEO check after the owner pasted generic SEO tips: title, description, canonical, h1, lang, mobile, HTTPS,
   sitemap and Search Console were already in place. Added link previews: `ogMeta(title, desc, path)` (Open Graph +
@@ -479,7 +484,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-26)
+## Open items (as of 2026-10-28)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
