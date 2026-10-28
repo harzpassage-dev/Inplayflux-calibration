@@ -599,6 +599,10 @@ then decide per tier on the new days and apply.
   have it checked (lawyer or e-recht24);
   `FREE_CTA_URL` still defaults to https://moneybag-signals.com. Ideas not built yet: referral
   links (extra days per paying referral), Tipstrr listing, Telega.io test.
+  Whop (whop.com, checked 28.10.): storefront/marketplace for paid Telegram groups, auto add/remove members, merchant of
+  record for EU VAT, affiliate program; ~3 % + card fees (~1.30 € per 20 € sub). Verdict with the owner: no value now
+  (no paying customers yet, marketplace brings little reach); reconsider at ~10–20 customers, after InPlayFlux's OK; ask
+  Whop support first whether German football-tip subscriptions are allowed.
 
 - Under 3.5: **paused since 21.10., stays off after the recalculation of 22.10.** (`scripts/u35_stats.py` on
   `under35_log_2026-10-22.csv`: 164 strict games 11.–22.10., halves split 17.10.): all 52 % (56/47); old rule goal
