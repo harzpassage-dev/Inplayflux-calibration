@@ -23,7 +23,7 @@ Premium tiers (all in `worker/src/index.js`):
 |---|---|---|
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
-| 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75 (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
+| 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75, men's first teams only since 29.10. (`nonMenMatch`: league/teams with U19…, Youth, Junior, Primavera, Reserve, Women, (W) are skipped; parser reads `league` from the 🏆 line) (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen", **paused** since 2026-10-21, `UNDER_ENABLED`; shadow log keeps running) | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
 
@@ -243,6 +243,12 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-29: Over 1.5 Test men only (owner's yes after a league check, 601 unique matches 05.09.–28.10. under the test
+  rule, halves split 12.10.): men 77.7 % (476, halves 79/77) vs women/youth/reserve 71.2 % (125, halves 70/72; at line
+  2.75–3.0 only 60 %, n=35); countries all too small (England 71 % (52), Norway 72 % (29), "UEFA" 88 → 36 % (22)), not
+  filtered. Expected ~20 % fewer O1.5 tips, ~78 %. Test "women, youth and reserve games are not posted" (fails without the
+  filter). Same day: O0.5 premium 27.–28.10. 6/10 + 4 void (watch at the weekly routine; fill voids with the CSV).
 
 - 2026-10-28: TikTok video 14 `marketing/tiktok-jugend.mp4` (youth vs men: same goals up to 60', U19 more often another goal).
 - 2026-10-28: 24-hour check on the owner's request ("wir waren schlecht?", export 10-28 looked at only, not added to

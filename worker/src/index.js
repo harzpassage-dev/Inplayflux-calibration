@@ -255,6 +255,8 @@ function parseForConfidenceScore(text) {
   if (out.targetLine == null && out.goals != null && /Target:\s*(?:Any\s+)?Goals?\b/i.test(text)) {
     out.targetLine = out.goals + 0.5;
   }
+  m = text.match(/🏆\s*([^\n\r]+)/u);
+  if (m) out.league = m[1].trim();
   m = text.match(/Strike Rate:\s*(\d+)%/i);
   if (m) out.feedWR = parseInt(m[1], 10);
   return out;
@@ -445,9 +447,13 @@ const O15_TEST_ENABLED = true;
 const O15_MAX_MINUTE = 61;
 const O15_MIN_LINE_PRE = 2.75;
 const O15_WR = 0.76;
+// Since 2026-10-29: men's first teams only. Women / youth / reserve games hit 71 % (125 unique matches,
+// halves 70/72) vs men 78 % (476, halves 79/77) under the same rule (05.09.–28.10.).
+const nonMenMatch = (p) => /U-?\d\d\b|Youth|Junior|Primavera|Reserve|Women|Feminin|Frauen|Damen/i.test(p.league || "") ||
+  /U-?\d\d\b|Reserve|\(W\)|Women/i.test(`${p.homeTeam || ""} ${p.awayTeam || ""}`);
 const o15TestRule = (parsed) => O15_TEST_ENABLED && parsed.targetLine === 1.5 &&
   parsed.minute != null && parsed.minute <= O15_MAX_MINUTE &&
-  parsed.goallinePre != null && parsed.goallinePre >= O15_MIN_LINE_PRE;
+  parsed.goallinePre != null && parsed.goallinePre >= O15_MIN_LINE_PRE && !nonMenMatch(parsed);
 // "Under 3.5 – mit Vorsicht setzen": O2.5 cards (2 goals) that are not
 // premium and whose live goal score is low. Rule since 2026-10-16 from the
 // strict shadow log (11.-16.10., 85'+ rule): goal score <= 0 and live line

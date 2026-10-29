@@ -71,8 +71,8 @@ export const admin = (worker, env, p, init = {}) => worker.fetch(new Request("ht
 
 // An InPlayFlux card in the format the worker parses.
 export function card({ header = "💰 MoneyBag 2-0/0-2 → Over 2.5 New", home = "Alpha FC", away = "Beta FC", score = "2-0",
-  target = "Over 2.5 Goals", minute = 56, sot = [6, 4], radar = 450, pre = "4.0", live = "3.5", over = "1.95", under = "1.85" } = {}) {
-  return `${header}\n🏆 Liga\n⚽ ${home} ${score} ${away}\n🎯 Target: ${target}\n⏱ ${minute}' · ~30 min left\n` +
+  target = "Over 2.5 Goals", league = "Liga", minute = 56, sot = [6, 4], radar = 450, pre = "4.0", live = "3.5", over = "1.95", under = "1.85" } = {}) {
+  return `${header}\n🏆 ${league}\n⚽ ${home} ${score} ${away}\n🎯 Target: ${target}\n⏱ ${minute}' · ~30 min left\n` +
     `📊 Shots ${sot[0]} · ${sot[1]} / 10 · 8 total\n📡 Radar X: x (${radar})\n⚖️ O/U ${pre} → ${live}  Over ${over}  Under ${under}`;
 }
 

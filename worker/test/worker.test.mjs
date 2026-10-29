@@ -81,6 +81,24 @@ test("Over 1.5 Test: rule minute <= 61 and line >= 2.75, rejected after a goal",
   }
 });
 
+test("Over 1.5 Test: women, youth and reserve games are not posted (men only since 29.10.)", async () => {
+  const cases = [
+    { league: "England National League", home: "Alpha FC", away: "Beta FC", posts: 1 },
+    { league: "Brazil Campeonato Women", home: "Alpha FC", away: "Beta FC", posts: 0 },
+    { league: "England Premier League", home: "Alpha (W)", away: "Beta (W)", posts: 0 },
+    { league: "Sweden U19 Allsvenskan", home: "Alpha U19", away: "Beta U19", posts: 0 },
+    { league: "Honduras Reserve League", home: "Alpha Reserves", away: "Beta Reserves", posts: 0 },
+    { league: "UEFA Youth League", home: "Alpha", away: "Beta", posts: 0 },
+  ];
+  for (const c of cases) {
+    const net = mockNet({ feed: [] });
+    const env = makeEnv();
+    await webhook(worker, env, card({ header: "💰  Over 1.5 Value", league: c.league, home: c.home, away: c.away, score: "1-0", target: "Goal", minute: 58, pre: "3.0", live: "2.5" }));
+    await cron(worker, env);
+    assert.equal(premiumPosts(net).length, c.posts, JSON.stringify(c));
+  }
+});
+
 test("settling: exact goal minute from the feed, WIN banner, free channel, result record", async () => {
   const net = mockNet({ feed: [] });
   const env = makeEnv();
