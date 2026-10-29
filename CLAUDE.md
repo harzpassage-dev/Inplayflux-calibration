@@ -244,6 +244,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-29: owner asked for a rollback option ("vor der letzten Kalibrierung lief es besser?"). `scripts/compare_models.py`
+  compares the old (21.10.) and new (26.10.) `CONFIDENCE_MODELS` on the same cards; for both unseen 26.10. 17:25 – 28.10.
+  02:21: O2.5 84.8 / 84.8 % (33/33), O3.5 82.6 / 84.6 % (23/26), O0.5 80 / 75 % (5/4), all 83.6 / 84.1 % (61/63); before
+  (21.–26.10., unseen for the old one) old 83.0 % vs new 82.7 % – practically the same picks. The felt drop came from the
+  Over 1.5 Test (no model) and O0.5 voids, not from the recalibration → no rollback. Rollback procedure added to the
+  skill `wochen-routine` (section 5).
+
 - 2026-10-29: Over 1.5 Test men only (owner's yes after a league check, 601 unique matches 05.09.–28.10. under the test
   rule, halves split 12.10.): men 77.7 % (476, halves 79/77) vs women/youth/reserve 71.2 % (125, halves 70/72; at line
   2.75–3.0 only 60 %, n=35); countries all too small (England 71 % (52), Norway 72 % (29), "UEFA" 88 → 36 % (22)), not

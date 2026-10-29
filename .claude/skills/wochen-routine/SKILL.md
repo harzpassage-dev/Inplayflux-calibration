@@ -52,3 +52,13 @@ the owner's yes.
 
 Short German summary: date + signal count, per-tier table (new days), what was switched on/off and why,
 what to watch next week. No promises; "18+ · Keine Gewinngarantie" only where marketing text is written.
+
+## 5. Rollback (owner thinks the last calibration was worse)
+
+1. Compare first, on cards neither model has seen:
+   `python3 scripts/compare_models.py <commit before the recalibration>^ "<deploy time of the recalibration>" [new raw export, normalized]`
+   (old vs new `CONFIDENCE_MODELS` on the same cards, one per match + line). If the two differ by < ~3 pp or n < 50,
+   the models are not the cause – look at the tiers without a model (Over 1.5 Test) and at voids instead.
+2. Only if the old models are clearly better: restore the old `CONFIDENCE_MODELS` (and goal score bands) from
+   `git show <commit>^:worker/src/index.js`, keep everything else, run the checks, push, note it in CLAUDE.md.
+   Every calibration stays in git, so any earlier version can be restored the same way within minutes.
