@@ -2031,10 +2031,12 @@ ${profit}
 const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 26px/1 Arial,"Liberation Sans",Helvetica,sans-serif;letter-spacing:-1px;color:#fff;text-decoration:none;text-transform:uppercase}.logo span{color:#ff4b52}
 .logo i{width:34px;height:15px;margin-right:4px;flex:none;background:linear-gradient(#ff4b52,#ff4b52) 6px 0/26px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 0 6px/34px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 10px 12px/22px 3px no-repeat}
 .topbar{display:flex;align-items:center;gap:14px;position:relative;z-index:20}
-.mnav summary{list-style:none;cursor:pointer;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 9px;border:2px solid #fff;-webkit-tap-highlight-color:transparent}
+.mnav summary{list-style:none;cursor:pointer;height:52px;display:flex;align-items:center;gap:8px;padding:0 10px 0 6px;border:2px solid #fff;-webkit-tap-highlight-color:transparent}
+.mnav summary em{writing-mode:vertical-rl;transform:rotate(180deg);font:normal 900 10px/1 Arial,"Liberation Sans",sans-serif;letter-spacing:2px;text-transform:uppercase;color:#fff}
+.mnav summary span{width:24px;display:flex;flex-direction:column;gap:6px}
 .mnav summary::-webkit-details-marker{display:none}.mnav summary b{display:block;height:3px;background:#fff}.mnav summary b:nth-child(2){background:#ff4b52}
 .mnav[open] summary{background:#ff4b52;border-color:#ff4b52}.mnav[open] summary b{background:#fff}
-.mnav nav{position:absolute;top:54px;left:0;width:290px;max-width:calc(100vw - 32px);max-height:75vh;overflow-y:auto;background:#111;border:2px solid #fff;border-left:6px solid #ff4b52;padding:8px 0 12px;box-shadow:8px 8px 0 rgba(0,0,0,.35);font:16px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif;text-transform:none;letter-spacing:0}
+.mnav nav{position:absolute;top:62px;left:0;width:290px;max-width:calc(100vw - 32px);max-height:75vh;overflow-y:auto;background:#111;border:2px solid #fff;border-left:6px solid #ff4b52;padding:8px 0 12px;box-shadow:8px 8px 0 rgba(0,0,0,.35);font:16px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif;text-transform:none;letter-spacing:0}
 .mnav nav p{margin:12px 18px 4px;color:#ff4b52;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
 .mnav nav a{display:block;padding:10px 18px;color:#fff;text-decoration:none;font-weight:700}.mnav nav a:hover,.mnav nav a:focus{background:#ff4b52;color:#fff}`;
 // Fold-out menu next to the logo on every public page (since 30.10., owner: "schnelles Navigieren"). Pure HTML
@@ -2044,7 +2046,7 @@ const NAV_LINKS = [
   ["Zahlen & Inhalte", [["/ergebnisse", "📊 Alle Ergebnisse"], ["/videos", "🎬 Daten-Videos"]]],
   ["Mitmachen", [["/#test", "🎁 24 h gratis testen"], ["/#preis", "🔒 Premium & Preis"], ["https://t.me/MoneyBagAnalyst", "📢 Gratis-Kanal (Telegram)"], ["/partner", "🤝 Partner-Netzwerk"], ["/partner#mitmachen", "✍️ Partner werden"]]],
 ];
-const NAV_HTML = `<details class="mnav"><summary aria-label="Menü öffnen"><b></b><b></b><b></b></summary><nav>${NAV_LINKS.map(([group, links]) =>
+const NAV_HTML = `<details class="mnav"><summary aria-label="Menü öffnen"><em>Menü</em><span><b></b><b></b><b></b></span></summary><nav>${NAV_LINKS.map(([group, links]) =>
   `<p>${group}</p>${links.map(([href, label]) => `<a href="${href}" onclick="this.closest('details').open=false"${href.startsWith("http") ? ' rel="noopener" target="_blank"' : ""}>${label}</a>`).join("")}`).join("")}</nav></details>`;
 const LOGO_HTML = `<div class="topbar">${NAV_HTML}<a class="logo" href="/" aria-label="MoneyBag Startseite"><i></i>MONEY<span>BAG</span></a></div>`;
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#111"/><g fill="#e0262f"><rect x="4" y="18" width="14" height="5"/><rect x="0" y="29" width="18" height="5"/><rect x="6" y="40" width="12" height="5"/></g><text x="40" y="45" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="31" fill="#fff" letter-spacing="-2">M<tspan fill="#e0262f">B</tspan></text></svg>`;

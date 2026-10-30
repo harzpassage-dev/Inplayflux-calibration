@@ -245,7 +245,7 @@ then decide per tier on the new days and apply.
 ## Change log (latest first)
 
 - 2026-10-30: fold-out menu on every public page (owner: quick navigation, "noch so viele Ideen"): `NAV_LINKS` →
-  `NAV_HTML` (HTML `<details class="mnav">`, hamburger left of the logo, no script; a tap on a link closes it), built into
+  `NAV_HTML` (HTML `<details class="mnav">`, hamburger with the word "MENÜ" written vertically, left of the logo, no script; a tap on a link closes it), built into
   `LOGO_HTML` (wrapped in `.topbar`), CSS in `LOGO_CSS`, so `/`, `/ergebnisse` and every `magHead` page (videos, partner,
   legal, 403) get it. Groups Start (Startseite, #daten, #so, #faq) / Zahlen & Inhalte (Ergebnisse, Videos) / Mitmachen
   (#test, #preis, free channel, Partner, Partner werden); legal links stay in the footers (404 without the Impressum vars).
