@@ -2022,7 +2022,7 @@ ${profit}
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal – oder Premium 24 Stunden kostenlos testen:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a> <a class="cta k" href="/#test">🎁 24 h gratis testen</a>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a> · <a href="/videos">Videos</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -2052,7 +2052,7 @@ main p{color:#222}.note{color:var(--muted);font-size:14px}
 footer{margin-top:40px;background:#111;color:#aaa;font-size:13px;padding:20px 0 28px}footer a{color:#ddd}
 @media(max-width:520px){.hero h1{font-size:28px}.hero{background:linear-gradient(115deg,#111 0 76%,var(--red) 76% 86%,#111 86%)}}`;
 const magHead = (title) => `<header class="hero"><div class="wrap">${LOGO_HTML}<h1>${title}</h1></div></header>`;
-const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
+const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
 
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
 // variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (address lines separated by
@@ -2084,6 +2084,41 @@ function impressumPage(env) {
 // result:*, cached like the results page. Visitors with a token or cookie still get the tool.
 // Public contact address (Cloudflare Email Routing on the domain forwards it to the owner's mailbox, since 26.10.).
 const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
+
+// "/videos" (since 2026-10-30, owner's choice): MoneyBag versions of the statistics videos (same numbers as the
+// Torminute videos, MoneyBag brand, no Torminute name; built by marketing/moneybag-videos.mjs into public/videos/).
+// Served from our own assets: no YouTube/TikTok player, no cookies. Newest first.
+const VIDEOS = [
+  ["jugend", "Jugend gegen Herren: Wer trifft öfter?"],
+  ["abseits", "Abseits! Kennst du die Regel wirklich?"],
+  ["nutzen", "Bauchgefühl oder Daten?"],
+  ["methode", "Wie entstehen unsere Zahlen?"],
+  ["knapp", "Knapp oder klar – wann fällt das nächste Tor?"],
+  ["trainer", "3 Trainer-Sprüche im Daten-Check"],
+  ["ecken", "Viele Ecken = viele Tore?"],
+  ["frauen", "Frauen oder Männer – wer trifft öfter?"],
+  ["sicher", "73 % – klingt sicher. Ist es das?"],
+  ["joker", "Der Joker kommt – fällt jetzt noch ein Tor?"],
+  ["laender", "In welchem Land fällt am häufigsten noch ein Tor?"],
+  ["nullnull", "0:0 nach 60 Minuten – fällt noch ein Tor?"],
+  ["mythen", "3 Mythen über Tore im Daten-Check"],
+  ["tore", "Das späte Tor ist kein Zufall"],
+];
+function videosPage() {
+  const cards = VIDEOS.map(([slug, title]) => `<figure class="vid"><video controls playsinline muted preload="none" poster="/videos/${slug}.jpg" src="/videos/${slug}.mp4"></video><figcaption>${title}</figcaption></figure>`).join("");
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – Daten-Videos</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/videos"><meta name="description" content="Kurze Videos mit eigenen Fußball-Auswertungen aus über 14.000 Live-Signalen: wann Tore fallen, Mythen im Daten-Check, Länder, Jugend und mehr.">
+${ogMeta("MoneyBag – Daten-Videos", "Kurze Videos mit eigenen Fußball-Auswertungen: wann Tore fallen, Mythen im Daten-Check und mehr.", "/videos")}
+<style>${MAG_CSS}
+.vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:20px}
+.vid{margin:0}.vid video{width:100%;aspect-ratio:9/16;background:#111;display:block}.vid figcaption{font-weight:900;font-size:15px;margin-top:8px;line-height:1.3}
+.cta{background:#111;color:#fff;padding:20px;margin-top:30px}.cta a{color:#ff6b72;font-weight:900}</style></head><body>${magHead("Daten-Videos")}<main class="wrap">
+<p style="margin-top:22px">Kurze Videos mit unseren eigenen Auswertungen – nur Zahlen, keine Tipps. Jede Zahl wurde in beiden Hälften des Zeitraums geprüft; die Datenbasis steht am Ende jedes Videos.</p>
+<div class="vids">${cards}</div>
+<div class="cta">Neue Auswertung jede Woche: <a href="/#daten">Daten der Woche</a> · Alle Signale mit Ergebnis: <a href="/ergebnisse">Ergebnisse</a> · <a href="/#test">24 h gratis testen</a></div>
+</main>${MAG_FOOT}</body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } });
+}
 
 // "Daten der Woche" on the start page (since 2026-10-30): one own analysis per week from the InPlayFlux exports, refreshed
 // with the weekly routine. Only numbers that hold in both halves of the period; script named in `source`.
@@ -2172,7 +2207,7 @@ ${LOGO_HTML}
 <h2 id="daten">Daten der Woche</h2>
 <div class="dw"><h3>${DATEN_DER_WOCHE.title}</h3><p class="t">${DATEN_DER_WOCHE.text}</p>
 ${DATEN_DER_WOCHE.bars.map(([l, v, n], i, a) => `<div class="r${i === a.length - 1 ? " top" : ""}"><span>${l} <small style="color:var(--muted)">(${n.toLocaleString("de-DE")})</small></span><div class="bar"><i style="width:${v}%"></i></div><span class="v">${v} %</span></div>`).join("")}
-<p class="note" style="margin:12px 0 0">Stand ${DATEN_DER_WOCHE.date} · ${DATEN_DER_WOCHE.basis} Anteil der Spiele, in denen danach noch ein Tor fiel.</p></div>
+<p class="note" style="margin:12px 0 0">Stand ${DATEN_DER_WOCHE.date} · ${DATEN_DER_WOCHE.basis} Anteil der Spiele, in denen danach noch ein Tor fiel. · <a href="/videos">Alle Daten-Videos →</a></p></div>
 <h2>So funktioniert MoneyBag</h2>
 <div class="grid">
 <div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>
@@ -2220,7 +2255,7 @@ document.getElementById("trial").addEventListener("submit", async function (e) {
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -3078,6 +3113,18 @@ export default {
       return resultsPage(request, env, ctx);
     }
 
+    if (url.pathname === "/videos" || url.pathname === "/videos/") return videosPage();
+    {
+      const vm = url.pathname.match(/^\/videos\/([a-z0-9]+)\.(mp4|jpg)$/);
+      if (vm && VIDEOS.some(([slug]) => slug === vm[1])) {
+        // Pass the original request on so Range requests (video seeking on iPhone/iPad) keep working.
+        const a = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin), { headers: request.headers }));
+        const h = new Headers(a.headers);
+        h.set("Content-Type", vm[2] === "mp4" ? "video/mp4" : "image/jpeg");
+        h.set("Cache-Control", "public, max-age=604800");
+        return new Response(a.body, { status: a.status, headers: h });
+      }
+    }
     if (url.pathname === "/og.png") {
       const img = await env.ASSETS.fetch(new Request(new URL("/og.png", url.origin)));
       return new Response(img.body, { status: img.status, headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
@@ -3087,11 +3134,11 @@ export default {
     }
     // --- Search engines: only the public results page is meant to be found ---
     if (url.pathname === "/robots.txt") {
-      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nAllow: /videos\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
         { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
     if (url.pathname === "/sitemap.xml") {
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n</urlset>\n`,
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n<url><loc>${url.origin}/videos</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
         { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
 

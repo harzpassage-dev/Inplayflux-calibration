@@ -244,6 +244,15 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-30: video page **`/videos`** (owner's choice "MoneyBag-Fassungen"): MoneyBag versions of all 14 statistics
+  videos, same numbers, MoneyBag speed logo instead of "⚽ TORMINUTE", red/black look, "@torminute" → "Mehr Daten:
+  moneybag-signals.com", comment calls removed (`marketing/moneybag-videos.mjs [slug …]` → `worker/public/videos/<slug>.mp4`
+  720×1280 ~0.6 MB + `<slug>.jpg` poster; it refuses to write a video that still contains "torminute"). Served from our
+  own assets (`VIDEOS` list, Range passed on for iPad seeking, no YouTube/TikTok player, no cookies → privacy policy
+  unchanged); links in footers and under "Daten der Woche"; in robots.txt and the sitemap. Torminute stays separate
+  (never link /videos from Torminute). For every new Torminute video: render the MoneyBag version and add it on top of
+  `VIDEOS` (test expects the count). Test "videos page".
+
 - 2026-10-30: owner asked about a football news feed on the site; advised against (press excerpts are protected in
   Germany, copied news gives no SEO value, external widgets need privacy/cookie changes, distracts from the trial). Built
   instead **"Daten der Woche"** on `/` (section `#daten` after the 14-day chart, `DATEN_DER_WOCHE` constant: one own
