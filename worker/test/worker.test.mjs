@@ -318,6 +318,15 @@ test("seo: start page and results page carry link-preview tags, the preview imag
   assert.equal(await img.text(), "PNG");
 });
 
+test("start page: shows the weekly own analysis (Daten der Woche) with bars and data basis", async () => {
+  mockNet({ feed: [] });
+  const html = await (await worker.fetch(new Request("https://moneybag-signals.com/"), makeEnv(), {})).text();
+  assert.match(html, /<h2 id="daten">Daten der Woche<\/h2>/);
+  assert.equal((html.match(/<div class="r( top)?">/g) || []).length, 4);
+  assert.match(html, /89 %<\/span>/);
+  assert.match(html, /eigene Auswertung/);
+});
+
 test("start page: visitors without a link get the public page with live numbers, a bad link still gets the access page", async () => {
   mockNet({ feed: [] });
   const env = makeEnv();

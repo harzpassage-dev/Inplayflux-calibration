@@ -2085,6 +2085,16 @@ function impressumPage(env) {
 // Public contact address (Cloudflare Email Routing on the domain forwards it to the owner's mailbox, since 26.10.).
 const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
 
+// "Daten der Woche" on the start page (since 2026-10-30): one own analysis per week from the InPlayFlux exports, refreshed
+// with the weekly routine. Only numbers that hold in both halves of the period; script named in `source`.
+const DATEN_DER_WOCHE = {
+  date: "30.10.2026",
+  title: "0:0 nach einer Stunde – fällt noch ein Tor?",
+  text: "Entscheidend ist nicht das Spiel bisher, sondern die Tor-Erwartung vor dem Anpfiff: Je höher der Markt die Tore vorher eingeschätzt hat, desto öfter fällt nach 60 Minuten 0:0 noch ein Treffer.",
+  bars: [["Erwartung bis 2,5 Tore", 64, 210], ["2,75 bis 3,5 Tore", 71, 938], ["ab 3,75 Tore", 82, 142], ["ab 4 Tore", 89, 82]],
+  basis: "1.290 Spiele mit 0:0 um Minute 60 (55.–65.), 05.09.–26.10.2026, eigene Auswertung; jede Gruppe in beiden Hälften des Zeitraums ähnlich (z. B. ab 3,75: 82 % und 81 %).",
+};
+
 function landingPageHtml(rows, env, nowMs) {
   // Design 6 "Sport-Magazin" (owner's pick of six drafts, 26.10.; drafts in marketing/designs/): red/black/white,
   // diagonal shirt stripe, big headlines, live numbers and a 14-day chart drawn as inline SVG (no external resources).
@@ -2134,6 +2144,10 @@ h2:before{content:"";width:28px;height:6px;background:var(--red);display:inline-
 .chart{border:2px solid var(--ink);padding:16px}.legend{font-size:13px;color:var(--muted);margin-top:6px}.legend i{display:inline-block;width:12px;height:12px;vertical-align:-1px;margin:0 4px 0 10px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .box{border-left:6px solid var(--red);background:#f6f6f7;padding:18px}.box h3{margin:0 0 6px;font-size:18px;font-weight:900}.box p{margin:0;color:#333}
+.dw{border:2px solid var(--ink);padding:18px}.dw h3{margin:0 0 6px;font-size:22px;font-weight:900}.dw .t{margin:0 0 14px;color:#333}
+.dw .r{display:grid;grid-template-columns:minmax(120px,190px) 1fr 52px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+@media(max-width:600px){.dw .r{grid-template-columns:1fr 52px;gap:4px 10px}.dw .r>span:first-child{grid-column:1/-1}}
+.dw .bar{height:18px;background:#eee}.dw .bar i{display:block;height:100%;background:var(--ink)}.dw .r.top .bar i{background:var(--red)}.dw .v{font-weight:900;text-align:right}
 .price{background:#111;color:#fff;padding:22px;position:relative;overflow:hidden}.price:after{content:"";position:absolute;right:-40px;top:0;bottom:0;width:90px;background:var(--red);transform:skewX(-20deg)}
 .price b{display:block;font-size:44px;font-weight:900;color:#ff4b52;line-height:1.1}.price p{color:#ccc;margin:8px 0 0;position:relative;z-index:1;max-width:85%}.price a{color:#fff}
 .trial{background:#111;color:#fff;padding:24px}.trial p{color:#ccc}
@@ -2155,6 +2169,10 @@ ${LOGO_HTML}
 <div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Treffer und verlorene Signale der letzten 14 Tage">${svgBars}</svg>
 <div class="legend"><i style="background:#111;margin-left:0"></i>Treffer<i style="background:#e0262f"></i>verloren · Stand ${updated} · alle Stufen ${pct(all.all)} (${all.all.won} von ${all.all.n})</div></div>
 <p class="note">Automatisch aus dem Live-Spielstand erfasst. Ungewertete Spiele zählen nicht mit. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
+<h2 id="daten">Daten der Woche</h2>
+<div class="dw"><h3>${DATEN_DER_WOCHE.title}</h3><p class="t">${DATEN_DER_WOCHE.text}</p>
+${DATEN_DER_WOCHE.bars.map(([l, v, n], i, a) => `<div class="r${i === a.length - 1 ? " top" : ""}"><span>${l} <small style="color:var(--muted)">(${n.toLocaleString("de-DE")})</small></span><div class="bar"><i style="width:${v}%"></i></div><span class="v">${v} %</span></div>`).join("")}
+<p class="note" style="margin:12px 0 0">Stand ${DATEN_DER_WOCHE.date} · ${DATEN_DER_WOCHE.basis} Anteil der Spiele, in denen danach noch ein Tor fiel.</p></div>
 <h2>So funktioniert MoneyBag</h2>
 <div class="grid">
 <div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>

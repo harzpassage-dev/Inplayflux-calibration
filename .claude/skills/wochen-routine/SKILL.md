@@ -62,3 +62,10 @@ what to watch next week. No promises; "18+ · Keine Gewinngarantie" only where m
 2. Only if the old models are clearly better: restore the old `CONFIDENCE_MODELS` (and goal score bands) from
    `git show <commit>^:worker/src/index.js`, keep everything else, run the checks, push, note it in CLAUDE.md.
    Every calibration stays in git, so any earlier version can be restored the same way within minutes.
+
+## 6. "Daten der Woche" on the start page (every weekly routine)
+
+Replace `DATEN_DER_WOCHE` in `worker/src/index.js` (date, title, 2-sentence German text, 3–4 bars [label, %, n], basis)
+with one new own analysis from `data/*.csv`: count unique matches, show only groups with n ≥ ~80 that hold in both halves
+of the period, no gain promises, no betting jargon beyond "Tor-Erwartung"/"Markt". Re-use the TikTok scripts in `scripts/`
+or write a new `scripts/*_stats.py`. Keep the test "Daten der Woche" passing (4 bars, or adjust it with the bar count).

@@ -244,6 +244,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-30: owner asked about a football news feed on the site; advised against (press excerpts are protected in
+  Germany, copied news gives no SEO value, external widgets need privacy/cookie changes, distracts from the trial). Built
+  instead **"Daten der Woche"** on `/` (section `#daten` after the 14-day chart, `DATEN_DER_WOCHE` constant: one own
+  analysis per week, bars + data basis, no external resources). First one: 0:0 at ~60' by pre-match goal expectation
+  (`scripts/method_stats.py`, 1,290 matches 05.09.–26.10.): ≤ 2.5 64 % (210), 2.75–3.5 71 % (938), ≥ 3.75 82 % (142,
+  halves 82/81), ≥ 4 89 % (82, halves 90/88). Refreshed with every weekly routine (skill section 6). Test added.
+
 - 2026-10-29: owner asked for a rollback option ("vor der letzten Kalibrierung lief es besser?"). `scripts/compare_models.py`
   compares the old (21.10.) and new (26.10.) `CONFIDENCE_MODELS` on the same cards; for both unseen 26.10. 17:25 – 28.10.
   02:21: O2.5 84.8 / 84.8 % (33/33), O3.5 82.6 / 84.6 % (23/26), O0.5 80 / 75 % (5/4), all 83.6 / 84.1 % (61/63); before
