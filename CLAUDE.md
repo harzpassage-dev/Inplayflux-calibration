@@ -244,6 +244,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-30: fold-out menu on every public page (owner: quick navigation, "noch so viele Ideen"): `NAV_LINKS` →
+  `NAV_HTML` (HTML `<details class="mnav">`, hamburger left of the logo, no script; a tap on a link closes it), built into
+  `LOGO_HTML` (wrapped in `.topbar`), CSS in `LOGO_CSS`, so `/`, `/ergebnisse` and every `magHead` page (videos, partner,
+  legal, 403) get it. Groups Start (Startseite, #daten, #so, #faq) / Zahlen & Inhalte (Ergebnisse, Videos) / Mitmachen
+  (#test, #preis, free channel, Partner, Partner werden); legal links stay in the footers (404 without the Impressum vars).
+  New ids on `/`: `so`, `preis`, `faq`. **Every new public page or section goes into `NAV_LINKS`.** Test "menu".
+
 - 2026-10-30: partner page **`/partner`** (owner's idea: network of trusted Telegram channels that recommend each other).
   Marked "Partner-Kanäle · gegenseitige Empfehlung (Werbung)" (UWG), section "Warum dieses Netzwerk wichtig ist" (4 boxes: fake channels, orientation, together, openness), five rules (wins and losses shown, no guaranteed
   wins, no fixed matches/prepayment, 18+ note, active ≥ ~1 month), disclaimer for third-party content, join form

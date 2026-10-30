@@ -439,3 +439,15 @@ test("partner page: marked as advertising, rules, join form reaches the owner, b
   assert.match(sm, /\/partner<\/loc>/);
   assert.equal((await worker.fetch(new Request("https://x/partner/unknown.png"), env, {})).status, 403, "only listed banners are served");
 });
+
+test("menu: every public page has the fold-out menu with all main links", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv({ IMPRESSUM_NAME: "Max", IMPRESSUM_ADDRESS: "Str. 1|12345 Ort" });
+  for (const path of ["/", "/ergebnisse", "/videos", "/partner", "/impressum", "/datenschutz", "/?t=" + "0".repeat(32)]) {
+    const html = await (await worker.fetch(new Request("https://moneybag-signals.com" + path), env, {})).text();
+    assert.match(html, /<details class="mnav">/, path);
+    for (const href of ["/ergebnisse", "/videos", "/partner", "/#test", "/#daten", "/#faq"]) assert.ok(html.includes(`<a href="${href}" onclick`), `${path} → ${href}`);
+  }
+  const land = await (await worker.fetch(new Request("https://moneybag-signals.com/"), env, {})).text();
+  for (const id of ["daten", "so", "faq", "preis", "test"]) assert.match(land, new RegExp(`id="${id}"`));
+});

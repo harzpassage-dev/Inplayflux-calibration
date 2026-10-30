@@ -2029,8 +2029,24 @@ ${profit}
 // Shared "Sport-Magazin" look (design 6, 26.10.) for the simple text pages: Impressum, AGB, Widerruf, Datenschutz, access page.
 // Logo "Speed" (owner's pick 26.10.): three red speed lines + italic MONEY (white) BAG (red), plain CSS, no font files
 const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 26px/1 Arial,"Liberation Sans",Helvetica,sans-serif;letter-spacing:-1px;color:#fff;text-decoration:none;text-transform:uppercase}.logo span{color:#ff4b52}
-.logo i{width:34px;height:15px;margin-right:4px;flex:none;background:linear-gradient(#ff4b52,#ff4b52) 6px 0/26px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 0 6px/34px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 10px 12px/22px 3px no-repeat}`;
-const LOGO_HTML = `<a class="logo" href="/" aria-label="MoneyBag Startseite"><i></i>MONEY<span>BAG</span></a>`;
+.logo i{width:34px;height:15px;margin-right:4px;flex:none;background:linear-gradient(#ff4b52,#ff4b52) 6px 0/26px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 0 6px/34px 3px no-repeat,linear-gradient(#ff4b52,#ff4b52) 10px 12px/22px 3px no-repeat}
+.topbar{display:flex;align-items:center;gap:14px;position:relative;z-index:20}
+.mnav summary{list-style:none;cursor:pointer;width:44px;height:44px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 9px;border:2px solid #fff;-webkit-tap-highlight-color:transparent}
+.mnav summary::-webkit-details-marker{display:none}.mnav summary b{display:block;height:3px;background:#fff}.mnav summary b:nth-child(2){background:#ff4b52}
+.mnav[open] summary{background:#ff4b52;border-color:#ff4b52}.mnav[open] summary b{background:#fff}
+.mnav nav{position:absolute;top:54px;left:0;width:290px;max-width:calc(100vw - 32px);max-height:75vh;overflow-y:auto;background:#111;border:2px solid #fff;border-left:6px solid #ff4b52;padding:8px 0 12px;box-shadow:8px 8px 0 rgba(0,0,0,.35);font:16px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans",sans-serif;text-transform:none;letter-spacing:0}
+.mnav nav p{margin:12px 18px 4px;color:#ff4b52;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
+.mnav nav a{display:block;padding:10px 18px;color:#fff;text-decoration:none;font-weight:700}.mnav nav a:hover,.mnav nav a:focus{background:#ff4b52;color:#fff}`;
+// Fold-out menu next to the logo on every public page (since 30.10., owner: "schnelles Navigieren"). Pure HTML
+// <details>, no script needed; a tap on a link also closes it (same-page anchors). New public pages go into NAV_LINKS (legal pages stay in the footers).
+const NAV_LINKS = [
+  ["Start", [["/", "🏠 Startseite"], ["/#daten", "📈 Daten der Woche"], ["/#so", "⚙️ So funktioniert's"], ["/#faq", "❓ Häufige Fragen"]]],
+  ["Zahlen & Inhalte", [["/ergebnisse", "📊 Alle Ergebnisse"], ["/videos", "🎬 Daten-Videos"]]],
+  ["Mitmachen", [["/#test", "🎁 24 h gratis testen"], ["/#preis", "🔒 Premium & Preis"], ["https://t.me/MoneyBagAnalyst", "📢 Gratis-Kanal (Telegram)"], ["/partner", "🤝 Partner-Netzwerk"], ["/partner#mitmachen", "✍️ Partner werden"]]],
+];
+const NAV_HTML = `<details class="mnav"><summary aria-label="Menü öffnen"><b></b><b></b><b></b></summary><nav>${NAV_LINKS.map(([group, links]) =>
+  `<p>${group}</p>${links.map(([href, label]) => `<a href="${href}" onclick="this.closest('details').open=false"${href.startsWith("http") ? ' rel="noopener" target="_blank"' : ""}>${label}</a>`).join("")}`).join("")}</nav></details>`;
+const LOGO_HTML = `<div class="topbar">${NAV_HTML}<a class="logo" href="/" aria-label="MoneyBag Startseite"><i></i>MONEY<span>BAG</span></a></div>`;
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#111"/><g fill="#e0262f"><rect x="4" y="18" width="14" height="5"/><rect x="0" y="29" width="18" height="5"/><rect x="6" y="40" width="12" height="5"/></g><text x="40" y="45" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="31" fill="#fff" letter-spacing="-2">M<tspan fill="#e0262f">B</tspan></text></svg>`;
 const ICON_LINK = `<link rel="icon" href="/favicon.svg" type="image/svg+xml">`;
 // Link previews (Telegram, WhatsApp, Google): Open Graph tags + the 1200x630 image worker/public/og.png
@@ -2292,14 +2308,14 @@ ${LOGO_HTML}
 <div class="dw"><h3>${DATEN_DER_WOCHE.title}</h3><p class="t">${DATEN_DER_WOCHE.text}</p>
 ${DATEN_DER_WOCHE.bars.map(([l, v, n], i, a) => `<div class="r${i === a.length - 1 ? " top" : ""}"><span>${l} <small style="color:var(--muted)">(${n.toLocaleString("de-DE")})</small></span><div class="bar"><i style="width:${v}%"></i></div><span class="v">${v} %</span></div>`).join("")}
 <p class="note" style="margin:12px 0 0">Stand ${DATEN_DER_WOCHE.date} · ${DATEN_DER_WOCHE.basis} Anteil der Spiele, in denen danach noch ein Tor fiel. · <a href="/videos">Alle Daten-Videos →</a></p></div>
-<h2>So funktioniert MoneyBag</h2>
+<h2 id="so">So funktioniert MoneyBag</h2>
 <div class="grid">
 <div class="box"><h3>📐 Modell-Filter</h3><p>Nur Signale, die das Modell stark genug einschätzt, gehen raus. Jede Woche an neuen Spielen nachgeprüft – was nicht mehr trägt, wird abgeschaltet.</p></div>
 <div class="box"><h3>💶 Mindestquote</h3><p>Bei jedem Signal steht, ab welcher Quote es sich auf Dauer rechnet. Liegt die Quote darunter: nicht setzen.</p></div>
 <div class="box"><h3>📏 Einsatz in Einheiten</h3><p>0,5 bis 2 Einheiten je nach Stärke des Signals – nie mehr setzen, als man verlieren kann.</p></div>
 <div class="box"><h3>📊 Offene Bilanz</h3><p>Jedes Ergebnis steht auf der <a href="/ergebnisse">Ergebnisseite</a>. Nichts gelöscht, nichts ausgewählt.</p></div>
 </div>
-<h2>Gratis oder Premium</h2>
+<h2 id="preis">Gratis oder Premium</h2>
 <div class="grid">
 <div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><a class="btn k" href="${freeLink}" style="margin-top:14px">Kanal öffnen</a></div>
 <div class="price"><h3 style="margin:0 0 6px;position:relative;z-index:1">🔒 PREMIUM</h3><b style="position:relative;z-index:1">20 € / Monat</b><p><a href="#test">🎁 Erst 24 Stunden kostenlos testen</a></p><p>Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
@@ -2329,7 +2345,7 @@ document.getElementById("trial").addEventListener("submit", async function (e) {
   } catch (err) { out.textContent = "Keine Verbindung, bitte später erneut versuchen."; }
 });
 </script>
-<h2>Häufige Fragen</h2>
+<h2 id="faq">Häufige Fragen</h2>
 <dl>
 <dt>Kann ich Premium erst testen?</dt><dd>Ja, 24 Stunden kostenlos. Einfach <a href="#test">oben anfragen</a> – du bekommst den Testzugang auf Telegram. Er endet automatisch – kein Abo, keine Kündigung nötig.</dd>
 <dt>Wie viele Signale gibt es?</dt><dd>Je nach Spieltag mehrere pro Tag, am Wochenende mehr.</dd>
