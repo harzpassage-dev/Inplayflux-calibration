@@ -412,3 +412,29 @@ test("start page trial form: a Telegram name is enough, the request reaches the 
   assert.match(msg.text, /@max_muster/);
   assert.equal((await post({ name: "Max", telegram: "max_muster" }, "4")).status, 400, "normal contact form still needs an email");
 });
+
+test("partner page: marked as advertising, rules, join form reaches the owner, bad channel links are refused", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const html = await (await worker.fetch(new Request("https://moneybag-signals.com/partner"), env, {})).text();
+  assert.match(html, /Werbung/);
+  assert.match(html, /Gewinne <b>und<\/b> Verluste/);
+  assert.match(html, /id="partner"/);
+  for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
+  const post = (body, ip) => worker.fetch(new Request("https://x/api/contact", { method: "POST", headers: { "CF-Connecting-IP": ip }, body: JSON.stringify(body) }), env, {});
+  const base = { kind: "partner", name: "Max", telegram: "@max_muster", message: "Statistik-Tipps zur 2. Liga" };
+  assert.equal((await post({ ...base, channel: "https://evil.example/x" }, "1")).status, 400);
+  assert.equal((await post({ ...base, channel: "t.me/tippkanal", message: "" }, "2")).status, 400);
+  assert.equal((await post({ ...base, channel: "t.me/tippkanal", telegram: "" }, "3")).status, 400);
+  const ok = await post({ ...base, channel: "@tippkanal" }, "4");
+  assert.equal(ok.status, 200);
+  const msg = net.sent.find((m) => m.chat_id === "777");
+  assert.match(msg.text, /Partner-Anfrage/);
+  assert.match(msg.text, /Kanal: https:\/\/t\.me\/tippkanal/);
+  assert.match(msg.text, /Beschreibung: Statistik-Tipps/);
+  const land = await (await worker.fetch(new Request("https://x/"), env, {})).text();
+  assert.match(land, /href="\/partner"/);
+  const sm = await (await worker.fetch(new Request("https://moneybag-signals.com/sitemap.xml"), env, {})).text();
+  assert.match(sm, /\/partner<\/loc>/);
+  assert.equal((await worker.fetch(new Request("https://x/partner/unknown.png"), env, {})).status, 403, "only listed banners are served");
+});

@@ -244,6 +244,16 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-30: partner page **`/partner`** (owner's idea: network of trusted Telegram channels that recommend each other).
+  Marked "Partner-Kanäle · gegenseitige Empfehlung (Werbung)" (UWG), five rules (wins and losses shown, no guaranteed
+  wins, no fixed matches/prepayment, 18+ note, active ≥ ~1 month), disclaimer for third-party content, join form
+  `#mitmachen` → `/api/contact` `kind: "partner"` (name, channel `partnerChannel()` = t.me link or @name, description,
+  Telegram name and/or email, two confirmations) → bot DM "🤝 Neue Partner-Anfrage". Partners are added by hand to
+  `PARTNERS` ([name, link, text, topic, banner]) after the owner checked them; banners go to `worker/public/partner/`
+  (served only if listed, own assets, links `rel="sponsored"`); no partner yet → "Das Netzwerk startet gerade".
+  Footer links, robots.txt, sitemap; privacy policy section 5 mentions the form. Owner's message template for channel
+  admins given in chat (German, asks for link, 1–2 sentences, banner ~1200×400 with permission). Test "partner page".
+
 - 2026-10-30: partnership request sent by the owner from harzpassage@gmx.de to hello@inplayflux.com (English email:
   partner box + link on our site, free-channel mentions, their referral link, MoneyBag promotes InPlayFlux in the
   German-speaking market; asks for written permission to use signals from the owner's strategies in a paid channel +

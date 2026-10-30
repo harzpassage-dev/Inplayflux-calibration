@@ -2022,7 +2022,7 @@ ${profit}
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal – oder Premium 24 Stunden kostenlos testen:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a> <a class="cta k" href="/#test">🎁 24 h gratis testen</a>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a> · <a href="/videos">Videos</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -2052,7 +2052,7 @@ main p{color:#222}.note{color:var(--muted);font-size:14px}
 footer{margin-top:40px;background:#111;color:#aaa;font-size:13px;padding:20px 0 28px}footer a{color:#ddd}
 @media(max-width:520px){.hero h1{font-size:28px}.hero{background:linear-gradient(115deg,#111 0 76%,var(--red) 76% 86%,#111 86%)}}`;
 const magHead = (title) => `<header class="hero"><div class="wrap">${LOGO_HTML}<h1>${title}</h1></div></header>`;
-const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
+const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
 
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
 // variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (address lines separated by
@@ -2116,6 +2116,84 @@ ${ogMeta("MoneyBag – Daten-Videos", "Kurze Videos mit eigenen Fußball-Auswert
 <p style="margin-top:22px">Kurze Videos mit unseren eigenen Auswertungen – nur Zahlen, keine Tipps. Jede Zahl wurde in beiden Hälften des Zeitraums geprüft; die Datenbasis steht am Ende jedes Videos.</p>
 <div class="vids">${cards}</div>
 <div class="cta">Neue Auswertung jede Woche: <a href="/#daten">Daten der Woche</a> · Alle Signale mit Ergebnis: <a href="/ergebnisse">Ergebnisse</a> · <a href="/#test">24 h gratis testen</a></div>
+</main>${MAG_FOOT}</body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } });
+}
+
+// "/partner" (since 2026-10-30, owner's idea): network of trusted Telegram channels that recommend each other
+// (cross-promotion). Marked as advertising/mutual recommendation (UWG § 5a). Partners are added by hand after the
+// owner checked them: [name, t.me link, description, topic, banner file in public/partner/ or ""]. Banners are served
+// from our own assets (no Telegram images embedded, so the privacy policy stays as it is).
+const PARTNERS = [];
+const PARTNER_RULES = [
+  "zeigt Gewinne <b>und</b> Verluste – nicht nur Treffer",
+  "verspricht keine sicheren Gewinne",
+  "keine „Fixed Matches“, keine Vorkasse-Angebote",
+  "weist auf 18+ und verantwortungsvolles Spielen hin",
+  "ist seit mindestens etwa einem Monat aktiv",
+];
+const partnerChannel = (v) => {
+  const s = String(v || "").trim();
+  let m = s.match(/^(?:https?:\/\/)?(?:t\.me|telegram\.me)\/(\+?[A-Za-z0-9_-]{4,64})\/?$/i);
+  if (m) return "https://t.me/" + m[1];
+  m = s.match(/^@?([A-Za-z][A-Za-z0-9_]{4,31})$/);
+  return m ? "https://t.me/" + m[1] : null;
+};
+function partnerPage() {
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const cards = PARTNERS.map(([name, link, text, topic, banner]) => `<div class="pc">${banner ? `<img src="/partner/${esc(banner)}" alt="${esc(name)}" loading="lazy">` : `<div class="pn">${esc(name)}</div>`}
+<div class="pb"><small>${esc(topic)}</small><h3>${esc(name)}</h3><p>${esc(text)}</p><a class="btn k" href="${esc(link)}" rel="noopener sponsored" target="_blank">Zum Kanal →</a></div></div>`).join("");
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – Partner-Netzwerk</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/partner"><meta name="description" content="Partner-Netzwerk seriöser Telegram-Kanäle rund um Fußball-Statistik: gegenseitige Empfehlung, klare Regeln, offene Ergebnisse.">
+${ogMeta("MoneyBag – Partner-Netzwerk", "Seriöse Telegram-Kanäle, die sich gegenseitig empfehlen – mit klaren Regeln.", "/partner")}
+<style>${MAG_CSS}
+.ad{display:inline-block;background:#111;color:#fff;font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;margin-top:22px}
+.rules{list-style:none;padding:0;margin:12px 0 0}.rules li{padding:8px 0 8px 30px;position:relative;border-bottom:1px solid var(--line)}
+.rules li:before{content:"✓";position:absolute;left:4px;color:var(--red);font-weight:900}
+.pcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px}
+.pc{border:2px solid #111;background:#fff;display:flex;flex-direction:column}.pc img{width:100%;aspect-ratio:3/1;object-fit:cover;display:block;background:#111}
+.pn{aspect-ratio:3/1;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font:italic 900 26px/1.1 Arial,sans-serif;text-transform:uppercase;padding:10px;text-align:center;border-bottom:4px solid var(--red)}
+.pb{padding:14px}.pb small{color:var(--red);font-weight:900;text-transform:uppercase;letter-spacing:1px;font-size:12px}.pb h3{margin:4px 0 6px}.pb p{margin:0 0 12px}
+.empty{background:#fff;border-left:6px solid var(--red);padding:16px 18px;margin-top:16px}
+.join{background:#111;color:#ddd;padding:20px;margin-top:14px}.join input,.join textarea{display:block;width:100%;box-sizing:border-box;margin:0 0 10px;padding:12px;border:0;font:inherit;font-size:16px}
+.join textarea{min-height:90px;resize:vertical}.join .chk{display:flex;gap:10px;align-items:flex-start;margin:6px 0 12px;color:#fff}.join .chk input{width:auto;margin:4px 0 0}
+.join a{color:#ff6b72}.join p,.join .note{color:#ddd}
+.btn{display:inline-block;background:var(--red);color:#fff;border:0;font:inherit;font-weight:900;padding:12px 18px;text-decoration:none;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}.btn.k{background:#111}</style></head><body>${magHead("Partner-Netzwerk")}<main class="wrap">
+<span class="ad">Partner-Kanäle · gegenseitige Empfehlung (Werbung)</span>
+<p>Wir empfehlen Telegram-Kanäle, die ehrlich arbeiten – und sie empfehlen uns. So finden Leser seriöse Angebote, und gute Kanäle wachsen gemeinsam.</p>
+<h2>Unsere Regeln für Partner</h2><p>Jeder Partner …</p><ul class="rules">${PARTNER_RULES.map((r) => `<li>${r}</li>`).join("")}</ul>
+<h2>Partner</h2>${cards ? `<div class="pcs">${cards}</div>` : `<div class="empty"><b>Das Netzwerk startet gerade.</b> Werde einer der ersten Partner – Anfrage unten.</div>`}
+<p class="note">Wir prüfen Partner nach den Regeln oben, haben aber keinen Einfluss auf deren Inhalte und übernehmen dafür keine Verantwortung. Hinweise auf Verstöße bitte an <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> – wir entfernen den Partner dann.</p>
+<h2 id="mitmachen">Partner werden</h2>
+<div class="join"><p style="margin:0 0 14px">Du betreibst einen Telegram-Kanal, der zu unseren Regeln passt? Schick uns eine Anfrage – wir melden uns auf Telegram. Dein Banner oder Logo (am besten quer, ca. 1200×400) schickst du uns danach dort.</p>
+<form id="partner"><input id="p-name" placeholder="Dein Name" maxlength="100" autocomplete="name" required>
+<input id="p-channel" placeholder="Kanal-Link, z. B. t.me/deinkanal" maxlength="100" autocapitalize="none" autocorrect="off" required>
+<textarea id="p-text" placeholder="Worum geht es in deinem Kanal? (1–2 Sätze)" maxlength="300" required></textarea>
+<input id="p-tg" placeholder="Dein Telegram-Name, z. B. @max_muster" maxlength="40" autocapitalize="none" autocorrect="off">
+<input id="p-mail" type="email" placeholder="oder E-Mail (optional)" maxlength="150" autocomplete="email">
+<label class="chk"><input type="checkbox" id="p-rules" required> Mein Kanal erfüllt die Regeln oben, und ich empfehle MoneyBag im Gegenzug in meinem Kanal.</label>
+<label class="chk"><input type="checkbox" id="p-age" required> Ich bin mindestens 18 Jahre alt und betreibe den Kanal selbst.</label>
+<button type="submit" class="btn">Anfrage senden</button>
+<p id="p-out" class="note" style="margin:12px 0 0;color:#fff"></p></form>
+<p class="note" style="margin:10px 0 0">Deine Angaben nutzen wir nur für diese Anfrage (<a href="/datenschutz">Datenschutz</a>). Lieber per E-Mail? <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a></p></div>
+<script>
+document.getElementById("partner").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  var out = document.getElementById("p-out");
+  if (!document.getElementById("p-rules").checked || !document.getElementById("p-age").checked) { out.textContent = "Bitte beide Häkchen setzen."; return; }
+  out.textContent = "Sende …";
+  try {
+    var r = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      kind: "partner", name: document.getElementById("p-name").value, channel: document.getElementById("p-channel").value,
+      message: document.getElementById("p-text").value, telegram: document.getElementById("p-tg").value,
+      email: document.getElementById("p-mail").value }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.ok) { out.textContent = "✅ Danke! Wir schauen uns deinen Kanal an und melden uns."; e.target.reset(); }
+    else out.textContent = d.error || "Senden fehlgeschlagen, bitte später erneut versuchen.";
+  } catch (err) { out.textContent = "Keine Verbindung, bitte später erneut versuchen."; }
+});
+</script>
+<div class="cta" style="background:#111;color:#fff;padding:20px;margin-top:30px">Unsere eigenen Zahlen, offen mit allen Verlusten: <a style="color:#ff6b72;font-weight:900" href="/ergebnisse">Ergebnisse</a> · <a style="color:#ff6b72;font-weight:900" href="/videos">Daten-Videos</a></div>
 </main>${MAG_FOOT}</body></html>`;
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } });
 }
@@ -2255,7 +2333,7 @@ document.getElementById("trial").addEventListener("submit", async function (e) {
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -2292,7 +2370,7 @@ function legalPage(env, kind) {
 <h2>2. Das Wichtigste in Kürze</h2><p>Diese Website verwendet <b>keine Analyse- oder Tracking-Tools, keine Werbung und keine Social-Media-Plugins</b>. Es wird nur ein technisch notwendiges Cookie für Premium-Kunden gesetzt. Daten werden nur verarbeitet, soweit es für den Betrieb der Website, die Beantwortung von Anfragen und die Abwicklung des Premium-Abos nötig ist.</p>
 <h2>3. Hosting und Server-Logdaten</h2><p>Die Website läuft bei Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA. Beim Aufruf jeder Seite verarbeitet Cloudflare technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browser- und Gerätetyp. Das dient der Auslieferung der Seiten, der Sicherheit (z. B. Schutz vor Angriffen) und der Fehlersuche. Protokolle werden nur für wenige Tage gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, funktionierenden Angebot). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert (Angemessenheitsbeschluss der EU-Kommission, Art. 45 DSGVO). Mehr: <a href="https://www.cloudflare.com/de-de/privacypolicy/">cloudflare.com/privacypolicy</a>.</p>
 <h2>4. Cookie und lokaler Speicher</h2><p>Öffnet ein Premium-Kunde seinen persönlichen Zugangslink, wird das Cookie <b>mb_access</b> gesetzt. Es enthält nur den Zugangscode und läuft ab, wenn der Zugang endet. Ohne dieses Cookie funktioniert der Zugang nicht; es ist technisch notwendig (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. b DSGVO). Im Premium-Tool werden Einstellungen und der Verlauf nur im lokalen Speicher deines Browsers abgelegt und nicht an uns übertragen. Auf der Startseite, der Ergebnisseite und den Rechtstexten werden keine Cookies gesetzt.</p>
-<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; Mails an ${email} werden über Cloudflare (Email Routing) an unser Postfach bei GMX (1&amp;1 Mail &amp; Media GmbH) weitergeleitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
+<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Beim Formular „Partner werden“ (Seite /partner) sind es Name, Link und Beschreibung deines Kanals, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigungen; ein Banner, das du uns danach schickst, zeigen wir nur nach deiner Zustimmung auf der Partner-Seite. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; Mails an ${email} werden über Cloudflare (Email Routing) an unser Postfach bei GMX (1&amp;1 Mail &amp; Media GmbH) weitergeleitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
 <h2>6. Premium-Abo und Zahlung</h2><p>Für das Abo verarbeiten wir deinen Namen, deine E-Mail-Adresse, ggf. deinen Telegram-Namen sowie Zahlungsdaten (Art. 6 Abs. 1 lit. b DSGVO). Die Zahlung erfolgt über PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., 22–24 Boulevard Royal, L-2449 Luxemburg); dabei gelten auch die Datenschutzhinweise von PayPal: <a href="https://www.paypal.com/de/legalhub/privacy-full">paypal.com/de/legalhub/privacy-full</a>. Rechnungs- und Zahlungsbelege bewahren wir nach den gesetzlichen Fristen (bis zu 10 Jahre, § 147 AO, § 257 HGB) auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
 <h2>7. Telegram</h2><p>Unsere Kanäle (Gratis- und Premium-Kanal) und unser Bot laufen über den Messenger-Dienst Telegram. Wenn du einem Kanal beitrittst, verarbeitet Telegram deine Daten nach eigenen Bestimmungen: <a href="https://telegram.org/privacy">telegram.org/privacy</a>. Wir sehen dabei nur, was Telegram uns anzeigt (z. B. Profilname und Nutzername von Kanalmitgliedern) und nutzen das nur zur Verwaltung des Zugangs (Art. 6 Abs. 1 lit. b DSGVO). Telegram kann Daten außerhalb der EU verarbeiten.</p>
 <h2>8. Quoten-Abfrage im Premium-Tool (optional)</h2><p>Im Premium-Tool kannst du freiwillig einen eigenen Schlüssel für „The Odds API“ eintragen. Nur dann ruft dein Browser Quoten direkt bei diesem Anbieter ab; dabei werden deine IP-Adresse und dein Schlüssel an ihn übermittelt (Art. 6 Abs. 1 lit. a DSGVO, durch dein Eintragen). Ohne Schlüssel findet keine Verbindung statt.</p>
@@ -3114,6 +3192,16 @@ export default {
     }
 
     if (url.pathname === "/videos" || url.pathname === "/videos/") return videosPage();
+    if (url.pathname === "/partner" || url.pathname === "/partner/") return partnerPage();
+    {
+      const pm = url.pathname.match(/^\/partner\/([A-Za-z0-9_-]+\.(png|jpg|webp))$/);
+      if (pm && PARTNERS.some((p) => p[4] === pm[1])) {
+        const a = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin)));
+        if (!a.ok) return new Response("Not found", { status: 404 });
+        const type = pm[2] === "png" ? "image/png" : pm[2] === "webp" ? "image/webp" : "image/jpeg";
+        return new Response(a.body, { headers: { "Content-Type": type, "Cache-Control": "public, max-age=86400" } });
+      }
+    }
     {
       const vm = url.pathname.match(/^\/videos\/([a-z0-9]+)\.(mp4|jpg)$/);
       if (vm && VIDEOS.some(([slug]) => slug === vm[1])) {
@@ -3146,11 +3234,11 @@ export default {
     }
     // --- Search engines: only the public results page is meant to be found ---
     if (url.pathname === "/robots.txt") {
-      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nAllow: /videos\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nAllow: /videos\nAllow: /partner\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
         { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
     if (url.pathname === "/sitemap.xml") {
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n<url><loc>${url.origin}/videos</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n<url><loc>${url.origin}/videos</loc><changefreq>weekly</changefreq></url>\n<url><loc>${url.origin}/partner</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
         { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
 
@@ -3733,10 +3821,16 @@ export default {
       const email = String(body.email || "").trim().slice(0, 150);
       const message = String(body.message || "").trim().slice(0, 500);
       // Start page trial form: a Telegram username is enough as contact (email optional there).
-      const trial = body.kind === "trial";
+      // Partner page join form (since 30.10.): channel link + description required, contact via Telegram or email.
+      const partner = body.kind === "partner";
+      const trial = body.kind === "trial" || partner;
       const tg = String(body.telegram || "").trim().replace(/^@/, "").slice(0, 40);
       const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       const tgOk = /^[A-Za-z0-9_]{5,32}$/.test(tg);
+      const channel = partner ? partnerChannel(body.channel) : null;
+      if (partner && (!channel || !message)) {
+        return jsonResponse({ error: "Bitte einen gültigen Kanal-Link (t.me/…) und 1–2 Sätze zu deinem Kanal angeben." }, 400);
+      }
       if (!name || (trial ? !(emailOk || tgOk) || (email && !emailOk) || (tg && !tgOk) : !emailOk)) {
         return jsonResponse({ error: trial ? "Bitte Name und deinen Telegram-Namen (@…) oder eine E-Mail-Adresse angeben." : "Bitte Name und eine gültige E-Mail-Adresse angeben." }, 400);
       }
@@ -3753,11 +3847,13 @@ export default {
       await env.ACCESS_KV.put(rateKey, "1", { expirationTtl: 60 });
 
       const lines = [
-        trial ? "🎁 Neue Anfrage: 24h-Test Premium (Startseite)" : "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
+        partner ? "🤝 Neue Partner-Anfrage (Seite /partner)" : trial ? "🎁 Neue Anfrage: 24h-Test Premium (Startseite)" : "📬 Neue Kontaktanfrage (MoneyBag Analyst, Formular)",
         `Name: ${name}`,
+        channel ? `Kanal: ${channel}` : null,
         tg ? `Telegram: @${tg} → https://t.me/${tg}` : null,
         !email ? null : looksLikeFakeEmail(email) ? `E-Mail: ${email} ⚠️ wirkt wie Fake-/Wegwerf-Adresse` : `E-Mail: ${email}`,
-        message ? `Nachricht: ${message}` : null,
+        message ? `${partner ? "Beschreibung" : "Nachricht"}: ${message}` : null,
+        partner ? "Regeln + Gegen-Empfehlung + 18+ bestätigt. Banner per Telegram anfordern." : null,
       ].filter(Boolean);
       const sent = await sendTelegramMessage(env, env.ADMIN_CHAT_ID, lines.join("\n"));
       if (!sent) {
