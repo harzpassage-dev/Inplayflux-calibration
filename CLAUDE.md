@@ -244,6 +244,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-30: partnership request sent by the owner from harzpassage@gmx.de to hello@inplayflux.com (English email:
+  partner box + link on our site, free-channel mentions, their referral link, MoneyBag promotes InPlayFlux in the
+  German-speaking market; asks for written permission to use signals from the owner's strategies in a paid channel +
+  optional API access), attached image `marketing/inplayflux-partner.png` (source `inplayflux-partner.html`, text only,
+  no InPlayFlux logo, partner box labelled "Mockup · proposed"). Nothing about a partnership on the live site until they
+  agree; then build the partner box (and the blocked own premium format may be revisited with their written OK).
+
 - 2026-10-30: video page **`/videos`** (owner's choice "MoneyBag-Fassungen"): MoneyBag versions of all 14 statistics
   videos, same numbers, MoneyBag speed logo instead of "⚽ TORMINUTE", red/black look, "@torminute" → "Mehr Daten:
   moneybag-signals.com", comment calls removed (`marketing/moneybag-videos.mjs [slug …]` → `worker/public/videos/<slug>.mp4`
