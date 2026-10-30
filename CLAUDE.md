@@ -245,7 +245,7 @@ then decide per tier on the new days and apply.
 ## Change log (latest first)
 
 - 2026-10-30: partner page **`/partner`** (owner's idea: network of trusted Telegram channels that recommend each other).
-  Marked "Partner-Kanäle · gegenseitige Empfehlung (Werbung)" (UWG), five rules (wins and losses shown, no guaranteed
+  Marked "Partner-Kanäle · gegenseitige Empfehlung (Werbung)" (UWG), section "Warum dieses Netzwerk wichtig ist" (4 boxes: fake channels, orientation, together, openness), five rules (wins and losses shown, no guaranteed
   wins, no fixed matches/prepayment, 18+ note, active ≥ ~1 month), disclaimer for third-party content, join form
   `#mitmachen` → `/api/contact` `kind: "partner"` (name, channel `partnerChannel()` = t.me link or @name, description,
   Telegram name and/or email, two confirmations) → bot DM "🤝 Neue Partner-Anfrage". Partners are added by hand to

@@ -419,6 +419,7 @@ test("partner page: marked as advertising, rules, join form reaches the owner, b
   const html = await (await worker.fetch(new Request("https://moneybag-signals.com/partner"), env, {})).text();
   assert.match(html, /Werbung/);
   assert.match(html, /Gewinne <b>und<\/b> Verluste/);
+  assert.match(html, /Warum dieses Netzwerk wichtig ist/);
   assert.match(html, /id="partner"/);
   for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
   const post = (body, ip) => worker.fetch(new Request("https://x/api/contact", { method: "POST", headers: { "CF-Connecting-IP": ip }, body: JSON.stringify(body) }), env, {});

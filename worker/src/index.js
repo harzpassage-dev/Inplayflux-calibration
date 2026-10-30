@@ -2148,6 +2148,7 @@ function partnerPage() {
 ${ogMeta("MoneyBag – Partner-Netzwerk", "Seriöse Telegram-Kanäle, die sich gegenseitig empfehlen – mit klaren Regeln.", "/partner")}
 <style>${MAG_CSS}
 .ad{display:inline-block;background:#111;color:#fff;font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;margin-top:22px}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:12px}.why>div{background:#fff;border-left:6px solid var(--red);padding:14px 16px}.why h3{margin:0 0 6px;font-size:17px}.why p{margin:0}
 .rules{list-style:none;padding:0;margin:12px 0 0}.rules li{padding:8px 0 8px 30px;position:relative;border-bottom:1px solid var(--line)}
 .rules li:before{content:"✓";position:absolute;left:4px;color:var(--red);font-weight:900}
 .pcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:16px}
@@ -2161,6 +2162,11 @@ ${ogMeta("MoneyBag – Partner-Netzwerk", "Seriöse Telegram-Kanäle, die sich g
 .btn{display:inline-block;background:var(--red);color:#fff;border:0;font:inherit;font-weight:900;padding:12px 18px;text-decoration:none;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}.btn.k{background:#111}</style></head><body>${magHead("Partner-Netzwerk")}<main class="wrap">
 <span class="ad">Partner-Kanäle · gegenseitige Empfehlung (Werbung)</span>
 <p>Wir empfehlen Telegram-Kanäle, die ehrlich arbeiten – und sie empfehlen uns. So finden Leser seriöse Angebote, und gute Kanäle wachsen gemeinsam.</p>
+<h2>Warum dieses Netzwerk wichtig ist</h2>
+<div class="why"><div><h3>🚩 Viel Schein auf Telegram</h3><p>Viele Tipp-Kanäle zeigen nur ihre Treffer, löschen Verluste, posten bearbeitete Screenshots oder verkaufen angeblich „sichere“ Spiele. Für Leser ist kaum zu erkennen, wem man trauen kann.</p></div>
+<div><h3>🧭 Orientierung für Leser</h3><p>Hier stehen nur Kanäle, die sich an feste, offene Regeln halten. Wer einen Kanal aus diesem Netzwerk findet, weiß, worauf er sich verlassen kann – und worauf nicht: auch gute Kanäle verlieren mal.</p></div>
+<div><h3>🤝 Gemeinsam statt allein</h3><p>Ehrliche Kanäle wachsen langsamer als laute. Wenn sie sich gegenseitig empfehlen, erreichen sie mehr Leser – ohne gekaufte Anzeigen und ohne leere Versprechen.</p></div>
+<div><h3>📊 Offenheit als Standard</h3><p>Wir zeigen jedes eigene Ergebnis auf unserer <a href="/ergebnisse">Ergebnisseite</a>, auch die Verluste. Genau diese Offenheit erwarten wir von jedem Partner.</p></div></div>
 <h2>Unsere Regeln für Partner</h2><p>Jeder Partner …</p><ul class="rules">${PARTNER_RULES.map((r) => `<li>${r}</li>`).join("")}</ul>
 <h2>Partner</h2>${cards ? `<div class="pcs">${cards}</div>` : `<div class="empty"><b>Das Netzwerk startet gerade.</b> Werde einer der ersten Partner – Anfrage unten.</div>`}
 <p class="note">Wir prüfen Partner nach den Regeln oben, haben aber keinen Einfluss auf deren Inhalte und übernehmen dafür keine Verantwortung. Hinweise auf Verstöße bitte an <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a> – wir entfernen den Partner dann.</p>
