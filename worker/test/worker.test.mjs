@@ -327,17 +327,22 @@ test("start page: shows the weekly own analysis (Daten der Woche) with bars and 
   assert.match(html, /eigene Auswertung/);
 });
 
-test("videos page: 14 MoneyBag videos from our own assets, Range passed on, no Torminute name", async () => {
+test("videos page: 14 MoneyBag videos from our own assets, byte ranges for Safari, no Torminute name", async () => {
   mockNet({ feed: [] });
-  let seen = null;
-  const env = makeEnv({ ASSETS: { fetch: (req) => { seen = req; return new Response("MP4", { status: 206, headers: { "Content-Range": "bytes 0-2/3" } }); } } });
+  const env = makeEnv({ ASSETS: { fetch: () => new Response("0123456789") } });
   const html = await (await worker.fetch(new Request("https://moneybag-signals.com/videos"), env, {})).text();
   assert.equal((html.match(/<video /g) || []).length, 14);
   assert.doesNotMatch(html, /torminute|youtube|tiktok/i);
-  const v = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4", { headers: { Range: "bytes=0-2" } }), env, {});
+  const v = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4", { headers: { Range: "bytes=2-4" } }), env, {});
   assert.equal(v.status, 206);
   assert.equal(v.headers.get("Content-Type"), "video/mp4");
-  assert.equal(seen.headers.get("Range"), "bytes=0-2");
+  assert.equal(v.headers.get("Content-Range"), "bytes 2-4/10");
+  assert.equal(await v.text(), "234");
+  const full = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4"), env, {});
+  assert.equal(full.status, 200);
+  assert.equal(full.headers.get("Accept-Ranges"), "bytes");
+  const tail = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4", { headers: { Range: "bytes=-3" } }), env, {});
+  assert.equal(await tail.text(), "789");
   const sm = await (await worker.fetch(new Request("https://moneybag-signals.com/sitemap.xml"), env, {})).text();
   assert.match(sm, /\/videos<\/loc>/);
 });

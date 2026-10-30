@@ -248,7 +248,7 @@ then decide per tier on the new days and apply.
   videos, same numbers, MoneyBag speed logo instead of "⚽ TORMINUTE", red/black look, "@torminute" → "Mehr Daten:
   moneybag-signals.com", comment calls removed (`marketing/moneybag-videos.mjs [slug …]` → `worker/public/videos/<slug>.mp4`
   720×1280 ~0.6 MB + `<slug>.jpg` poster; it refuses to write a video that still contains "torminute"). Served from our
-  own assets (`VIDEOS` list, Range passed on for iPad seeking, no YouTube/TikTok player, no cookies → privacy policy
+  own assets (`VIDEOS` list, byte ranges (206) cut in the worker because the asset binding returned 200 for Range requests and Safari/iPad only plays ranged video, no YouTube/TikTok player, no cookies → privacy policy
   unchanged); links in footers and under "Daten der Woche"; in robots.txt and the sitemap. Torminute stays separate
   (never link /videos from Torminute). For every new Torminute video: render the MoneyBag version and add it on top of
   `VIDEOS` (test expects the count). Test "videos page".

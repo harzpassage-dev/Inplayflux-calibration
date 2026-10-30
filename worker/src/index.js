@@ -3117,12 +3117,24 @@ export default {
     {
       const vm = url.pathname.match(/^\/videos\/([a-z0-9]+)\.(mp4|jpg)$/);
       if (vm && VIDEOS.some(([slug]) => slug === vm[1])) {
-        // Pass the original request on so Range requests (video seeking on iPhone/iPad) keep working.
-        const a = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin), { headers: request.headers }));
-        const h = new Headers(a.headers);
-        h.set("Content-Type", vm[2] === "mp4" ? "video/mp4" : "image/jpeg");
-        h.set("Cache-Control", "public, max-age=604800");
-        return new Response(a.body, { status: a.status, headers: h });
+        // Safari / iPad only plays video that is served in byte ranges (206). The asset binding returns the whole
+        // file, so the range is cut here (files are ~0.6 MB).
+        const a = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin)));
+        if (!a.ok) return new Response("Not found", { status: 404 });
+        const type = vm[2] === "mp4" ? "video/mp4" : "image/jpeg";
+        const buf = await a.arrayBuffer();
+        const base = { "Content-Type": type, "Cache-Control": "public, max-age=604800", "Accept-Ranges": "bytes" };
+        const rm = (request.headers.get("Range") || "").match(/^bytes=(\d*)-(\d*)$/);
+        if (rm && (rm[1] || rm[2])) {
+          let start = rm[1] ? parseInt(rm[1], 10) : buf.byteLength - parseInt(rm[2], 10);
+          let end = rm[1] && rm[2] ? Math.min(parseInt(rm[2], 10), buf.byteLength - 1) : buf.byteLength - 1;
+          start = Math.max(0, start);
+          if (start > end || start >= buf.byteLength) {
+            return new Response(null, { status: 416, headers: { ...base, "Content-Range": `bytes */${buf.byteLength}` } });
+          }
+          return new Response(buf.slice(start, end + 1), { status: 206, headers: { ...base, "Content-Range": `bytes ${start}-${end}/${buf.byteLength}`, "Content-Length": String(end - start + 1) } });
+        }
+        return new Response(buf, { headers: { ...base, "Content-Length": String(buf.byteLength) } });
       }
     }
     if (url.pathname === "/og.png") {
