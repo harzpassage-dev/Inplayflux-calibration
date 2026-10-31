@@ -709,6 +709,12 @@ then decide per tier on the new days and apply.
   (no paying customers yet, marketplace brings little reach); reconsider at ~10–20 customers, after InPlayFlux's OK; ask
   Whop support first whether German football-tip subscriptions are allowed.
 
+- **Plan from 31.10. (owner's "Was könnten wir noch verbessern")**: (1) profit / market check per tier from the admin results
+  CSV, (2) **owner said yes 31.10.**: stop posting tips that lose money at their signal quote – decide the cut per tier (e.g.
+  `signalQuote.over` below a floor, or market p above our hit rate) from ~1 week of tips with quotes (parser fixed 31.10.
+  evening), show the owner the numbers, then build it with a test; (3) Over 1.5 Test per strategy; (4) automatic 24 h trial
+  (bot creates the token and sends the link); (5) invite links per source; (6) fill the partner network; (7) legal check,
+  Gewerbe; (8) InPlayFlux answer; (9) API-Football once customers pay. Next: owner sends the 30-day CSV ~07./08.11.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
   result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
   daily fixtures call could settle all voids) once there are paying customers.
