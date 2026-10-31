@@ -486,3 +486,22 @@ test("daily report: reminds the owner to fill voids from a CSV once 10+ tips of 
   assert.match(text, /10 Tipps der letzten 7 Tage sind noch ungewertet/);
   assert.match(text, /Unklare Ergebnisse nachtragen/);
 });
+
+test("admin results CSV: last 30 days as a file with quote, market and wait columns, password needed", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  const now = Date.now();
+  const r = { tier: "o15", home: "Alpha, FC", away: "Beta", line: 1.5, minute: 60, result: "won", resultMinute: 75, units: 0.5,
+    minQuote: 1.32, quote: 1.25, quoteEstimated: true, betPlaced: false, profit: null, marketP: 0.78,
+    wait: { entry: 71, bet: true, profit: 0.2 }, postedAt: new Date(now - 3600e3).toISOString(), settledAt: new Date(now).toISOString() };
+  env.ACCESS_KV.store.set(`result:${now}:x`, JSON.stringify(r));
+  env.ACCESS_KV.meta.set(`result:${now}:x`, r);
+  assert.equal((await admin(worker, env, "/admin/api/results-csv?days=30", { headers: { Authorization: "Bearer falsch" } })).status, 401);
+  const csv = await (await admin(worker, env, "/admin/api/results-csv?days=30")).text();
+  const [head, row] = csv.trim().split("\n");
+  assert.match(head, /^postedAt,settledAt,tier,home,away,line,minute,result/);
+  assert.match(head, /marketP,waitEntry,waitBet,waitProfit/);
+  assert.match(row, /,o15,"Alpha, FC",Beta,1.5,60,won,75,0.5,1.32,1.25,true,false,,0.78,71,true,0.2,/);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.match(html, /CSV speichern \(30 Tage\)/);
+});

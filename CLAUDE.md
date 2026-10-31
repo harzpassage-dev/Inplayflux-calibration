@@ -247,6 +247,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: admin "Ergebnisse" button **"CSV speichern (30 Tage)"** (owner's wish for plan item 1, profit / market check):
+  `/admin/api/results-csv?days=N` (password, max 365) → `resultsCsv` with postedAt, settledAt, tier, teams, line, minute,
+  result, resultMinute, units, minQuote, quote, quoteEstimated, betPlaced, profit, marketP, waitEntry/Bet/Profit, filledFrom;
+  download + copy textarea fallback (iPad). Test "admin results CSV". Owner then uploads the file here for the analysis.
+
 - 2026-10-31: ROI image `marketing/roi-tabelle.png` (source `roi-tabelle.html`, design 6, 1080×1350): ROI = hit rate × quote − 1
   with live numbers (High Confidence 80.2 % → min. quote 1.25, +4/+12/+20 % at 1.30/1.40/1.50; Over 1.5 Test 75.5 % → 1.33,
   −2/+6/+13 %); note that the signal quote is often lower and waiting for 1.40 costs hits; the owner's "100 tips → 120 €"

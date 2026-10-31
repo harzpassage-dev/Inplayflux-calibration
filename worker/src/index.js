@@ -1551,6 +1551,18 @@ async function saveResult(env, t, result) {
   });
 }
 
+const RESULT_CSV_COLS = ["postedAt", "settledAt", "tier", "home", "away", "line", "minute", "result", "resultMinute", "units",
+  "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom"];
+function resultsCsv(rows) {
+  const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const lines = rows.map((r) => {
+    const w = r.wait || {};
+    const x = { ...r, waitEntry: w.entry, waitBet: w.bet, waitProfit: w.profit };
+    return RESULT_CSV_COLS.map((c) => cell(x[c])).join(",");
+  });
+  return [RESULT_CSV_COLS.join(",")].concat(lines).join("\n") + "\n";
+}
+
 // KV metadata is limited to 1024 bytes; team names are cut to stay well below.
 function resultMeta(record) {
   return { ...record, home: String(record.home || "").slice(0, 40), away: String(record.away || "").slice(0, 40) };
@@ -2676,6 +2688,7 @@ async function handleAdminPage() {
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
   <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
+  <button id="res-csv-btn" style="margin-left:6px;">CSV speichern (30 Tage)</button>
   <div id="res-out" style="margin-top:10px;"></div>
   <h4 style="margin:16px 0 6px;">Unklare Ergebnisse nachtragen</h4>
   <p style="font-size:0.8rem;color:#8891a3;margin:0 0 8px;">InPlayFlux-CSV-Export auswählen (roh oder bearbeitet). Erst Vorschau, dann Übernehmen. Nur Tipps mit „unklar“ werden geändert.</p>
@@ -3217,6 +3230,24 @@ document.getElementById('fill-prev-btn').addEventListener('click', () => fillUnc
 document.getElementById('fill-apply-btn').addEventListener('click', () => fillUnclear(true));
 document.getElementById('res7-btn').addEventListener('click', () => loadResults(7));
 document.getElementById('res30-btn').addEventListener('click', () => loadResults(30));
+document.getElementById('res-csv-btn').addEventListener('click', async () => {
+  const out = document.getElementById('res-out');
+  out.textContent = 'Erstelle CSV …';
+  try {
+    const r = await fetch('/admin/api/results-csv?days=30', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status);
+    const csv = await r.text();
+    const name = 'moneybag_ergebnisse_30tage_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    // Fallback for browsers that ignore blob downloads (some iPad browsers): show it to copy.
+    out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">' + (csv.trim().split('\\n').length - 1) +
+      ' Tipps. Datei ' + esc(name) + ' wurde gespeichert (iPad: Dateien-App → Downloads). Falls kein Download startet: Text kopieren.</div>' +
+      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
+  } catch (e) { out.textContent = e.message; }
+});
 
 document.getElementById('list-btn').addEventListener('click', async () => {
   const out = document.getElementById('list-out');
@@ -3732,6 +3763,14 @@ export default {
         days, summary: sum, open: await readTracked(env), rows,
         reportPreview: weeklyReportText(sum, new Date(to.getTime() - days * DAY_MS), to),
       });
+    }
+
+    // All settled tips of the last N days as CSV (owner, 31.10.: for the profit / market check per tier).
+    if (url.pathname === "/admin/api/results-csv" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 30, 365);
+      const rows = await listResults(env, Date.now() - days * DAY_MS);
+      return new Response(resultsCsv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
     }
 
     if (url.pathname === "/admin/api/confirm-log" && request.method === "GET") {
