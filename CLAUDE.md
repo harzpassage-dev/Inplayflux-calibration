@@ -244,6 +244,15 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: weekly routine with export 10-31 (Saturday upload; `data/inplayflux_sinyaller_2026-10-31.csv`, shift 0,
+  15,230 signals), models refitted, thresholds unchanged, goal score bands updated (points unchanged), badge "Kalibriert:
+  31.10.2026 · 15.230 Signale", report `reports/2026-10-31-recalibration.md`. Unseen 26.–31.10.: O2.5 83.3 % (102) vs raw
+  80.4 %, O3.5 76.8 % (95) vs 75.2 %, O0.5 76.6 % (47) vs 69.7 %, O0.5 line ≥ 4 9/10; O1.5 model 81.2 % (69) vs 73.6 % but
+  68.7 % the week before → stays off. Over 1.5 Test (men) 73.8 % (149 matches), since the men filter 72.1 % (68) – at the
+  cut, watch; by strategy Money Bag 74.6 % (134), Value 72.2 % (72), ValueShots15 75.9 % (29). "MoneyBag 0-0 → Goal" back
+  (147 cards, raw 66 %). "Daten der Woche" now: score at minute 60 (0:0 70 / level with goals 76 / 1-goal lead 74 /
+  2+ lead 77 %, 10,171 matches, both halves stable). Same day: admin password hint (below).
+
 - 2026-10-31: owner got a bare "unauthorized" at admin "Unklare Ergebnisse nachtragen" (password field empty after a
   reload). The admin script now wraps `fetch` for `/admin/api/*`: empty field → "Bitte oben zuerst das Admin-Passwort
   eintragen …", 401 → "Passwort falsch – …" (applies to every admin button). Test "admin page: empty or wrong password".
@@ -613,7 +622,7 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Next (from 26.10.): weekly routine done 26.10.; next Mon 02.11. bot "Wochen-Check" → new CSV → skill `wochen-routine`;
+- Next (from 31.10.): weekly routine done 31.10. (export 10-31); next ~Mon 09.11. (or 02.11. if the owner sends one); bot "Wochen-Check" → new CSV → skill `wochen-routine`;
   market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
   legal advice); start-page trial form tested by the owner 27.10. (bot DM arrived); trial flow: DM → admin

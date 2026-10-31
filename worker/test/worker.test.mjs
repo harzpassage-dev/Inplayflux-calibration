@@ -323,7 +323,7 @@ test("start page: shows the weekly own analysis (Daten der Woche) with bars and 
   const html = await (await worker.fetch(new Request("https://moneybag-signals.com/"), makeEnv(), {})).text();
   assert.match(html, /<h2 id="daten">Daten der Woche<\/h2>/);
   assert.equal((html.match(/<div class="r( top)?">/g) || []).length, 4);
-  assert.match(html, /89 %<\/span>/);
+  assert.match(html, /77 %<\/span>/);
   assert.match(html, /eigene Auswertung/);
 });
 
