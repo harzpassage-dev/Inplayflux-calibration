@@ -40,7 +40,11 @@ export function mockNet(state) {
     if (url.includes("GETAllMatches")) return state.feed === undefined ? new Response("err", { status: 500 }) : new Response(JSON.stringify(state.feed));
     if (url.includes("api.telegram.org")) {
       const body = opts.body instanceof FormData ? Object.fromEntries(opts.body.entries()) : JSON.parse(opts.body);
-      state.sent.push({ method: url.split("/").pop(), ...body });
+      const method = url.split("/").pop();
+      state.sent.push({ method, ...body });
+      if (method === "getMe") return new Response(JSON.stringify({ ok: true, result: { username: "MoneyBagTestBot" } }));
+      if (method === "createChatInviteLink") return new Response(JSON.stringify({ ok: true, result: { invite_link: "https://t.me/+trial" + nextId++ } }));
+      if (method === "banChatMember" || method === "unbanChatMember") return new Response(JSON.stringify({ ok: true, result: true }));
       return new Response(JSON.stringify({ ok: true, result: { message_id: nextId++ } }));
     }
     throw new Error("unexpected fetch " + url);

@@ -115,6 +115,95 @@ async function sendTelegramMessage(env, chatId, text, replyToMessageId) {
   return data && data.ok ? data.result : null;
 }
 
+async function tgApi(env, method, payload) {
+  const resp = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await resp.json().catch(() => null);
+  return data && data.ok ? data.result : null;
+}
+
+// Bot username for the t.me start link, from getMe, cached in KV for a day.
+async function botUsername(env) {
+  const cached = await env.ACCESS_KV.get("bot:username");
+  if (cached) return cached;
+  const me = await tgApi(env, "getMe");
+  if (!me || !me.username) return null;
+  await env.ACCESS_KV.put("bot:username", me.username, { expirationTtl: 24 * 60 * 60 });
+  return me.username;
+}
+
+// Automatic 24 h trial (since 31.10., owner's plan item 4): the start page button opens the bot with /start test.
+// One trial per Telegram user id (trial:tg:<id>, kept a year); the bot answers at once with a one-person invite link
+// to the premium channel (valid 2 h) and a 24 h tool link. trialend:<ms>:<id> marks the removal from the premium
+// channel; the minute cron (every 10 min) removes the member (ban + unban = kick, may rejoin later as a customer)
+// unless the owner sent "/behalten <id>" to the bot. TRIAL_MAX_PER_DAY guards against abuse.
+const TRIAL_HOURS = 24;
+const TRIAL_MAX_PER_DAY = 30;
+const fmtBerlin = (ms) => new Date(ms).toLocaleString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+async function startTrial(env, msg, origin) {
+  const from = msg.from || {};
+  const id = String(from.id || msg.chat.id);
+  const handle = from.username ? `@${from.username}` : [from.first_name, from.last_name].filter(Boolean).join(" ") || `ID ${id}`;
+  const mail = env.IMPRESSUM_EMAIL || CONTACT_EMAIL;
+  if (await env.ACCESS_KV.get(`trial:tg:${id}`)) {
+    await sendTelegramMessage(env, msg.chat.id, `Du hattest schon einen 24-Stunden-Test. 🙂\n\nPremium kostet 20 € im Monat, monatlich kündbar. Schreib einfach hier deine Frage oder eine E-Mail an ${mail}.`);
+    return;
+  }
+  const day = new Date().toISOString().slice(0, 10);
+  const count = Number(await env.ACCESS_KV.get(`trial:count:${day}`)) || 0;
+  if (count >= TRIAL_MAX_PER_DAY) {
+    await sendTelegramMessage(env, msg.chat.id, "Gerade gibt es sehr viele Anfragen. Wir melden uns persönlich bei dir – bitte hab etwas Geduld.");
+    await sendTelegramMessage(env, env.ADMIN_CHAT_ID, `🎁 Test-Anfrage über dem Tageslimit (${TRIAL_MAX_PER_DAY}) von ${handle} (ID ${id}) – bitte von Hand freischalten.`);
+    return;
+  }
+  const now = Date.now();
+  const endsAt = now + TRIAL_HOURS * 60 * 60 * 1000;
+  const token = randomToken();
+  await putAccess(env, token, { token, status: "trial", createdAt: now, expiresAt: endsAt, telegramId: id, auto: true });
+  const invite = await tgApi(env, "createChatInviteLink", {
+    chat_id: env.PREMIUM_CHANNEL_ID, name: `Test ${handle}`.slice(0, 32), member_limit: 1, expire_date: Math.floor(now / 1000) + 2 * 60 * 60,
+  });
+  await env.ACCESS_KV.put(`trial:tg:${id}`, JSON.stringify({ startedAt: now, endsAt, handle }), { expirationTtl: 365 * 24 * 60 * 60 });
+  await env.ACCESS_KV.put(`trial:count:${day}`, String(count + 1), { expirationTtl: 2 * 24 * 60 * 60 });
+  await env.ACCESS_KV.put(`trialend:${endsAt}:${id}`, JSON.stringify({ id, handle, endsAt }), { expirationTtl: 3 * 24 * 60 * 60 });
+  const lines = [
+    "🎁 Dein 24-Stunden-Test bei MoneyBag läuft!",
+    "",
+    invite ? `1️⃣ Premium-Kanal beitreten (Link gilt 2 Stunden, nur für dich):\n${invite.invite_link}` : "1️⃣ Die Einladung in den Premium-Kanal schicken wir dir gleich persönlich.",
+    "",
+    `2️⃣ Analyse-Tool (24 Stunden):\n${origin}/?t=${token}`,
+    "",
+    `⏰ Der Test endet am ${fmtBerlin(endsAt)} Uhr automatisch – kein Abo, nichts zu kündigen.`,
+    `📋 Alle Ergebnisse: ${RESULTS_PAGE_URL}`,
+    "",
+    "18+ · Keine Gewinngarantie · Setz nie mehr, als du verlieren kannst. Hilfe: check-dein-spiel.de",
+  ];
+  await sendTelegramMessage(env, msg.chat.id, lines.join("\n"));
+  await sendTelegramMessage(env, env.ADMIN_CHAT_ID,
+    `🎁 Automatischer 24h-Test gestartet: ${handle} (ID ${id}), endet ${fmtBerlin(endsAt)} Uhr.` +
+    (invite ? "" : "\n⚠️ Einladungslink konnte nicht erstellt werden – Bot braucht im Premium-Kanal das Recht „Nutzer einladen“. Bitte von Hand einladen.") +
+    `\nWird daraus ein zahlender Kunde, schick mir: /behalten ${id}`);
+}
+
+async function endTrials(env) {
+  const now = Date.now();
+  const list = await env.ACCESS_KV.list({ prefix: "trialend:" });
+  for (const key of list.keys) {
+    const at = Number(key.name.split(":")[1]);
+    if (!(at <= now)) continue;
+    const id = key.name.split(":")[2];
+    const ok = await tgApi(env, "banChatMember", { chat_id: env.PREMIUM_CHANNEL_ID, user_id: Number(id), until_date: Math.floor(now / 1000) + 60 });
+    await tgApi(env, "unbanChatMember", { chat_id: env.PREMIUM_CHANNEL_ID, user_id: Number(id), only_if_banned: true });
+    await env.ACCESS_KV.delete(key.name);
+    const mail = env.IMPRESSUM_EMAIL || CONTACT_EMAIL;
+    await sendTelegramMessage(env, id, `⏰ Dein 24-Stunden-Test ist vorbei – danke fürs Ausprobieren!\n\nAlle Ergebnisse (auch die Verluste): ${RESULTS_PAGE_URL}\nPremium: 20 € im Monat, monatlich kündbar. Schreib hier einfach „Premium“ oder eine E-Mail an ${mail}.`);
+    if (!ok) await sendTelegramMessage(env, env.ADMIN_CHAT_ID, `⚠️ Test von ID ${id} beendet, aber der Bot konnte ihn nicht aus dem Premium-Kanal entfernen (Recht „Mitglieder sperren“ fehlt?). Bitte von Hand entfernen.`);
+  }
+}
+
 const DISPOSABLE_EMAIL_DOMAINS = new Set([
   "mailinator.com", "guerrillamail.com", "guerrillamail.info", "temp-mail.org",
   "tempmail.com", "10minutemail.com", "10minutemail.net", "throwawaymail.com",
@@ -2309,7 +2398,7 @@ h2:before{content:"";width:28px;height:6px;background:var(--red);display:inline-
 .price b{display:block;font-size:44px;font-weight:900;color:#ff4b52;line-height:1.1}.price p{color:#ccc;margin:8px 0 0;position:relative;z-index:1;max-width:85%}.price a{color:#fff}
 .trial{background:#111;color:#fff;padding:24px}.trial p{color:#ccc}
 #trial input:not([type=checkbox]){display:block;width:100%;background:#fff;color:#111;border:0;padding:14px;margin:0 0 10px;font:inherit}
-.chk{display:flex;gap:8px;align-items:center;margin:4px 0 4px;color:#ccc}.trial .note{color:#aaa}.trial a{color:#ff6b72}
+.chk{display:flex;gap:8px;align-items:center;margin:4px 0 4px;color:#ccc}.trial .note{color:#aaa}.trial a{color:#ff6b72}.trial a.btn{color:#fff;margin-top:6px}
 .note{color:var(--muted);font-size:14px}dt{font-weight:900;margin-top:16px}dd{margin:4px 0 0;color:#333}
 footer{margin-top:48px;background:#111;color:#aaa;font-size:13px;padding:22px 0 30px}footer a{color:#ddd}
 @media(max-width:600px){h1{font-size:42px}.lead{font-size:17px}.hero{background:linear-gradient(115deg,#111 0 72%,var(--red) 72% 82%,#111 82%)}.n{border-right:0;border-bottom:1px solid var(--line)}.n b{font-size:38px}}
@@ -2343,28 +2432,14 @@ ${DATEN_DER_WOCHE.bars.map(([l, v, n], i, a) => `<div class="r${i === a.length -
 <div class="price"><h3 style="margin:0 0 6px;position:relative;z-index:1">🔒 PREMIUM</h3><b style="position:relative;z-index:1">20 € / Monat</b><p><a href="#test">🎁 Erst 24 Stunden kostenlos testen</a></p><p>Alle Signale live im Premium-Kanal: 🔥 High Confidence, 🟠 Half-Risiko, 🧪 Over 1.5 (Testphase). Anfrage per E-Mail an <a href="mailto:${mail}">${mail}</a>. Zahlung per PayPal, monatlich kündbar.</p></div>
 </div>
 <h2 id="test">24 Stunden kostenlos testen</h2>
-<div class="trial"><p style="margin:0 0 14px">Trag deinen Namen und deinen <b style="color:#fff">Telegram-Namen</b> ein – wir melden uns bei dir auf Telegram mit dem Testzugang. Der Test endet automatisch, kein Abo.</p>
-<form id="trial"><input id="t-name" placeholder="Dein Name" maxlength="100" autocomplete="name" required>
-<input id="t-tg" placeholder="Telegram-Name, z. B. @max_muster" maxlength="40" autocapitalize="none" autocorrect="off">
-<input id="t-mail" type="email" placeholder="oder E-Mail (optional)" maxlength="150" autocomplete="email">
-<label class="chk"><input type="checkbox" id="t-age" required> Ich bin mindestens 18 Jahre alt.</label>
-<button type="submit" class="btn">Test anfragen</button>
-<p id="t-out" class="note" style="margin:12px 0 0"></p></form>
-<p class="note" style="margin:10px 0 0">Deine Angaben nutzen wir nur für diese Anfrage (<a href="/datenschutz">Datenschutz</a>). Lieber per E-Mail? <a href="mailto:${mail}">${mail}</a></p></div>
+<div class="trial"><p style="margin:0 0 14px">Ein Tipp genügt: Unser Telegram-Bot schickt dir <b style="color:#fff">sofort</b> deine Einladung in den Premium-Kanal und den Link zum Analyse-Tool – rund um die Uhr. Nach 24 Stunden endet der Test automatisch, kein Abo, keine Zahlungsdaten.</p>
+<label class="chk"><input type="checkbox" id="t-age"> Ich bin mindestens 18 Jahre alt.</label>
+<a class="btn" id="t-go" href="/test-starten" rel="nofollow">🎁 Test auf Telegram starten</a>
+<p id="t-out" class="note" style="margin:12px 0 0"></p>
+<p class="note" style="margin:10px 0 0">Ein Test pro Person. Dafür speichern wir deine Telegram-Nutzer-ID (<a href="/datenschutz">Datenschutz</a>). Kein Telegram? Schreib uns: <a href="mailto:${mail}">${mail}</a></p></div>
 <script>
-document.getElementById("trial").addEventListener("submit", async function (e) {
-  e.preventDefault();
-  var out = document.getElementById("t-out");
-  if (!document.getElementById("t-age").checked) { out.textContent = "Bitte bestätige, dass du mindestens 18 bist."; return; }
-  out.textContent = "Sende …";
-  try {
-    var r = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      kind: "trial", name: document.getElementById("t-name").value, telegram: document.getElementById("t-tg").value,
-      email: document.getElementById("t-mail").value, message: "Bitte 24h-Testzugang (18+ bestätigt)" }) });
-    var d = await r.json().catch(function () { return {}; });
-    if (r.ok) { out.textContent = "✅ Danke! Wir melden uns bald bei dir."; e.target.reset(); }
-    else out.textContent = d.error || "Senden fehlgeschlagen, bitte später erneut versuchen.";
-  } catch (err) { out.textContent = "Keine Verbindung, bitte später erneut versuchen."; }
+document.getElementById("t-go").addEventListener("click", function (e) {
+  if (!document.getElementById("t-age").checked) { e.preventDefault(); document.getElementById("t-out").textContent = "Bitte bestätige zuerst, dass du mindestens 18 bist."; }
 });
 </script>
 <h2 id="faq">Häufige Fragen</h2>
@@ -2414,7 +2489,7 @@ function legalPage(env, kind) {
 <h2>2. Das Wichtigste in Kürze</h2><p>Diese Website verwendet <b>keine Analyse- oder Tracking-Tools, keine Werbung und keine Social-Media-Plugins</b>. Es wird nur ein technisch notwendiges Cookie für Premium-Kunden gesetzt. Daten werden nur verarbeitet, soweit es für den Betrieb der Website, die Beantwortung von Anfragen und die Abwicklung des Premium-Abos nötig ist.</p>
 <h2>3. Hosting und Server-Logdaten</h2><p>Die Website läuft bei Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA. Beim Aufruf jeder Seite verarbeitet Cloudflare technisch notwendige Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browser- und Gerätetyp. Das dient der Auslieferung der Seiten, der Sicherheit (z. B. Schutz vor Angriffen) und der Fehlersuche. Protokolle werden nur für wenige Tage gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren, funktionierenden Angebot). Cloudflare ist unter dem EU-US Data Privacy Framework zertifiziert (Angemessenheitsbeschluss der EU-Kommission, Art. 45 DSGVO). Mehr: <a href="https://www.cloudflare.com/de-de/privacypolicy/">cloudflare.com/privacypolicy</a>.</p>
 <h2>4. Cookie und lokaler Speicher</h2><p>Öffnet ein Premium-Kunde seinen persönlichen Zugangslink, wird das Cookie <b>mb_access</b> gesetzt. Es enthält nur den Zugangscode und läuft ab, wenn der Zugang endet. Ohne dieses Cookie funktioniert der Zugang nicht; es ist technisch notwendig (§ 25 Abs. 2 Nr. 2 TDDDG, Art. 6 Abs. 1 lit. b DSGVO). Im Premium-Tool werden Einstellungen und der Verlauf nur im lokalen Speicher deines Browsers abgelegt und nicht an uns übertragen. Auf der Startseite, der Ergebnisseite und den Rechtstexten werden keine Cookies gesetzt.</p>
-<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Beim Formular für den 24-Stunden-Test auf der Startseite sind es Name, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigung, mindestens 18 zu sein; wir melden uns dann über Telegram oder per E-Mail bei dir. Beim Formular „Partner werden“ (Seite /partner) sind es Name, Link und Beschreibung deines Kanals, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigungen; ein Banner, das du uns danach schickst, zeigen wir nur nach deiner Zustimmung auf der Partner-Seite. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; Mails an ${email} werden über Cloudflare (Email Routing) an unser Postfach bei GMX (1&amp;1 Mail &amp; Media GmbH) weitergeleitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
+<h2>5. Kontaktformular und E-Mail</h2><p>Wenn du uns über das Kontaktformular schreibst, verarbeiten wir Name, E-Mail-Adresse und Nachricht, um deine Anfrage zu beantworten. Den 24-Stunden-Test startest du über unseren Telegram-Bot: Wir speichern dann deine Telegram-Nutzer-ID, deinen Nutzernamen und den Zeitpunkt, erstellen einen persönlichen Einladungslink in den Premium-Kanal und entfernen dich nach 24 Stunden automatisch wieder aus dem Kanal; die Nutzer-ID bewahren wir ein Jahr auf, damit jede Person nur einmal testet (Art. 6 Abs. 1 lit. b und f DSGVO). Beim Formular „Partner werden“ (Seite /partner) sind es Name, Link und Beschreibung deines Kanals, Telegram-Name und/oder E-Mail-Adresse sowie deine Bestätigungen; ein Banner, das du uns danach schickst, zeigen wir nur nach deiner Zustimmung auf der Partner-Seite. Die Anfrage wird uns über den Messenger Telegram zugestellt (siehe Nr. 7). Zum Schutz vor Missbrauch wird deine IP-Adresse für 60 Sekunden gespeichert und danach automatisch gelöscht. Schreibst du uns eine E-Mail, verarbeiten wir deine Adresse und den Inhalt; Mails an ${email} werden über Cloudflare (Email Routing) an unser Postfach bei GMX (1&amp;1 Mail &amp; Media GmbH) weitergeleitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Anfragen zu einem Vertrag) bzw. lit. f DSGVO (sonstige Anfragen). Wir löschen die Daten, wenn die Anfrage erledigt ist und keine Aufbewahrungspflicht besteht.</p>
 <h2>6. Premium-Abo und Zahlung</h2><p>Für das Abo verarbeiten wir deinen Namen, deine E-Mail-Adresse, ggf. deinen Telegram-Namen sowie Zahlungsdaten (Art. 6 Abs. 1 lit. b DSGVO). Die Zahlung erfolgt über PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A., 22–24 Boulevard Royal, L-2449 Luxemburg); dabei gelten auch die Datenschutzhinweise von PayPal: <a href="https://www.paypal.com/de/legalhub/privacy-full">paypal.com/de/legalhub/privacy-full</a>. Rechnungs- und Zahlungsbelege bewahren wir nach den gesetzlichen Fristen (bis zu 10 Jahre, § 147 AO, § 257 HGB) auf (Art. 6 Abs. 1 lit. c DSGVO).</p>
 <h2>7. Telegram</h2><p>Unsere Kanäle (Gratis- und Premium-Kanal) und unser Bot laufen über den Messenger-Dienst Telegram. Wenn du einem Kanal beitrittst, verarbeitet Telegram deine Daten nach eigenen Bestimmungen: <a href="https://telegram.org/privacy">telegram.org/privacy</a>. Wir sehen dabei nur, was Telegram uns anzeigt (z. B. Profilname und Nutzername von Kanalmitgliedern) und nutzen das nur zur Verwaltung des Zugangs (Art. 6 Abs. 1 lit. b DSGVO). Telegram kann Daten außerhalb der EU verarbeiten.</p>
 <h2>8. Quoten-Abfrage im Premium-Tool (optional)</h2><p>Im Premium-Tool kannst du freiwillig einen eigenen Schlüssel für „The Odds API“ eintragen. Nur dann ruft dein Browser Quoten direkt bei diesem Anbieter ab; dabei werden deine IP-Adresse und dein Schlüssel an ihn übermittelt (Art. 6 Abs. 1 lit. a DSGVO, durch dein Eintragen). Ohne Schlüssel findet keine Verbindung statt.</p>
@@ -3282,6 +3357,11 @@ export default {
     }
 
     if (url.pathname === "/videos" || url.pathname === "/videos/") return videosPage();
+    if (url.pathname === "/test-starten") {
+      const bot = env.TELEGRAM_BOT_TOKEN ? await botUsername(env) : null;
+      if (!bot) return Response.redirect(`${url.origin}/#test`, 302);
+      return Response.redirect(`https://t.me/${bot}?start=test`, 302);
+    }
     if (url.pathname === "/partner" || url.pathname === "/partner/") return partnerPage();
     {
       const pm = url.pathname.match(/^\/partner\/([A-Za-z0-9_-]+\.(png|jpg|webp))$/);
@@ -3878,7 +3958,14 @@ export default {
       const msg = update && update.message;
       if (msg && msg.chat && msg.chat.type === "private" && env.TELEGRAM_BOT_TOKEN && env.ADMIN_CHAT_ID) {
         const isAdmin = String(msg.chat.id) === String(env.ADMIN_CHAT_ID);
-        if (isAdmin) {
+        const keep = isAdmin && msg.text && msg.text.match(/^\/behalten\s+(\d+)/);
+        if (keep) {
+          const gone = (await env.ACCESS_KV.list({ prefix: "trialend:" })).keys.filter((k) => k.name.endsWith(`:${keep[1]}`));
+          for (const k of gone) await env.ACCESS_KV.delete(k.name);
+          await sendTelegramMessage(env, msg.chat.id, gone.length ? `✅ ID ${keep[1]} bleibt im Premium-Kanal (wird nicht automatisch entfernt). Tool-Zugang bei Bedarf im Admin verlängern.` : `Für ID ${keep[1]} läuft kein Test.`);
+        } else if (!isAdmin && msg.text && /^\/start\s+test\b/.test(msg.text)) {
+          await startTrial(env, msg, url.origin);
+        } else if (isAdmin) {
           const replyTo = msg.reply_to_message && msg.reply_to_message.message_id;
           const visitorChatId = replyTo && (await env.ACCESS_KV.get(`relay:msgid:${replyTo}`));
           if (visitorChatId && msg.text) {
@@ -4007,6 +4094,9 @@ export default {
     if (!env.PREMIUM_CHANNEL_ID || !env.TELEGRAM_BOT_TOKEN) return;
     if (event.cron === WEEKLY_CRON) ctx.waitUntil(sendWeeklyReport(env));
     else if (event.cron === DAILY_CRON) ctx.waitUntil(sendDailyReport(env));
-    else ctx.waitUntil(runMinuteJobs(env));
+    else {
+      ctx.waitUntil(runMinuteJobs(env));
+      if (new Date().getUTCMinutes() % 10 === 0) ctx.waitUntil(endTrials(env));
+    }
   },
 };

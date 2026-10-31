@@ -396,12 +396,9 @@ test("privacy policy: 404 without the Impressum variables, shown with them, link
   assert.ok(!fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8").includes("fonts.googleapis"));
 });
 
-test("start page trial form: a Telegram name is enough, the request reaches the owner on Telegram", async () => {
+test("contact API trial kind (old start page form): a Telegram name is enough, the request reaches the owner", async () => {
   const net = mockNet({ feed: [] });
   const env = makeEnv();
-  const html = await (await worker.fetch(new Request("https://x/"), env, {})).text();
-  assert.match(html, /id="trial"/);
-  for (const [, js] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
   const post = (body, ip) => worker.fetch(new Request("https://x/api/contact", { method: "POST", headers: { "CF-Connecting-IP": ip }, body: JSON.stringify(body) }), env, {});
   assert.equal((await post({ kind: "trial", name: "Max", telegram: "@ab" }, "1")).status, 400);
   assert.equal((await post({ kind: "trial", name: "Max" }, "2")).status, 400);
@@ -504,4 +501,47 @@ test("admin results CSV: last 30 days as a file with quote, market and wait colu
   assert.match(row, /,o15,"Alpha, FC",Beta,1.5,60,won,75,0.5,1.32,1.25,true,false,,0.78,71,true,0.2,/);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.match(html, /CSV speichern \(30 Tage\)/);
+});
+
+test("automatic 24 h trial: start page button opens the bot, /start test gives invite + tool link once, removed after 24 h unless kept", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const land = await (await worker.fetch(new Request("https://moneybag-signals.com/"), env, {})).text();
+  assert.match(land, /href="\/test-starten"/);
+  for (const [, js] of land.matchAll(/<script>([\s\S]*?)<\/script>/g)) new Function(js);
+  const go = await worker.fetch(new Request("https://moneybag-signals.com/test-starten"), env, {});
+  assert.equal(go.status, 302);
+  assert.equal(go.headers.get("location"), "https://t.me/MoneyBagTestBot?start=test");
+  const dm = (id, text) => worker.fetch(new Request("https://moneybag-signals.com/telegram-webhook", {
+    method: "POST", headers: { "X-Telegram-Bot-Api-Secret-Token": "s" },
+    body: JSON.stringify({ message: { chat: { id, type: "private" }, from: { id, username: "tester" + id }, text } }),
+  }), env, {});
+  await dm(4242, "/start test");
+  const toUser = net.sent.filter((m) => m.chat_id === 4242 && m.method === "sendMessage");
+  assert.equal(toUser.length, 1);
+  assert.match(toUser[0].text, /https:\/\/t\.me\/\+trial/);
+  const token = toUser[0].text.match(/\?t=([0-9a-f]{32})/)[1];
+  const rec = JSON.parse(env.ACCESS_KV.store.get(token));
+  assert.equal(rec.status, "trial");
+  assert.ok(Math.abs(rec.expiresAt - Date.now() - 24 * 3600e3) < 60e3);
+  const invite = net.sent.find((m) => m.method === "createChatInviteLink");
+  assert.equal(invite.member_limit, 1);
+  assert.ok(net.sent.some((m) => m.chat_id === "777" && /Automatischer 24h-Test.*ID 4242/.test(m.text)));
+  await dm(4242, "/start test");
+  assert.match(net.sent.filter((m) => m.chat_id === 4242).pop().text, /schon einen 24-Stunden-Test/);
+  assert.equal(net.sent.filter((m) => m.method === "createChatInviteLink").length, 1, "one trial per person");
+  // second user, kept by the owner
+  await dm(5151, "/start test");
+  await dm(777, "/behalten 5151");
+  assert.match(net.sent.filter((m) => m.chat_id === 777).pop().text, /bleibt im Premium-Kanal/);
+  // 25 h later: 4242 is removed, 5151 stays
+  const realNow = Date.now;
+  Date.now = () => realNow() + 25 * 3600e3;
+  const realMin = Date.prototype.getUTCMinutes;
+  Date.prototype.getUTCMinutes = () => 10;
+  try { await cron(worker, env); } finally { Date.now = realNow; Date.prototype.getUTCMinutes = realMin; }
+  const bans = net.sent.filter((m) => m.method === "banChatMember").map((m) => m.user_id);
+  assert.deepEqual(bans, [4242]);
+  assert.ok(net.sent.some((m) => m.method === "unbanChatMember" && m.user_id === 4242));
+  assert.match(net.sent.filter((m) => m.chat_id === "4242").pop().text, /Test ist vorbei/);
 });

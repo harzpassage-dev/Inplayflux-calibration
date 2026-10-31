@@ -247,6 +247,18 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: **automatic 24 h trial** (plan item 4, owner's yes). Start page `#test`: 18+ checkbox + button "Test auf Telegram
+  starten" → `/test-starten` (302 to `t.me/<bot>?start=test`, bot name from `getMe`, cached in KV `bot:username`). In the bot,
+  `/start test` → `startTrial`: one trial per Telegram user id (`trial:tg:<id>`, 1 year), max `TRIAL_MAX_PER_DAY` 30
+  (`trial:count:<day>`, above that the owner is told), 24 h tool token (`putAccess`, `auto: true`), one-person premium invite
+  link (`createChatInviteLink`, member_limit 1, valid 2 h), reply with both links + end time + 18+ line, DM to the owner with
+  "/behalten <id>". `trialend:<ms>:<id>`: every 10 min (`endTrials` in the minute cron) the user is removed from the premium
+  channel (ban + unban = kick, may rejoin as a customer) and gets a "Test vorbei" DM with the price; the owner's
+  `/behalten <id>` (private chat with the bot) cancels the removal. **The bot needs the premium-channel admin rights "invite
+  users via link" and "ban users"**; without them the owner gets a warning to do it by hand. Privacy policy section 5 updated
+  (Telegram id, username, 1 year). The old form API (`/api/contact` kind "trial") still works. Tests "automatic 24 h trial",
+  "contact API trial kind".
+
 - 2026-10-31: **bug fix – signal quote was missing on almost every tip** (found with the new results CSV: quote on 8 of
   1,326 tips, `marketP` on none). Real cards read `⚖️ O/U  2.75 → 1.25 📉   Over 1.73  Under 1.98`; the worker regex expected
   `Over` right after the live line, so the 📉/📈 arrow broke `cardOdds` → no `signalQuote`, `marketP`, `wait`, profit lines
@@ -713,7 +725,7 @@ then decide per tier on the new days and apply.
   CSV, (2) **owner said yes 31.10.**: stop posting tips that lose money at their signal quote – decide the cut per tier (e.g.
   `signalQuote.over` below a floor, or market p above our hit rate) from ~1 week of tips with quotes (parser fixed 31.10.
   evening), show the owner the numbers, then build it with a test; (3) Over 1.5 Test per strategy; (4) automatic 24 h trial
-  (bot creates the token and sends the link); (5) invite links per source; (6) fill the partner network; (7) legal check,
+  (bot creates the token and sends the link – done 31.10.); (5) invite links per source; (6) fill the partner network; (7) legal check,
   Gewerbe; (8) InPlayFlux answer; (9) API-Football once customers pay. Next: owner sends the 30-day CSV ~07./08.11.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
   result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
