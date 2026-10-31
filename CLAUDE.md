@@ -32,8 +32,9 @@ and the first 3 settled premium tips per day (won or lost, never picked by resul
 after the match is decided; `free:count:<day>`). Under 3.5 **shadow log** for every O2.5 card (`u35:YYYY-MM-DD`, admin "Under 3.5 (still
 protokolliert)"), result tracking (`track:open` → `result:*`), weekly report Monday 08:00 UTC
 (cron `0 8 * * 1`), private morning report to the owner daily 07:00 UTC except Mondays (cron `0 7 * * *`,
-`sendDailyReport`/`dailyAdminText`: last 24 h per tier, voids, profit estimates, open tips, and a warning when a
-line with ≥ 2 tips/day over the week got none – a switched-off InPlayFlux strategy), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
+`sendDailyReport`/`dailyAdminText`: last 24 h per tier, voids, profit estimates, open tips, a warning when a
+line with ≥ 2 tips/day over the week got none – a switched-off InPlayFlux strategy – and, from `VOID_REMIND` 10 open
+voids in 7 days, a reminder to fill them from a CSV export), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
 overlapping runs never post or settle a tip twice, when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
 "❌ LOST …" (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
 calls `editMessageText`; posts from before 2026-10-14 evening have no id and stay unmarked),
@@ -63,7 +64,9 @@ link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, free 24 
 the owner, FAQ; a `?t=` link or the `mb_access` cookie still
 opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
 (`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
-are noindex), `/robots.txt` + `/sitemap.xml` (`/` and `/ergebnisse`; site verified in Google Search Console). The
+are noindex), `/videos` (MoneyBag versions of the statistics videos), `/partner` (partner network + join form),
+`/robots.txt` + `/sitemap.xml` (`/`, `/ergebnisse`, `/videos`, `/partner`; site verified in Google Search Console). Every
+public page has the fold-out menu (`NAV_LINKS`, "MENÜ" button left of the logo); new pages/sections go into it. The
 privacy policy lists every data flow (Cloudflare, cookie, contact form → Telegram, GMX, PayPal, Telegram, optional
 The Odds API key): any new external resource, cookie or tracker needs an update there first.
 
@@ -243,6 +246,11 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-10-31: ROI image `marketing/roi-tabelle.png` (source `roi-tabelle.html`, design 6, 1080×1350): ROI = hit rate × quote − 1
+  with live numbers (High Confidence 80.2 % → min. quote 1.25, +4/+12/+20 % at 1.30/1.40/1.50; Over 1.5 Test 75.5 % → 1.33,
+  −2/+6/+13 %); note that the signal quote is often lower and waiting for 1.40 costs hits; the owner's "100 tips → 120 €"
+  example was left out on purpose.
 
 - 2026-10-31: many "ungewertet" (void) tips on a busy Saturday (Kazakhstan, Czech, Myanmar, Japan, U19 games): the guest feed's
   ~15 slots were full of stoppage-time games, so our matches never showed up and gave up after 4 h. InPlayFlux does **not**
@@ -562,7 +570,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-28)
+## Open items (as of 2026-10-31)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -667,8 +675,7 @@ then decide per tier on the new days and apply.
   instant check at posting time (no 2-min wait) instead of the delayed check.
 - Live check: none for now (guest feed ~15 matches; API-Football free plan suspended on Cloudflare IPs;
   Highlightly lacks lower leagues). Re-enable by a paid API-Football plan + secret `APIFOOTBALL_KEY`
-  (code ready). Owner was offered an email draft to InPlayFlux (API access / partnership, also about
-  forwarding card text to paying subscribers) – not known whether it was sent.
+  (code ready). Partnership/permission email to InPlayFlux **sent 30.10.** (see change log) – waiting for the answer.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
@@ -689,6 +696,16 @@ then decide per tier on the new days and apply.
   record for EU VAT, affiliate program; ~3 % + card fees (~1.30 € per 20 € sub). Verdict with the owner: no value now
   (no paying customers yet, marketplace brings little reach); reconsider at ~10–20 customers, after InPlayFlux's OK; ask
   Whop support first whether German football-tip subscriptions are allowed.
+
+- Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
+  result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
+  daily fixtures call could settle all voids) once there are paying customers.
+- Over 1.5 Test after the men filter (29.10.): 72.1 % on 68 unseen matches – at the 72 % cut. Decide at the next weekly
+  routine; "Over 1.5 Value" (72.2 %, 72) is the weakest strategy this week.
+- Marketing images in design 6 for the free channel: weekly image (admin, `drawBilanz`), `marketing/roi-tabelle.png`
+  (ROI at quotes 1.30/1.40/1.50 from live hit rates, 31.10.; no euro gain example – reads like a promise). Telegram only,
+  never Torminute.
+- Partner network `/partner`: no partner listed yet; owner contacts channels with the template (banner ~1200×400).
 
 - Under 3.5: **paused since 21.10., stays off after the recalculation of 22.10.** (`scripts/u35_stats.py` on
   `under35_log_2026-10-22.csv`: 164 strict games 11.–22.10., halves split 17.10.): all 52 % (56/47); old rule goal
