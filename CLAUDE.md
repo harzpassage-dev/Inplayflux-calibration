@@ -60,8 +60,8 @@ also stored as KV **metadata** so listing needs no per-key `get` (old keys get m
 lazily, max 100 per call). Free-channel posts and the weekly report link to it.
 
 **Public pages** (no token, all in `worker/src/index.js`, since 2026-10-25): `/` start page for visitors without an access
-link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, free 24 h test with request form `#test` → bot DM to
-the owner, FAQ; a `?t=` link or the `mb_access` cookie still
+link (`landingPage`, live hit rates, price 20 €/month, PayPal, email, free 24 h test `#test` – since 31.10. automatic via the
+bot (`/test-starten` → `/start test` → invite + tool link, removed after 24 h, see change log), FAQ; a `?t=` link or the `mb_access` cookie still
 opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
 (`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
 are noindex), `/videos` (MoneyBag versions of the statistics videos), `/partner` (partner network + join form),
@@ -671,8 +671,8 @@ then decide per tier on the new days and apply.
 - Next (from 31.10.): weekly routine done 31.10. (export 10-31); next ~Mon 09.11. (or 02.11. if the owner sends one); bot "Wochen-Check" → new CSV → skill `wochen-routine`;
   market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
-  legal advice); start-page trial form tested by the owner 27.10. (bot DM arrived); trial flow: DM → admin
-  "Zugang erstellen" (24 h) → send the link on Telegram; per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
+  legal advice); trial is automatic since 31.10. (owner should test it once with a second Telegram account; customers from a
+  trial: owner sends `/behalten <id>` to the bot and extends the tool token in admin); per new customer: send the `/agb` link and get the "start now, pro-rata on withdrawal" consent in the
   email before unlocking (`legal/agb-entwurf.md`, operator notes); trade registration (Gewerbe) if not done.
 - Owner to-dos (26.10.): (new Telegram profile pictures set in both channels 27.10., done; auto WIN banner seen working
   on an Over 1.5 Test post; site link in the free channel description 27.10., done). First new "MoneyBag 0-0 → Goal" card arrived 28.10.
