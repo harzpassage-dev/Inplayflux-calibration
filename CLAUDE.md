@@ -729,6 +729,12 @@ then decide per tier on the new days and apply.
   evening), show the owner the numbers, then build it with a test; (3) Over 1.5 Test per strategy; (4) automatic 24 h trial
   (bot creates the token and sends the link – done 31.10.); (5) invite links per source; (6) fill the partner network; (7) legal check,
   Gewerbe; (8) InPlayFlux answer; (9) API-Football once customers pay. Next: owner sends the 30-day CSV ~07./08.11.
+- Higher thresholds checked 31.10. (`scripts/threshold_walkforward.py`, model refit weekly, tested on the next unseen week,
+  10.–31.10., counts are cards): O2.5 0.75 82.0 % (~40/day) / 0.80 81.4 % (~25/day, now) / 0.82 81.1 % / 0.84 85.9 % (~6/day,
+  weeks 78/88/90) – the model barely separates between 0.75 and 0.82; O3.5 0.75 80.3 % (~15/day, now) / 0.80 83.0 % (~2/day);
+  O0.5 0.75 79.6 % (~8/day, now) / 0.80 89.8 % (49 cards, ~2/day, weeks 91/91/87) / 0.82 96.6 % (29). **Owner chose to change
+  nothing until the quote data is in** (~07./08.11.): higher hit rates usually come with lower quotes. Candidate then:
+  O0.5 → 0.80.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
   result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
   daily fixtures call could settle all voids) once there are paying customers.
