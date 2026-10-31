@@ -244,6 +244,11 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: admin "Bilanz-Grafik erstellen" (`drawBilanz`) redrawn in design 6 (owner: "Wochenbilanz im neuen Design"):
+  black top with red diagonal stripes, speed logo drawn on the canvas, italic "WOCHENBILANZ", big white total %, section
+  "NACH STUFE" with black = hit / red = lost bars as on `/ergebnisse`, black footer with the results link + 18+ line.
+  Example `marketing/bilanz-design6-beispiel.png`. Test "admin weekly image".
+
 - 2026-10-31: weekly routine with export 10-31 (Saturday upload; `data/inplayflux_sinyaller_2026-10-31.csv`, shift 0,
   15,230 signals), models refitted, thresholds unchanged, goal score bands updated (points unchanged), badge "Kalibriert:
   31.10.2026 · 15.230 Signale", report `reports/2026-10-31-recalibration.md`. Unseen 26.–31.10.: O2.5 83.3 % (102) vs raw

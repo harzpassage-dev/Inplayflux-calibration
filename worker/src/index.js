@@ -2850,60 +2850,79 @@ function isoWeek(d) {
   return Math.ceil(((t - y) / 86400000 + 1) / 7);
 }
 function drawBilanz(s, from, to) {
+  // Design 6 "Sport-Magazin" like the public pages (since 31.10.): black top with a red diagonal stripe, speed logo,
+  // black = hit / red = lost bars as on /ergebnisse, black footer with the results link and 18+ line.
   const W = 1080, H = 1350, c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const font = (w, px) => w + ' ' + px + 'px -apple-system, system-ui, Segoe UI, sans-serif';
-  const bg = g.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#12151c'); bg.addColorStop(1, '#1c2333');
-  g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  const gold = '#d4a72c', text = '#e6e9f0', muted = '#8891a3', green = '#4caf7a', red = '#e06a5a';
+  const font = (w, px, it) => (it ? 'italic ' : '') + w + ' ' + px + 'px Arial, Helvetica, -apple-system, sans-serif';
+  const red = '#e0262f', red2 = '#ff4b52', ink = '#111111', muted = '#5d5d66', line = '#e4e4e8';
   const d2 = d => String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
   const pct = t => t.n ? Math.round(t.won / t.n * 1000) / 10 : null;
   const de = v => String(v).replace('.', ',');
-  g.textAlign = 'left';
-  g.fillStyle = gold; g.font = font('700', 40); g.fillText('💰 MONEYBAG', 80, 120);
-  g.fillStyle = text; g.font = font('800', 88); g.fillText('Wochenbilanz', 80, 230);
-  g.fillStyle = muted; g.font = font('500', 40);
-  g.fillText('KW ' + isoWeek(to) + ' · ' + d2(from) + '–' + d2(to) + to.getFullYear(), 80, 295);
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  // black hero with the diagonal shirt stripe
+  const HB = 620;
+  g.fillStyle = ink; g.fillRect(0, 0, W, HB);
+  g.fillStyle = red; g.beginPath(); g.moveTo(760, 0); g.lineTo(930, 0); g.lineTo(640, HB); g.lineTo(470, HB); g.closePath(); g.fill();
+  g.fillStyle = ink; g.globalAlpha = 0.55; g.fillRect(0, 0, W, HB); g.globalAlpha = 1;
+  g.fillStyle = red; g.beginPath(); g.moveTo(860, 0); g.lineTo(1010, 0); g.lineTo(720, HB); g.lineTo(570, HB); g.closePath(); g.fill();
+  // speed logo
+  g.fillStyle = red2; g.fillRect(96, 92, 64, 8); g.fillRect(80, 110, 80, 8); g.fillRect(104, 128, 56, 8);
+  g.textAlign = 'left'; g.font = font('900', 54, true);
+  g.fillStyle = '#ffffff'; g.fillText('MONEY', 172, 136);
+  const mw = g.measureText('MONEY').width;
+  g.fillStyle = red2; g.fillText('BAG', 172 + mw, 136);
+  g.fillStyle = '#ffffff'; g.font = font('900', 104, true); g.fillText('WOCHENBILANZ', 76, 270);
+  g.fillStyle = '#cccccc'; g.font = font('700', 38);
+  g.fillText('KW ' + isoWeek(to) + ' · ' + d2(from) + '–' + d2(to) + to.getFullYear(), 80, 330);
   const total = pct(s.all);
-  g.fillStyle = gold; g.font = font('800', 200);
+  g.fillStyle = '#ffffff'; g.font = font('900', 190, true);
   g.fillText(total == null ? '–' : de(total) + ' %', 70, 520);
-  g.fillStyle = text; g.font = font('500', 42);
-  g.fillText(s.all.n ? s.all.won + ' von ' + s.all.n + ' Tipps getroffen' : 'Noch keine abgeschlossenen Tipps', 80, 590);
+  g.fillStyle = '#dddddd'; g.font = font('700', 40);
+  g.fillText(s.all.n ? s.all.won + ' von ' + s.all.n + ' Tipps getroffen' : 'Noch keine abgeschlossenen Tipps', 80, 582);
+  // section head like the h2 on the pages
+  g.fillStyle = red; g.beginPath(); g.moveTo(86, 680); g.lineTo(130, 680); g.lineTo(124, 692); g.lineTo(80, 692); g.closePath(); g.fill();
+  g.fillStyle = ink; g.font = font('900', 30); g.fillText('NACH STUFE', 146, 696);
   const rows = [
     ['🔥', 'High Confidence', s.premium], ['🟠', 'Half-Risiko', s.half || { n: 0, won: 0 }],
     ['⚠️', 'Risiko', s.risk, 'seit 13.10. abgeschaltet'], ['🛡️', 'Under 3.5', s.under || { n: 0, won: 0 }],
     ['🧪', 'Over 1.5 Test', s.o15 || { n: 0, won: 0 }, 'seit 21.10.'],
   ].filter(r => r[2] && r[2].n);
-  let y = 700;
+  let y = 790;
   rows.forEach(([icon, label, t, note]) => {
     const p = pct(t);
-    g.fillStyle = text; g.font = font('600', 44); g.fillText(icon + '  ' + label, 80, y);
+    g.textAlign = 'left'; g.fillStyle = ink; g.font = font('900', 44); g.fillText(icon + '  ' + label, 80, y);
     if (note) {
-      const x = 80 + g.measureText(icon + '  ' + label).width + 20;
-      g.fillStyle = muted; g.font = font('500', 30); g.fillText(note, x, y);
-      g.fillStyle = text;
+      const x = 80 + g.measureText(icon + '  ' + label).width + 18;
+      g.fillStyle = muted; g.font = font('700', 28); g.fillText(note, x, y);
     }
-    g.textAlign = 'right'; g.font = font('700', 42); g.fillText(de(p) + ' %', 1000, y);
-    g.fillStyle = muted; g.font = font('500', 34); g.fillText(t.won + '/' + t.n + '   ', 1000 - g.measureText(de(p) + ' %').width - 70, y);
+    g.textAlign = 'right'; g.fillStyle = red; g.font = font('900', 46, true); g.fillText(de(p) + ' %', 1000, y);
+    const pw2 = g.measureText(de(p) + ' %').width;
+    g.fillStyle = muted; g.font = font('700', 32); g.fillText(t.won + '/' + t.n, 1000 - pw2 - 30, y);
     g.textAlign = 'left';
-    g.fillStyle = '#2c3444'; g.fillRect(80, y + 24, 920, 16);
-    g.fillStyle = p >= 70 ? green : p >= 55 ? gold : red; g.fillRect(80, y + 24, 920 * p / 100, 16);
-    y += 112;
+    g.fillStyle = red; g.fillRect(80, y + 22, 920, 22);
+    g.fillStyle = ink; g.fillRect(80, y + 22, 920 * p / 100, 22);
+    y += 120;
   });
+  g.fillStyle = muted; g.font = font('700', 26);
+  g.fillText('Schwarz = Treffer, Rot = verloren', 80, y - 30);
   if (s.priced >= 20) {
     const roi = s.staked ? Math.round(s.profit / s.staked * 1000) / 10 : 0;
     const sign = s.profit >= 0 ? '+' : '';
-    g.fillStyle = s.profit >= 0 ? green : red; g.font = font('700', 42);
+    g.fillStyle = s.profit >= 0 ? ink : red; g.font = font('900', 40);
     g.fillText('💶 ' + sign + de(s.profit) + ' Einheiten (Rendite ' + sign + de(roi) + ' %)', 80, y + 30);
-    g.fillStyle = muted; g.font = font('500', 30);
-    g.fillText('bei ' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + ' mit Quote ab Mindestquote', 80, y + 75);
+    g.fillStyle = muted; g.font = font('700', 28);
+    g.fillText('bei ' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + ' mit Quote ab Mindestquote', 80, y + 72);
   }
-  g.fillStyle = '#2c3444'; g.fillRect(80, 1232, 920, 2);
-  g.fillStyle = muted; g.font = font('500', 28);
-  g.fillText('Automatisch aus dem Live-Spielstand erfasst – Treffer und Verluste.', 80, 1278);
-  g.fillText('18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de', 80, 1316);
+  // footer
+  g.fillStyle = ink; g.fillRect(0, 1190, W, H - 1190);
+  g.fillStyle = red; g.fillRect(0, 1190, W, 8);
+  g.fillStyle = '#ffffff'; g.font = font('900', 34);
+  g.fillText('Alle Ergebnisse: moneybag-signals.com/ergebnisse', 80, 1256);
+  g.fillStyle = '#aaaaaa'; g.font = font('700', 26);
+  g.fillText('Automatisch aus dem Live-Spielstand erfasst – Treffer und Verluste.', 80, 1298);
+  g.fillText('18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de', 80, 1332);
   return c;
 }
 document.getElementById('img-btn').addEventListener('click', async () => {

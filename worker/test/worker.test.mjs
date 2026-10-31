@@ -458,3 +458,9 @@ test("admin page: empty or wrong password gives a clear German hint instead of a
   assert.match(html, /Bitte oben zuerst das Admin-Passwort eintragen/);
   assert.match(html, /Passwort falsch/);
 });
+
+test("admin weekly image: drawn in the magazine design (speed logo, black/red bars, results link)", async () => {
+  mockNet({ feed: [] });
+  const html = await (await worker.fetch(new Request("https://x/admin"), makeEnv(), {})).text();
+  for (const want of ["WOCHENBILANZ", "NACH STUFE", "Schwarz = Treffer, Rot = verloren", "moneybag-signals.com/ergebnisse"]) assert.ok(html.includes(want), want);
+});
