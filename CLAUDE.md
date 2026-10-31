@@ -255,7 +255,9 @@ then decide per tier on the new days and apply.
   "/behalten <id>". `trialend:<ms>:<id>`: every 10 min (`endTrials` in the minute cron) the user is removed from the premium
   channel (ban + unban = kick, may rejoin as a customer) and gets a "Test vorbei" DM with the price; the owner's
   `/behalten <id>` (private chat with the bot) cancels the removal. **The bot needs the premium-channel admin rights "invite
-  users via link" and "ban users"**; without them the owner gets a warning to do it by hand. Privacy policy section 5 updated
+  users via link" and "ban users"** (owner set both in "MoneyBag Premium Alerts" 31.10.: "Abonnenten hinzufügen" + "Nutzer
+  sperren"); without them the owner gets a warning to do it by hand. The bot is @harzpassage_bot, display name "Sportfreunde"
+  (renaming the display name via BotFather was suggested; a new username needs KV `bot:username` cleared). Privacy policy section 5 updated
   (Telegram id, username, 1 year). The old form API (`/api/contact` kind "trial") still works. Tests "automatic 24 h trial",
   "contact API trial kind".
 
