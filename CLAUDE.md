@@ -735,6 +735,15 @@ then decide per tier on the new days and apply.
   O0.5 0.75 79.6 % (~8/day, now) / 0.80 89.8 % (49 cards, ~2/day, weeks 91/91/87) / 0.82 96.6 % (29). **Owner chose to change
   nothing until the quote data is in** (~07./08.11.): higher hit rates usually come with lower quotes. Candidate then:
   O0.5 → 0.80.
+- Two-goal lines checked 31.10. (owner: "O2.5 signals on Over 3, O1.5 on Over 2", `scripts/two_goal_estimate.py`). The exports
+  have **no final score**, only whether the next goal fell and its minute, so the second goal is *estimated* by a hazard
+  model (logistic: minute, pre-match line, goals, minutes since last goal; 10-fold group CV, well calibrated 55/67/75/83 %
+  predicted vs 55/67/75/83 % real). Asian Over 3.0 at 2 goals: all 37 % win / 39 % push / 24 % loss → break-even 1.66; line
+  ≥ 3.5 & minute ≤ 60 47/35/18 → **1.38** (folds 1.32–1.53, n=1,555); line ≥ 4 & ≤ 60' 52/32/16 → 1.30 (509). Over 2.0 at
+  1 goal: test rule 34/42/24 → 1.72; line ≥ 3.5 → 1.42 (374). No odds for these lines in the data: an edge exists only if
+  bookmakers pay more than the break-even – the model uses public info only, so the market may price the same. Next step
+  offered: owner notes real Asian Over 3.0 odds on such signals, and/or the worker logs the final score so the strategy can
+  be tested on real outcomes.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
   result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
   daily fixtures call could settle all voids) once there are paying customers.
