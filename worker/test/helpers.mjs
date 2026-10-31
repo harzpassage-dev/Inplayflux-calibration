@@ -69,11 +69,11 @@ export const admin = (worker, env, p, init = {}) => worker.fetch(new Request("ht
   ...init, headers: { Authorization: "Bearer pw", ...(init.headers || {}) },
 }), env, { waitUntil: () => {} });
 
-// An InPlayFlux card in the format the worker parses.
+// An InPlayFlux card in the real format (since 31.10. with the 📉/📈 trend arrow, which the parser had missed).
 export function card({ header = "💰 MoneyBag 2-0/0-2 → Over 2.5 New", home = "Alpha FC", away = "Beta FC", score = "2-0",
-  target = "Over 2.5 Goals", league = "Liga", minute = 56, sot = [6, 4], radar = 450, pre = "4.0", live = "3.5", over = "1.95", under = "1.85" } = {}) {
+  target = "Over 2.5 Goals", league = "Liga", minute = 56, sot = [6, 4], radar = 450, pre = "4.0", live = "3.5", over = "1.95", under = "1.85", trend = "📉" } = {}) {
   return `${header}\n🏆 ${league}\n⚽ ${home} ${score} ${away}\n🎯 Target: ${target}\n⏱ ${minute}' · ~30 min left\n` +
-    `📊 Shots ${sot[0]} · ${sot[1]} / 10 · 8 total\n📡 Radar X: x (${radar})\n⚖️ O/U ${pre} → ${live}  Over ${over}  Under ${under}`;
+    `📊 Shots ${sot[0]} · ${sot[1]} / 10 · 8 total\n📡 Radar X: x (${radar})\n⚖️ O/U  ${pre} → ${live} ${trend}   Over ${over}  Under ${under}`; // real cards: 📉/📈 before the odds
 }
 
 export const tracked = (env) => JSON.parse(env.ACCESS_KV.store.get("track:open") || "[]");

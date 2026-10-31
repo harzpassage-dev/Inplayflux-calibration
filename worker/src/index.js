@@ -236,8 +236,9 @@ function parseForConfidenceScore(text) {
   if (m) out.radar = parseInt(m[1], 10);
   m = text.match(/O\/U\s*([\d.]+)\s*→/i);
   if (m) out.goallinePre = parseFloat(m[1]);
-  // "⚖️ O/U 3.0 → 3.5  Over 1.80  Under 2.00": the odds belong to the live line.
-  m = text.match(/O\/U\s*[\d.]+\s*→\s*([\d.]+)\s+Over\s*([\d.]+)\s+Under\s*([\d.]+)/i);
+  // "⚖️ O/U 2.75 → 1.25 📉   Over 1.73  Under 1.98": the odds belong to the live line. Real cards put a 📉/📈
+  // between line and odds; until 31.10. this regex missed them, so almost no tip had a signal quote.
+  m = text.match(/O\/U\s*[\d.]+\s*→\s*([\d.]+)[^\d\n]*?Over\s*([\d.]+)\s+Under\s*([\d.]+)/i);
   if (m) out.cardOdds = { line: parseFloat(m[1]), over: parseFloat(m[2]), under: parseFloat(m[3]) };
   // Team/score line. Skips strategy headers like "💰 MoneyBag 0-0 → Goal",
   // which have the same "name n-n name" shape.

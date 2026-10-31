@@ -247,6 +247,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: **bug fix – signal quote was missing on almost every tip** (found with the new results CSV: quote on 8 of
+  1,326 tips, `marketP` on none). Real cards read `⚖️ O/U  2.75 → 1.25 📉   Over 1.73  Under 1.98`; the worker regex expected
+  `Over` right after the live line, so the 📉/📈 arrow broke `cardOdds` → no `signalQuote`, `marketP`, `wait`, profit lines
+  (the customer tool's regex already allowed it). Regex now skips non-digits before `Over`; the test card in
+  `helpers.mjs` uses the real format (old code fails 2 tests). Market comparison / profit check (plan item 1) restarts from
+  31.10. evening: needs ~1 week of new tips before a verdict.
+
 - 2026-10-31: admin "Ergebnisse" button **"CSV speichern (30 Tage)"** (owner's wish for plan item 1, profit / market check):
   `/admin/api/results-csv?days=N` (password, max 365) → `resultsCsv` with postedAt, settledAt, tier, teams, line, minute,
   result, resultMinute, units, minQuote, quote, quoteEstimated, betPlaced, profit, marketP, waitEntry/Bet/Profit, filledFrom;
