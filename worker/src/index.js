@@ -1844,9 +1844,16 @@ function dailyAdminText(rows, now, openCount) {
   if (quiet.length) {
     lines.push("", `⚠️ Keine Tipps mehr für ${quiet.map((l) => LINE_NAMES[l]).join(", ")} (sonst mehrere pro Tag). Bitte bei InPlayFlux unter Strategy prüfen, ob die Strategie noch eingeschaltet ist.`);
   }
+  // The guest feed misses many matches (busy days: the ~15 slots are full of stoppage-time games), so voids pile up.
+  // InPlayFlux does not mark cards with the result, so the owner fills them from a CSV export (owner's choice 31.10.).
+  const openVoids = week.filter((r) => r.result === "void").length;
+  if (openVoids >= VOID_REMIND) {
+    lines.push("", `📥 ${openVoids} Tipps der letzten 7 Tage sind noch ungewertet. Bitte nachtragen: bei InPlayFlux die CSV exportieren, dann im Admin oben das Passwort eintragen → „Unklare Ergebnisse nachtragen“ → Datei wählen → Vorschau → Übernehmen.`);
+  }
   lines.push("", `📋 ${RESULTS_PAGE_URL}`);
   return lines.join("\n");
 }
+const VOID_REMIND = 10;
 
 async function sendDailyReport(env) {
   if (!env.ADMIN_CHAT_ID || new Date().getUTCDay() === 1) return;

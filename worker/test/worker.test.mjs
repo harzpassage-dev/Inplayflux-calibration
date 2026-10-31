@@ -464,3 +464,25 @@ test("admin weekly image: drawn in the magazine design (speed logo, black/red ba
   const html = await (await worker.fetch(new Request("https://x/admin"), makeEnv(), {})).text();
   for (const want of ["WOCHENBILANZ", "NACH STUFE", "Schwarz = Treffer, Rot = verloren", "moneybag-signals.com/ergebnisse"]) assert.ok(html.includes(want), want);
 });
+
+test("daily report: reminds the owner to fill voids from a CSV once 10+ tips of the week are ungewertet", async () => {
+  const realDay = Date.prototype.getUTCDay;
+  const run = async (voids) => {
+    const net = mockNet({ feed: [] });
+    const env = makeEnv();
+    const now = Date.now();
+    for (let i = 0; i < voids; i++) {
+      const r = { tier: "premium", home: "H" + i, away: "A" + i, line: 2.5, minute: 60, units: 1, result: "void",
+        postedAt: new Date(now - (10 + i) * 3600e3).toISOString(), settledAt: new Date(now - (6 + i) * 3600e3).toISOString() };
+      env.ACCESS_KV.store.set(`result:${now - i}:${i}`, JSON.stringify(r));
+      env.ACCESS_KV.meta.set(`result:${now - i}:${i}`, r);
+    }
+    Date.prototype.getUTCDay = () => 3;
+    try { await cron(worker, env, "0 7 * * *"); } finally { Date.prototype.getUTCDay = realDay; }
+    return net.sent.find((m) => m.chat_id === "777").text;
+  };
+  assert.doesNotMatch(await run(9), /Unklare Ergebnisse nachtragen/);
+  const text = await run(10);
+  assert.match(text, /10 Tipps der letzten 7 Tage sind noch ungewertet/);
+  assert.match(text, /Unklare Ergebnisse nachtragen/);
+});

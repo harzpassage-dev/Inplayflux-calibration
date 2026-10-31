@@ -244,6 +244,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: many "ungewertet" (void) tips on a busy Saturday (Kazakhstan, Czech, Myanmar, Japan, U19 games): the guest feed's
+  ~15 slots were full of stoppage-time games, so our matches never showed up and gave up after 4 h. InPlayFlux does **not**
+  mark its cards with the result (owner checked the signal channel), so no free automatic source. Owner chose "CSV +
+  reminder" over paid API-Football (~19 $/month, revisit once there are paying customers): the daily morning report adds
+  "📥 N Tipps der letzten 7 Tage sind noch ungewertet …" with the fill steps once ≥ `VOID_REMIND` (10) voids are open
+  (filled ones turn won/lost and drop out). Test "daily report: reminds the owner to fill voids".
+
 - 2026-10-31: admin "Bilanz-Grafik erstellen" (`drawBilanz`) redrawn in design 6 (owner: "Wochenbilanz im neuen Design"):
   black top with red diagonal stripes, speed logo drawn on the canvas, italic "WOCHENBILANZ", big white total %, section
   "NACH STUFE" with black = hit / red = lost bars as on `/ergebnisse`, black footer with the results link + 18+ line.
