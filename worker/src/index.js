@@ -2711,6 +2711,14 @@ async function handleAdminPage() {
 
 <script>
 function pw() { return document.getElementById('pw').value; }
+// Every admin call: clear German hint when the password field is empty or wrong (was a bare "unauthorized").
+const _fetch = window.fetch.bind(window);
+window.fetch = async (u, o) => {
+  if (String(u).startsWith('/admin/api/') && !pw()) throw new Error('Bitte oben zuerst das Admin-Passwort eintragen (das Feld ist nach dem Neuladen der Seite leer).');
+  const r = await _fetch(u, o);
+  if (r.status === 401 && String(u).startsWith('/admin/api/')) throw new Error('Passwort falsch – bitte oben im Passwortfeld prüfen und erneut tippen.');
+  return r;
+};
 async function api(path, body) {
   const r = await fetch(path, {
     method: 'POST',

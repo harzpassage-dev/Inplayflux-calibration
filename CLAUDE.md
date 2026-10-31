@@ -244,6 +244,10 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-10-31: owner got a bare "unauthorized" at admin "Unklare Ergebnisse nachtragen" (password field empty after a
+  reload). The admin script now wraps `fetch` for `/admin/api/*`: empty field → "Bitte oben zuerst das Admin-Passwort
+  eintragen …", 401 → "Passwort falsch – …" (applies to every admin button). Test "admin page: empty or wrong password".
+
 - 2026-10-30: fold-out menu on every public page (owner: quick navigation, "noch so viele Ideen"): `NAV_LINKS` →
   `NAV_HTML` (HTML `<details class="mnav">`, hamburger with the word "MENÜ" written vertically, left of the logo, no script; a tap on a link closes it), built into
   `LOGO_HTML` (wrapped in `.topbar`), CSS in `LOGO_CSS`, so `/`, `/ergebnisse` and every `magHead` page (videos, partner,

@@ -451,3 +451,10 @@ test("menu: every public page has the fold-out menu with all main links", async 
   const land = await (await worker.fetch(new Request("https://moneybag-signals.com/"), env, {})).text();
   for (const id of ["daten", "so", "faq", "preis", "test"]) assert.match(land, new RegExp(`id="${id}"`));
 });
+
+test("admin page: empty or wrong password gives a clear German hint instead of a bare 'unauthorized'", async () => {
+  mockNet({ feed: [] });
+  const html = await (await worker.fetch(new Request("https://x/admin"), makeEnv(), {})).text();
+  assert.match(html, /Bitte oben zuerst das Admin-Passwort eintragen/);
+  assert.match(html, /Passwort falsch/);
+});
