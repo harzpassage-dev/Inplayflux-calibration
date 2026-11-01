@@ -262,6 +262,11 @@ then decide per tier on the new days and apply.
   API-Football source per run now (live list shared by posting check and settling), max 8 id lookups per run, 60 s pause
   per isolate after a rate-limit answer (`afPauseUntil`), and the admin check shows the per-minute limit from the
   response headers (`x-ratelimit-limit` / `-remaining`). If the limit shows 10 (free plan), ask API-Football support.
+  Result 17:46: Pro, limit 300/min with 299 left, only 2 calls counted today, yet `fixtures?live=all` still answers
+  "Too many requests … per minute" → API-Football apparently limits per **IP**, and Cloudflare Workers share egress IPs
+  (same cause as the free-plan suspension 17.10.). Owner asked to write to support (rate limit per key / whitelist, else
+  refund). Fallback options: refund, or API-Football via RapidAPI (key-based gateway; worker change ~10 min: header
+  `x-rapidapi-key`, host api-football-v1.p.rapidapi.com, path `/v3/`). Until fixed the worker falls back as before.
 
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
