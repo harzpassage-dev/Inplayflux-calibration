@@ -781,3 +781,12 @@ test("live quote in the post: API-Football price of the own line, with a hint wh
   assert.ok(p2 && p2.text.includes("📈 Live-Quote jetzt: 1,20 (Over 1.5) – noch unter der Mindestquote ⏳"), p2 && p2.text);
   assert.ok(!p2.text.includes("\nQuote: Over"), "no second quote line");
 });
+
+test("team names: a word may be the start of the other (Sheff Utd (W) = Sheffield Utd W)", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card({ home: "Sunderland (W)", away: "Sheff Utd (W)" }));
+  net.apiLive = [afFix({ id: 51, home: "Sunderland W", away: "Sheffield Utd W", minute: 57, goals: [10, 30] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(tracked(env)[0].afId, 51);
+});

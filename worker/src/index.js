@@ -591,8 +591,9 @@ function teamWords(name) {
 function sameTeam(x, y) {
   const nx = normTeam(x), ny = normTeam(y);
   if (nx && ny && (nx === ny || nx.includes(ny) || ny.includes(nx))) return true;
-  const wy = new Set(teamWords(y));
-  return teamWords(x).some((w) => w.length >= 4 && wy.has(w));
+  // Shared distinctive word; a 4+ letter word may also be the start of the other ("Sheff" / "Sheffield").
+  const wy = teamWords(y);
+  return teamWords(x).some((w) => wy.some((v) => v === w || (Math.min(w.length, v.length) >= 4 && (v.startsWith(w) || w.startsWith(v)))));
 }
 function findApiMatch(list, home, away) {
   if (!Array.isArray(list)) return null;
@@ -1815,8 +1816,12 @@ async function apiOddsProbe(env) {
     const hit = (t.afId && live && live.find((x) => x.afId === t.afId)) || findApiMatch(live, t.home, t.away);
     const fid = t.afId || (hit && hit.afId) || null;
     const inDay = !fid && day ? findApiMatch(day, t.home, t.away) : null;
+    // Not found: show day-list matches that share one team, to tell missing leagues from name spellings.
+    const near = !fid && !inDay && day
+      ? day.filter((f) => sameTeam(f.h, t.home) || sameTeam(f.a, t.away)).slice(0, 2).map((f) => `${f.h} – ${f.a}`)
+      : [];
     return {
-      match: `${t.home} – ${t.away}`, line: t.line, afId: fid, live: !!hit, inDay: !!inDay,
+      match: `${t.home} – ${t.away}`, line: t.line, afId: fid, live: !!hit, inDay: !!inDay, near,
       ageMin: Math.round((Date.now() - t.postedAt) / 60000),
       odds: fid && ids.has(fid) ? Object.keys(ids.get(fid)).length > 0 : false,
     };
@@ -3923,7 +3928,8 @@ document.getElementById('odds-btn').addEventListener('click', async () => {
     if (!d.key) { out.textContent = 'Kein API-Football-Schlüssel.'; return; }
     if (!d.ok) { out.textContent = '❌ Keine Live-Quoten bekommen (API-Fehler oder Limit).'; return; }
     const open = (d.open || []).map((t) => (t.odds ? '✅ ' : t.live ? '🔗 ' : t.afId || t.inDay ? '📅 ' : '— ') +
-      esc(t.match) + ' (Over ' + t.line + ', vor ' + t.ageMin + ' Min.)').join('<br>');
+      esc(t.match) + ' (Over ' + t.line + ', vor ' + t.ageMin + ' Min.)' +
+      (t.near && t.near.length ? ' <span style="color:#8891a3;">· ähnlich im Spielplan: ' + esc(t.near.join(' / ')) + '</span>' : '')).join('<br>');
     out.innerHTML = 'Live-Spiele: ' + d.live + ' · mit Live-Quoten: ' + d.withOdds + ' · davon mit Über/Unter-Toren: ' + d.withOu +
       '<br>Spiele-Archiv heute: ' + d.storedToday + ' Spiele gespeichert' +
       (d.sample ? '<br>Beispiel: ' + esc(d.sample.match || String(d.sample.fixture)) + ' – Linien ' + esc(Object.keys(d.sample.lines).join(', ')) : '') +
