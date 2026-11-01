@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results } from "./helpers.mjs";
+import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix } from "./helpers.mjs";
 
 const worker = await loadWorker();
 const premiumPosts = (net) => net.sent.filter((m) => m.method === "sendMessage" && m.chat_id === "-100");
@@ -595,4 +595,67 @@ test("admin API-Football check: no key, key with plan and calls, password needed
   assert.equal((await admin(worker, env, "/admin/api/apifootball-status", { headers: { Authorization: "Bearer wrong" } })).status, 401);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("API-Football prüfen"));
+});
+
+async function at(ms, fn) {
+  const realNow = Date.now;
+  Date.now = () => realNow() + ms;
+  try { return await fn(); } finally { Date.now = realNow; }
+}
+
+test("API-Football: tip missing from the guest feed is checked, settled with the exact goal minute and the final score", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card({ home: "Drøbak/Frogn", away: "Ørn Horten" }));
+  net.apiLive = [afFix({ id: 77, home: "Drobak-Frogn", away: "Orn Horten", minute: 58, goals: [20, 41] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1, "posted after the API check");
+  net.apiLive = [afFix({ id: 77, home: "Drobak-Frogn", away: "Orn Horten", minute: 74, gh: 3, goals: [20, 41, 73] })];
+  await at(20 * 60e3, () => cron(worker, env));
+  let r = results(env)[0];
+  assert.equal(r.result, "won");
+  assert.equal(r.resultMinute, 73);
+  assert.ok(net.sent.find((m) => m.method === "editMessageText").text.startsWith("✅ WIN – Tor in Minute 73'"));
+  assert.equal(tracked(env)[0].afId, 77);
+  // Full time: gone from the live list, looked up by id.
+  net.apiLive = [];
+  net.apiById = { 77: afFix({ id: 77, home: "Drobak-Frogn", away: "Orn Horten", status: "FT", minute: 90, gh: 3, ga: 1, goals: [20, 41, 73, 88] }) };
+  await at(50 * 60e3, () => cron(worker, env));
+  r = results(env)[0];
+  assert.equal(r.finalGoals, 4);
+  assert.equal(tracked(env).length, 0);
+});
+
+test("API-Football: a match never seen live is settled from the day list instead of void", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 5, home: "Alpha FC", away: "Beta FC", minute: 57 })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1);
+  net.apiLive = [];
+  await at(30 * 60e3, () => cron(worker, env)); // not found anywhere yet, too early for the day list
+  assert.equal(net.dayCalls || 0, 0);
+  // The fixture id from the check is stored; drop it to test the day list (tips that were never found live).
+  const tr = tracked(env); assert.equal(tr[0].afId, 5); delete tr[0].afId; env.ACCESS_KV.store.set("track:open", JSON.stringify(tr));
+  net.apiDay = [afFix({ id: 5, home: "Alpha", away: "Beta", status: "FT", minute: 90, gh: 2, ga: 0, goals: [10, 30] })];
+  await at(70 * 60e3, () => cron(worker, env));
+  const r = results(env)[0];
+  assert.equal(r.result, "lost");
+  assert.equal(r.finalGoals, 2);
+  assert.equal(net.dayCalls, 1);
+  assert.ok(net.sent.find((m) => m.method === "editMessageText").text.startsWith("❌"));
+});
+
+test("API-Football: postponed match is void", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 9, home: "Alpha FC", away: "Beta FC", minute: 57 })];
+  await at(130e3, () => cron(worker, env));
+  net.apiLive = [];
+  net.apiById = { 9: afFix({ id: 9, home: "Alpha FC", away: "Beta FC", status: "ABD", minute: 70 }) };
+  await at(20 * 60e3, () => cron(worker, env));
+  assert.equal(results(env)[0].result, "void");
+  assert.equal(tracked(env).length, 0);
 });

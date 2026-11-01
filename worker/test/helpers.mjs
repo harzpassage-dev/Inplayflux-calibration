@@ -40,6 +40,11 @@ export function mockNet(state) {
     if (url.includes("GETAllMatches")) return state.feed === undefined ? new Response("err", { status: 500 }) : new Response(JSON.stringify(state.feed));
     if (url.includes("api-sports.io")) {
       state.apiCalls = (state.apiCalls || 0) + 1;
+      if (url.includes("fixtures?id=")) {
+        const id = decodeURIComponent(url.split("fixtures?id=")[1]);
+        return new Response(JSON.stringify({ errors: [], response: state.apiById && state.apiById[id] ? [state.apiById[id]] : [] }));
+      }
+      if (url.includes("fixtures?date=")) { state.dayCalls = (state.dayCalls || 0) + 1; return new Response(JSON.stringify({ errors: [], response: state.apiDay || [] })); }
       if (url.endsWith("/status")) return new Response(JSON.stringify({ errors: [], response: { subscription: { plan: "Pro", active: true, end: "2026-12-01T00:00:00+00:00" }, requests: { current: 12, limit_day: 7500 } } }));
       return new Response(JSON.stringify({ errors: [], response: state.apiLive || [] }));
     }
@@ -87,3 +92,10 @@ export function card({ header = "💰 MoneyBag 2-0/0-2 → Over 2.5 New", home =
 
 export const tracked = (env) => JSON.parse(env.ACCESS_KV.store.get("track:open") || "[]");
 export const results = (env) => [...env.ACCESS_KV.meta.values()].filter((r) => r && r.result);
+
+// An API-Football fixture in the API's own format.
+export function afFix({ id = 1, home = "Alpha", away = "Beta", status = "2H", minute = 60, gh = 2, ga = 0, goals = [] } = {}) {
+  return { fixture: { id, status: { short: status, elapsed: minute } }, teams: { home: { name: home }, away: { name: away } },
+    goals: { home: gh, away: ga }, score: { fulltime: { home: status === "FT" ? gh : null, away: status === "FT" ? ga : null } },
+    events: goals.map((m) => ({ type: "Goal", detail: "Normal Goal", time: { elapsed: m } })) };
+}

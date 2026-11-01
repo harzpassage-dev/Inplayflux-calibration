@@ -248,6 +248,17 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-01 evening: **settling via API-Football** (Pro plan active, admin check green: Pro, 7,500/day). A tip missing from
+  the InPlayFlux guest feed is looked up at API-Football (`settleTracked` → `findApiFixture`, `afSource`): live list
+  (`fixtures?live=all`, by stored `afId` or by team names – `findApiMatch`/`sameTeam`, tolerant to ø/æ/ß, hyphens, "FC"
+  etc.), then `fixtures?id=` once it left the live list (max 15 per run), and if never found, the day list
+  (`fixtures?date=`, ≥ 60 min after posting, once per run, per tip every 15 min). Finished (FT/AET/PEN, 90-minute score)
+  → won/lost with the **exact goal minute** (`afGoalMinute`: the (line + 0.5)-th goal from the events) and `finalGoals`;
+  PST/CANC/ABD/AWD/WO → void; never finished after 12 h → void. The posting check stores the fixture id (`afId`) in the
+  tracked tip. Without the key everything works as before (InPlayFlux feed, 4 h void). If the InPlayFlux feed is down,
+  tips are still settled via the API. Calls: ~1 live call/min while tips are open + lookups (~1,500–3,000/day).
+  Tests "API-Football: …" (3). Admin check shows the live-list error if that call fails.
+
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
   prüfen"** (`/admin/api/apifootball-status`, `apiFootballStatus`: `/status` plan/active/calls today + `fixtures?live=all`

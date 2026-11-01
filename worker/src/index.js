@@ -445,8 +445,8 @@ const isGuestFeed = (feed) => Array.isArray(feed) && feed.length <= GUEST_FEED_M
 
 // Second source for the 2-minute check while InPlayFlux is only a guest preview:
 // API-Football (api-sports.io), an official API with its own key (Cloudflare
-// secret APIFOOTBALL_KEY; free plan 100 calls/day, one call per minute only while
-// cards wait). It has minute, score and red cards for nearly all leagues, but no
+// secret APIFOOTBALL_KEY; Pro plan since 01.11.: 7,500 calls/day; one live call per
+// minute while cards wait or tips are open, plus a few fixture lookups). It has minute, score and red cards for nearly all leagues, but no
 // shots on target, radar or market line, so it only checks "no goal, no red card,
 // not too late". Without the key cards are posted unchecked as before.
 const APIFOOTBALL_LIVE_URL = "https://v3.football.api-sports.io/fixtures?live=all";
@@ -463,22 +463,79 @@ async function fetchApiFootballLive(env) {
     // Quota or key problems come back as HTTP 200 with an "errors" object.
     const errors = data && data.errors;
     if (!data || !Array.isArray(data.response) || (errors && Object.keys(errors).length)) return null;
-    return data.response.map((f) => {
-      const gh = num(f.goals && f.goals.home) || 0;
-      const ga = num(f.goals && f.goals.away) || 0;
-      const events = Array.isArray(f.events) ? f.events : null;
-      return {
-        h: f.teams && f.teams.home && f.teams.home.name,
-        a: f.teams && f.teams.away && f.teams.away.name,
-        minute: num(f.fixture && f.fixture.status && f.fixture.status.elapsed),
-        goals: gh + ga,
-        score: `${gh}-${ga}`,
-        redCards: events ? events.filter((e) => e.type === "Card" && /red/i.test(e.detail || "")).length : null,
-      };
-    });
+    return data.response.map(afFixture);
   } catch (e) {
     return null;
   }
+}
+
+// One API-Football fixture in our shape. goalMinutes: minutes of the goals in the
+// first 90 minutes (+ stoppage time) in order, so the n-th goal's minute is exact.
+const AF_FINISHED = new Set(["FT", "AET", "PEN"]);
+const AF_VOID = new Set(["PST", "CANC", "ABD", "AWD", "WO"]);
+function afFixture(f) {
+  const status = (f.fixture && f.fixture.status && f.fixture.status.short) || "";
+  const ft = f.score && f.score.fulltime;
+  // Over/under counts 90 minutes: after extra time take the full-time score.
+  const useFt = (status === "AET" || status === "PEN") && ft && ft.home != null;
+  const gh = num(useFt ? ft.home : f.goals && f.goals.home) || 0;
+  const ga = num(useFt ? ft.away : f.goals && f.goals.away) || 0;
+  const events = Array.isArray(f.events) ? f.events : null;
+  const goalMinutes = events
+    ? events.filter((e) => e.type === "Goal" && !/missed/i.test(e.detail || "") && e.time && num(e.time.elapsed) != null && num(e.time.elapsed) <= 90)
+        .map((e) => num(e.time.elapsed)).sort((x, y) => x - y)
+    : null;
+  return {
+    afId: f.fixture && f.fixture.id,
+    h: f.teams && f.teams.home && f.teams.home.name,
+    a: f.teams && f.teams.away && f.teams.away.name,
+    minute: num(f.fixture && f.fixture.status && f.fixture.status.elapsed),
+    status,
+    finished: AF_FINISHED.has(status),
+    voided: AF_VOID.has(status),
+    goals: gh + ga,
+    score: `${gh}-${ga}`,
+    goalMinutes: goalMinutes && goalMinutes.length === gh + ga ? goalMinutes : null,
+    redCards: events ? events.filter((e) => e.type === "Card" && /red/i.test(e.detail || "")).length : null,
+  };
+}
+
+async function fetchApiFootball(env, path) {
+  if (!env.APIFOOTBALL_KEY) return null;
+  try {
+    const resp = await fetch("https://v3.football.api-sports.io/" + path, {
+      headers: { "x-apisports-key": env.APIFOOTBALL_KEY },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const errors = data && data.errors;
+    if (!data || !Array.isArray(data.response) || (errors && Object.keys(errors).length)) return null;
+    return data.response.map(afFixture);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Team names differ between InPlayFlux and API-Football ("Drøbak/Frogn" vs
+// "Drobak-Frogn", "FC Alpha" vs "Alpha"): exact or contained names first, then a
+// shared distinctive word for both teams.
+const TEAM_STOP = new Set(["fc", "sc", "fk", "sk", "if", "cf", "ac", "as", "cd", "ud", "sd", "sv", "tsv", "vfb", "vfl", "club",
+  "united", "city", "town", "real", "sporting", "athletic", "de", "la", "el", "the", "and", "women", "ii", "u19", "u20", "u21", "u23",
+  "reserves", "team", "fotball", "football", "futbol", "calcio", "spor", "ks", "bk", "ik", "il", "ca", "afc", "cfc"]);
+function teamWords(name) {
+  return String(name || "").toLowerCase().replace(/ø/g, "o").replace(/æ/g, "ae").replace(/ß/g, "ss").replace(/ł/g, "l")
+    .normalize("NFKD").replace(/\p{M}/gu, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !TEAM_STOP.has(w));
+}
+function sameTeam(x, y) {
+  const nx = normTeam(x), ny = normTeam(y);
+  if (nx && ny && (nx === ny || nx.includes(ny) || ny.includes(nx))) return true;
+  const wy = new Set(teamWords(y));
+  return teamWords(x).some((w) => w.length >= 4 && wy.has(w));
+}
+function findApiMatch(list, home, away) {
+  if (!Array.isArray(list)) return null;
+  return findMatch(list, home, away) || list.find((m) => sameTeam(m.h, home) && sameTeam(m.a, away)) || null;
 }
 
 // Admin "API-Football prüfen" (since 01.11., paid plan): key set, plan, calls used today,
@@ -1312,7 +1369,7 @@ async function runMinuteJobs(env) {
 const RUN_LOCK_KEY = "lock:minute";
 const RUN_LOCK_MS = 110 * 1000;
 
-async function postUnchecked(env, item, reason, label) {
+async function postUnchecked(env, item, reason, label, afId = null) {
   const mq = minQuote(item.proba);
   const units = strongO05(item.parsed) ? UNITS_STRONG : UNITS_NORMAL;
   // No "ohne Live-Prüfung" suffix since 17.10.: without a live source it was on every post (owner's call).
@@ -1326,7 +1383,7 @@ async function postUnchecked(env, item, reason, label) {
   await logConfirmation(env, item, { reason: `ohne Prüfung gepostet: ${reason}` }, "premium:ok");
   await trackSignal(env, {
     ...post,
-    tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
+    tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null, afId: afId || undefined,
     line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units, odds: item.signalOdds || null,
     signalQuote: cardQuote(item.parsed),
   });
@@ -1386,12 +1443,12 @@ async function processPendingPremium(env, due, feed) {
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
     if (!match && env.APIFOOTBALL_KEY && (!Array.isArray(feed) || isGuestFeed(feed))) {
       if (apiLive === undefined) apiLive = await fetchApiFootballLive(env);
-      const m = apiLive ? findMatch(apiLive, item.parsed.homeTeam, item.parsed.awayTeam) : null;
+      const m = apiLive ? findApiMatch(apiLive, item.parsed.homeTeam, item.parsed.awayTeam) : null;
       const res = m ? confirmBasic(item, m) : null;
       if (res && res.ok) {
         done.add(item.id);
         await postUnchecked(env, item, "nur Tor/Rote Karte geprüft (API-Football)",
-          `🔥 High Confidence (${Math.round(item.proba * 100)}%) · live geprüft: kein Tor, keine Rote Karte`);
+          `🔥 High Confidence (${Math.round(item.proba * 100)}%) · live geprüft: kein Tor, keine Rote Karte`, m.afId);
       } else if (res && !res.unknown) {
         done.add(item.id);
         await logConfirmation(env, item, res, "premium:rej");
@@ -1507,9 +1564,65 @@ function findTrackedMatch(feed, t) {
   return (t.matchId && feed.find((m) => m.id === t.matchId)) || findMatch(feed, t.home, t.away);
 }
 
+// Since 01.11. (paid API-Football): a tip missing from the InPlayFlux guest feed is
+// looked up there – in the live list (by fixture id once known, else by team
+// names), then by fixture id once it left the live list, and if never found, in the
+// day's fixture list (once per run). Finished matches settle with the exact goal
+// minute and the final score; postponed/abandoned ones are void.
+const AF_ID_LOOKUPS_PER_RUN = 15;
+const AF_DAY_RETRY_MS = 15 * 60 * 1000;
+const AF_DAY_AFTER_MS = 60 * 60 * 1000; // a card at ~60' is decided about an hour later
+
+function afSource(env) {
+  let live;
+  const days = new Map();
+  let idLeft = AF_ID_LOOKUPS_PER_RUN;
+  return {
+    async live() {
+      if (live === undefined) live = await fetchApiFootballLive(env);
+      return live;
+    },
+    async byId(id) {
+      if (idLeft-- <= 0) return null;
+      const r = await fetchApiFootball(env, "fixtures?id=" + encodeURIComponent(id));
+      return r && r[0] ? r[0] : null;
+    },
+    async day(date) {
+      if (!days.has(date)) days.set(date, await fetchApiFootball(env, "fixtures?date=" + date));
+      return days.get(date);
+    },
+  };
+}
+
+async function findApiFixture(env, src, t, now) {
+  const live = await src.live();
+  let af = live ? (t.afId ? live.find((x) => x.afId === t.afId) : findApiMatch(live, t.home, t.away)) : null;
+  if (!af && t.afId) af = await src.byId(t.afId);
+  const lookDay = !af && !t.afId && now - t.postedAt >= AF_DAY_AFTER_MS && (!t.dayTriedAt || now - t.dayTriedAt >= AF_DAY_RETRY_MS);
+  if (lookDay) {
+    t.dayTriedAt = now;
+    t._dayTried = true;
+    const date = new Date(t.postedAt - 70 * 60 * 1000).toISOString().slice(0, 10); // kickoff day (UTC)
+    af = findApiMatch(await src.day(date), t.home, t.away);
+  }
+  // A match that never finishes there (suspended, interrupted) is void after 12 h.
+  if (af && !af.finished && !af.voided && now - t.postedAt > 12 * 60 * 60 * 1000) af = { ...af, voided: true };
+  return af || null;
+}
+
+// Minute of the goal the tip needed (the (line + 0.5)-th goal), when API-Football lists all goals.
+function afGoalMinute(t, af) {
+  if (t.under || !af.goalMinutes) return null;
+  const gm = af.goalMinutes[Math.round(t.line - 0.5)];
+  return gm != null && (t.minute == null || gm >= t.minute - 1) ? gm : null;
+}
+
 async function settleTracked(env, feed) {
   const open = await readTracked(env);
-  if (!open.length || !Array.isArray(feed)) return;
+  const feedDown = !Array.isArray(feed);
+  if (!open.length || (feedDown && !env.APIFOOTBALL_KEY)) return;
+  if (feedDown) feed = [];
+  const src = env.APIFOOTBALL_KEY ? afSource(env) : null;
   const now = Date.now();
   let changed = false;
   const keep = [];
@@ -1517,12 +1630,61 @@ async function settleTracked(env, feed) {
   const warnTiers = new Set();
   for (const t of open) {
     const m = findTrackedMatch(feed, t);
-    const seenGoals = m ? (num(m.hg) || 0) + (num(m.ag) || 0) : null;
-    if (m && t.lastGoals !== seenGoals) {
+    const af = !m && src ? await findApiFixture(env, src, t, now) : null;
+    if (af && t.afId !== af.afId) {
+      t.afId = af.afId;
+      changed = true;
+    }
+    if (t._dayTried) {
+      delete t._dayTried;
+      changed = true; // remember the throttle
+    }
+    const seenGoals = m ? (num(m.hg) || 0) + (num(m.ag) || 0) : af ? af.goals : null;
+    if (seenGoals != null && t.lastGoals !== seenGoals) {
       t.lastGoals = seenGoals; // last score seen, becomes the final score (finalGoals)
       changed = true;
     }
+    if (af && t.settledKey && (af.finished || af.voided)) {
+      // API-Football has the final score: log it and stop watching.
+      if (af.finished) await addFinalGoals(env, t.settledKey, af.goals);
+      changed = true;
+      continue;
+    }
+    if (af && !t.settledKey && (af.finished || af.voided)) {
+      const k = tipKey(t.tier, t.home, t.away, t.line);
+      if (settled.has(k)) {
+        changed = true;
+        continue;
+      }
+      settled.add(k);
+      changed = true;
+      let result = "void";
+      if (af.finished) {
+        const over = af.goals > t.line;
+        result = t.under ? (over ? "lost" : "won") : over ? "won" : "lost";
+        t.resultMinute = over ? afGoalMinute(t, af) : null;
+        t.goalExact = t.resultMinute != null;
+        warnTiers.add(t.tier);
+      }
+      await saveResult(env, t, result, af.finished ? af.goals : null);
+      try {
+        await markPremiumPost(env, t, result);
+      } catch (e) {}
+      try {
+        await maybePostFree(env, t, result);
+      } catch (e) {}
+      continue;
+    }
     if (t.settledKey) {
+      if (af) {
+        // Still running at API-Football: watch on (late flag only matters without it).
+        keep.push(t);
+        continue;
+      }
+      if (feedDown) {
+        keep.push(t);
+        continue;
+      }
       // Already settled by its goal: keep watching only to log the final score.
       const fin = watchFinal(t, m, now);
       if (fin === "keep") keep.push(t);
@@ -1537,7 +1699,20 @@ async function settleTracked(env, feed) {
       continue;
     }
     let result = null;
-    if (m) {
+    if (af) {
+      // Live at API-Football (not finished): decided as soon as the needed goal falls.
+      if (af.goals > t.line) {
+        result = t.under ? "lost" : "won";
+        t.resultMinute = afGoalMinute(t, af);
+        t.goalExact = t.resultMinute != null;
+      }
+      if (t.missingSince) {
+        delete t.missingSince;
+        changed = true;
+      }
+    } else if (feedDown) {
+      // InPlayFlux down and not (yet) found at API-Football: wait.
+    } else if (m) {
       const goals = seenGoals;
       const minute = num(m.minute);
       if (goals > t.line) {
@@ -1571,10 +1746,10 @@ async function settleTracked(env, feed) {
       settled.add(k);
       changed = true;
       if (result !== "void") warnTiers.add(t.tier);
-      const decidedLate = !m && t.late; // match gone after 85': last score seen is the final score
+      const decidedLate = !m && !af && t.late; // match gone after 85': last score seen is the final score
       const resultKey = await saveResult(env, t, result, decidedLate && t.lastGoals != null ? t.lastGoals : null);
       // Decided by a goal while the match runs: watch on until full time for the final score.
-      if (m && result !== "void") {
+      if ((m || af) && result !== "void") {
         delete t.late;
         delete t.missingSince;
         t.settledKey = resultKey;
@@ -3425,7 +3600,7 @@ document.getElementById('af-btn').addEventListener('click', async () => {
     if (!d.ok) { out.textContent = '❌ API antwortet nicht richtig: ' + JSON.stringify(d.errors || { http: d.http }); return; }
     out.textContent = '✅ API-Football antwortet · Tarif: ' + (d.plan || '?') + (d.active === false ? ' (NICHT aktiv)' : '') +
       ' · heute ' + d.used + ' von ' + d.limit + ' Abfragen genutzt' +
-      (d.live != null ? ' · gerade ' + d.live + ' Live-Spiele' : '') + (d.end ? ' · läuft bis ' + String(d.end).slice(0, 10) : '');
+      (d.live != null ? ' · gerade ' + d.live + ' Live-Spiele' : ' · Live-Liste fehlt: ' + JSON.stringify(d.errors || {})) + (d.end ? ' · läuft bis ' + String(d.end).slice(0, 10) : '');
   } catch (e) { out.textContent = e.message; }
 });
 
