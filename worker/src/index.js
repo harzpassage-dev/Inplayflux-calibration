@@ -449,7 +449,17 @@ const isGuestFeed = (feed) => Array.isArray(feed) && feed.length <= GUEST_FEED_M
 // minute while cards wait or tips are open, plus a few fixture lookups). It has minute, score and red cards for nearly all leagues, but no
 // shots on target, radar or market line, so it only checks "no goal, no red card,
 // not too late". Without the key cards are posted unchecked as before.
-const APIFOOTBALL_LIVE_URL = "https://v3.football.api-sports.io/fixtures?live=all";
+// Two ways in: direct (api-sports.io, secret APIFOOTBALL_KEY) or via RapidAPI (secret
+// RAPIDAPI_KEY, preferred when set). Direct calls from Cloudflare Workers hit API-Football's
+// per-IP limit (shared Cloudflare IPs, 01.11.); RapidAPI limits per key.
+const afOn = (env) => !!(env.RAPIDAPI_KEY || env.APIFOOTBALL_KEY);
+function afRequest(env, path) {
+  if (env.RAPIDAPI_KEY) {
+    return ["https://api-football-v1.p.rapidapi.com/v3/" + path,
+      { "x-rapidapi-key": env.RAPIDAPI_KEY, "x-rapidapi-host": "api-football-v1.p.rapidapi.com" }];
+  }
+  return ["https://v3.football.api-sports.io/" + path, { "x-apisports-key": env.APIFOOTBALL_KEY }];
+}
 
 async function fetchApiFootballLive(env) {
   return fetchApiFootball(env, "fixtures?live=all");
@@ -490,10 +500,11 @@ function afFixture(f) {
 // so a busy minute does not keep hitting the limit.
 let afPauseUntil = 0;
 async function fetchApiFootball(env, path) {
-  if (!env.APIFOOTBALL_KEY || Date.now() < afPauseUntil) return null;
+  if (!afOn(env) || Date.now() < afPauseUntil) return null;
   try {
-    const resp = await fetch("https://v3.football.api-sports.io/" + path, {
-      headers: { "x-apisports-key": env.APIFOOTBALL_KEY },
+    const [url, headers] = afRequest(env, path);
+    const resp = await fetch(url, {
+      headers,
       signal: AbortSignal.timeout(10000),
     });
     if (resp.status === 429) afPauseUntil = Date.now() + 60 * 1000;
@@ -532,23 +543,25 @@ function findApiMatch(list, home, away) {
 // Admin "API-Football prüfen" (since 01.11., paid plan): key set, plan, calls used today,
 // live matches right now. Costs 2 calls.
 async function apiFootballStatus(env) {
-  if (!env.APIFOOTBALL_KEY) return { key: false };
+  if (!afOn(env)) return { key: false };
   const call = async (path) => {
-    const resp = await fetch("https://v3.football.api-sports.io/" + path, {
-      headers: { "x-apisports-key": env.APIFOOTBALL_KEY },
+    const [url, headers] = afRequest(env, path);
+    const resp = await fetch(url, {
+      headers,
       signal: AbortSignal.timeout(8000),
     });
     const data = await resp.json().catch(() => null);
     const errors = data && data.errors && !Array.isArray(data.errors) && Object.keys(data.errors).length ? data.errors : null;
     const h = (n) => resp.headers.get(n);
-    return { http: resp.status, data, errors, perMin: h("x-ratelimit-limit"), perMinLeft: h("x-ratelimit-remaining"),
+    return { http: resp.status, data, errors, perMin: h("x-ratelimit-limit") || h("x-ratelimit-requests-limit"),
+      perMinLeft: h("x-ratelimit-remaining") || h("x-ratelimit-requests-remaining"),
       dayLeft: h("x-ratelimit-requests-remaining") };
   };
   try {
     const st = await call("status");
     const r = st.data && st.data.response;
     const out = {
-      key: true, ok: st.http === 200 && !st.errors && !!r && !Array.isArray(r),
+      key: true, via: env.RAPIDAPI_KEY ? "RapidAPI" : "direkt", ok: st.http === 200 && !st.errors && !!r && !Array.isArray(r),
       errors: st.errors, http: st.http, perMin: st.perMin, perMinLeft: st.perMinLeft, pausedByBot: Date.now() < afPauseUntil,
       plan: r && r.subscription ? r.subscription.plan : null,
       active: r && r.subscription ? r.subscription.active : null,
@@ -1354,7 +1367,7 @@ async function runMinuteJobs(env) {
   try {
     const feed = await fetchFeed();
     // One API-Football source per run: the live list is fetched once and shared.
-    const src = env.APIFOOTBALL_KEY ? afSource(env) : null;
+    const src = afOn(env) ? afSource(env) : null;
     if (due.length) await processPendingPremium(env, due, feed, src);
     if (tracked.length) await settleTracked(env, feed, src);
     if (u35Open) await settleU35(env, feed, u35Keys.map((k, i) => [k, u35Lists[i]]));
@@ -1438,7 +1451,7 @@ async function processPendingPremium(env, due, feed, src = null) {
       continue;
     }
     const match = Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null;
-    if (!match && env.APIFOOTBALL_KEY && (!Array.isArray(feed) || isGuestFeed(feed))) {
+    if (!match && afOn(env) && (!Array.isArray(feed) || isGuestFeed(feed))) {
       if (apiLive === undefined) apiLive = await (src || afSource(env)).live();
       const m = apiLive ? findApiMatch(apiLive, item.parsed.homeTeam, item.parsed.awayTeam) : null;
       const res = m ? confirmBasic(item, m) : null;
@@ -1617,9 +1630,9 @@ function afGoalMinute(t, af) {
 async function settleTracked(env, feed, srcIn = null) {
   const open = await readTracked(env);
   const feedDown = !Array.isArray(feed);
-  if (!open.length || (feedDown && !env.APIFOOTBALL_KEY)) return;
+  if (!open.length || (feedDown && !afOn(env))) return;
   if (feedDown) feed = [];
-  const src = env.APIFOOTBALL_KEY ? srcIn || afSource(env) : null;
+  const src = afOn(env) ? srcIn || afSource(env) : null;
   const now = Date.now();
   let changed = false;
   const keep = [];
@@ -3593,10 +3606,10 @@ document.getElementById('af-btn').addEventListener('click', async () => {
     const r = await fetch('/admin/api/apifootball-status', { headers: { 'Authorization': 'Bearer ' + pw() } });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
-    if (!d.key) { out.textContent = '❌ Kein Schlüssel: In Cloudflare fehlt das Secret APIFOOTBALL_KEY.'; return; }
+    if (!d.key) { out.textContent = '❌ Kein Schlüssel: In Cloudflare fehlt das Secret RAPIDAPI_KEY (oder APIFOOTBALL_KEY).'; return; }
     const lim = d.perMin ? ' · Limit pro Minute: ' + d.perMin + (d.perMinLeft != null ? ' (frei: ' + d.perMinLeft + ')' : '') : '';
     if (!d.ok) { out.textContent = '❌ API antwortet nicht richtig: ' + JSON.stringify(d.errors || { http: d.http }) + lim; return; }
-    out.textContent = '✅ API-Football antwortet · Tarif: ' + (d.plan || '?') + (d.active === false ? ' (NICHT aktiv)' : '') +
+    out.textContent = '✅ API-Football antwortet (' + (d.via || '') + ') · Tarif: ' + (d.plan || '?') + (d.active === false ? ' (NICHT aktiv)' : '') +
       ' · heute ' + d.used + ' von ' + d.limit + ' Abfragen genutzt' +
       (d.live != null ? ' · gerade ' + d.live + ' Live-Spiele' : ' · Live-Liste fehlt: ' + JSON.stringify(d.errors || {})) + lim + (d.end ? ' · läuft bis ' + String(d.end).slice(0, 10) : '');
   } catch (e) { out.textContent = e.message; }
@@ -4204,7 +4217,7 @@ export default {
               // Posting stays in the cron (one run at a time): several InPlayFlux
               // strategies send the same match within seconds, and parallel
               // webhook runs got past the KV claim and posted it three times (17.10.).
-              const fast = !snap.match && snap.guestFeed && !env.APIFOOTBALL_KEY;
+              const fast = !snap.match && snap.guestFeed && !afOn(env);
               await queuePremium(env, channelMsg.text, parsed, score, snap.odds, fast);
             }
           } else if (

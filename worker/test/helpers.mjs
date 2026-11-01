@@ -38,8 +38,9 @@ export function mockNet(state) {
     url = String(url);
     if (url.includes("ir_token_refresh")) return new Response(null, { status: 200, headers: { "X-IR-Token": "a".repeat(64), "Set-Cookie": "s=1; path=/" } });
     if (url.includes("GETAllMatches")) return state.feed === undefined ? new Response("err", { status: 500 }) : new Response(JSON.stringify(state.feed));
-    if (url.includes("api-sports.io")) {
+    if (url.includes("api-sports.io") || url.includes("api-football-v1.p.rapidapi.com")) {
       state.apiCalls = (state.apiCalls || 0) + 1;
+      state.apiUrls = (state.apiUrls || []).concat([[url, opts.headers || {}]]);
       if (url.includes("fixtures?id=")) {
         const id = decodeURIComponent(url.split("fixtures?id=")[1]);
         return new Response(JSON.stringify({ errors: [], response: state.apiById && state.apiById[id] ? [state.apiById[id]] : [] }));

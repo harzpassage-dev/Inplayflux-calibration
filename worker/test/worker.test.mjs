@@ -660,3 +660,17 @@ test("API-Football: postponed match is void", async () => {
   assert.equal(results(env)[0].result, "void");
   assert.equal(tracked(env).length, 0);
 });
+
+test("API-Football via RapidAPI: RAPIDAPI_KEY is used first, with the RapidAPI host and key headers", async () => {
+  const net = mockNet({ feed: [], apiLive: [{}] });
+  const env = makeEnv({ RAPIDAPI_KEY: "r", APIFOOTBALL_KEY: "k" });
+  const d = await (await admin(worker, env, "/admin/api/apifootball-status")).json();
+  assert.equal(d.ok, true);
+  assert.equal(d.via, "RapidAPI");
+  assert.equal(d.live, 1);
+  for (const [url, h] of net.apiUrls) {
+    assert.ok(url.startsWith("https://api-football-v1.p.rapidapi.com/v3/"), url);
+    assert.equal(h["x-rapidapi-key"], "r");
+    assert.equal(h["x-rapidapi-host"], "api-football-v1.p.rapidapi.com");
+  }
+});

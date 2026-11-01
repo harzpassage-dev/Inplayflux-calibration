@@ -267,6 +267,11 @@ then decide per tier on the new days and apply.
   (same cause as the free-plan suspension 17.10.). Owner asked to write to support (rate limit per key / whitelist, else
   refund). Fallback options: refund, or API-Football via RapidAPI (key-based gateway; worker change ~10 min: header
   `x-rapidapi-key`, host api-football-v1.p.rapidapi.com, path `/v3/`). Until fixed the worker falls back as before.
+  API-Sports support (chat bot) confirmed: shared Cloudflare IPs hit a network-level limit, no whitelist possible, only a
+  dedicated IP helps; refunds via "Chat with an agent". Built the same evening: **RapidAPI route** – secret `RAPIDAPI_KEY`
+  (preferred over `APIFOOTBALL_KEY`, `afOn`/`afRequest`), admin check shows "(RapidAPI)" or "(direkt)". Plan: owner tests
+  RapidAPI's free Basic plan first; if the live list comes through → refund API-Sports, buy Pro on RapidAPI. Test
+  "API-Football via RapidAPI".
 
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
