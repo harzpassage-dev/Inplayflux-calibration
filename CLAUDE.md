@@ -248,6 +248,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-01: **final score per tip** (owner's yes, to test Over 3.0 / Over 2.0 on real outcomes instead of the hazard
+  estimate): results get `finalGoals` (total goals at full time, also a column in the results CSV). A tip decided by its
+  goal stays in `track:open` with `settledKey` (= its `result:*` key) and is watched like an open tip (`watchFinal`); when
+  the match is gone after 85' for 10 min, `addFinalGoals` writes the last score seen into the record + metadata; never seen
+  late → dropped without it after 4 h. Lost tips (gone after 85') get it at once. Watched entries are not counted as open
+  (morning report, admin) but still block a re-post. Voids have none. First analysis once ~2 weeks of tips have it.
+  Test "final score". Same day: MoneyBag version of the Elfmeter video on `/videos` (15 videos; the script also drops " 👇").
+
 - 2026-10-31: TikTok video 10 `marketing/tiktok-elfmeter.mp4` (penalties; external sourced facts, like the IFAB rules in video 5).
 
 - 2026-10-31: **automatic 24 h trial** (plan item 4, owner's yes). Start page `#test`: 18+ checkbox + button "Test auf Telegram

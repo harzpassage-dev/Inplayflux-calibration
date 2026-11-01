@@ -25,7 +25,7 @@ for (const slug of slugs) {
   let html = fs.readFileSync(path.join(here, `tiktok-${slug}.video.html`), "utf8")
     .replace("⚽ TORMINUTE", "<i></i>MONEY<b>BAG</b>")
     .replace(/Folge <span class="gold">@torminute<\/span> ⚽📊/, "Mehr Daten: <span class=\"gold\">moneybag-signals.com</span>")
-    .replace(/ (Schreib es|Ab) in die Kommentare!/g, "")
+    .replace(/ (Schreib es|Ab) in die Kommentare!/g, "").replace(/ 👇/g, "")
     .replace("</head>", CSS + "</head>");
   if (/torminute/i.test(html)) throw new Error(slug + ": Torminute left in the video");
   const dir = path.join(tmp, slug); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });

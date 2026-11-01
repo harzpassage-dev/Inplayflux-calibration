@@ -113,7 +113,43 @@ test("settling: exact goal minute from the feed, WIN banner, free channel, resul
   assert.equal(r.result, "won");
   assert.equal(r.resultMinute, 71);
   assert.ok(r.quote > 1 && r.marketP > 0 && r.wait, "quote, market and wait estimate stored");
+  assert.equal(r.finalGoals, null, "final score not known yet");
+  // The won tip stays watched (only for the final score), not counted as open.
+  assert.equal(tracked(env).length, 1);
+  assert.ok(tracked(env)[0].settledKey);
+  const open = await (await admin(worker, env, "/admin/api/results?days=7")).json();
+  assert.equal(open.open.length, 0);
+});
+
+test("final score: logged when the match is gone after 85', for won and lost tips", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  await webhook(worker, env, card());
+  await webhook(worker, env, card({ home: "Gamma", away: "Delta" }));
+  await cron(worker, env);
+  net.feed = [
+    { id: "m", h: "Alpha FC", a: "Beta FC", minute: "80", hg: "3", ag: "0", sonGolDakikasi: "71" },
+    { id: "n", h: "Gamma", a: "Delta", minute: "86", hg: "2", ag: "0" },
+  ];
+  await cron(worker, env);
+  net.feed[0] = { id: "m", h: "Alpha FC", a: "Beta FC", minute: "90", hg: "4", ag: "1", sonGolDakikasi: "89" };
+  await cron(worker, env);
+  assert.equal(net.sent.filter((m) => m.method === "editMessageText").length, 1, "won tip marked once, not again on later goals");
+  net.feed = [];
+  const realNow = Date.now;
+  try {
+    await cron(worker, env); // both gone: grace period starts
+    Date.now = () => realNow() + 11 * 60e3;
+    await cron(worker, env);
+  } finally { Date.now = realNow; }
+  const byHome = Object.fromEntries(results(env).map((r) => [r.home, r]));
+  assert.equal(byHome["Alpha FC"].result, "won");
+  assert.equal(byHome["Alpha FC"].finalGoals, 5);
+  assert.equal(byHome["Gamma"].result, "lost");
+  assert.equal(byHome["Gamma"].finalGoals, 2);
   assert.equal(tracked(env).length, 0);
+  const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();
+  assert.ok(csv.split("\n")[0].endsWith(",finalGoals"));
 });
 
 test("settling with two goals: minute unknown, banner without minute", async () => {
@@ -327,11 +363,11 @@ test("start page: shows the weekly own analysis (Daten der Woche) with bars and 
   assert.match(html, /eigene Auswertung/);
 });
 
-test("videos page: 14 MoneyBag videos from our own assets, byte ranges for Safari, no Torminute name", async () => {
+test("videos page: 15 MoneyBag videos from our own assets, byte ranges for Safari, no Torminute name", async () => {
   mockNet({ feed: [] });
   const env = makeEnv({ ASSETS: { fetch: () => new Response("0123456789") } });
   const html = await (await worker.fetch(new Request("https://moneybag-signals.com/videos"), env, {})).text();
-  assert.equal((html.match(/<video /g) || []).length, 14);
+  assert.equal((html.match(/<video /g) || []).length, 15);
   assert.doesNotMatch(html, /torminute|youtube|tiktok/i);
   const v = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4", { headers: { Range: "bytes=2-4" } }), env, {});
   assert.equal(v.status, 206);

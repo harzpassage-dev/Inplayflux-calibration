@@ -1480,15 +1480,29 @@ async function settleTracked(env, feed) {
   const settled = new Set(); // duplicates of a tip settled in this run are dropped silently
   const warnTiers = new Set();
   for (const t of open) {
+    const m = findTrackedMatch(feed, t);
+    const seenGoals = m ? (num(m.hg) || 0) + (num(m.ag) || 0) : null;
+    if (m && t.lastGoals !== seenGoals) {
+      t.lastGoals = seenGoals; // last score seen, becomes the final score (finalGoals)
+      changed = true;
+    }
+    if (t.settledKey) {
+      // Already settled by its goal: keep watching only to log the final score.
+      const fin = watchFinal(t, m, now);
+      if (fin === "keep") keep.push(t);
+      else if (fin === "final") await addFinalGoals(env, t.settledKey, t.lastGoals);
+      if (fin !== "keep" || t._changed) changed = true;
+      delete t._changed;
+      continue;
+    }
     const k = tipKey(t.tier, t.home, t.away, t.line);
     if (settled.has(k)) {
       changed = true;
       continue;
     }
-    const m = findTrackedMatch(feed, t);
     let result = null;
     if (m) {
-      const goals = (num(m.hg) || 0) + (num(m.ag) || 0);
+      const goals = seenGoals;
       const minute = num(m.minute);
       if (goals > t.line) {
         result = t.under ? "lost" : "won";
@@ -1521,7 +1535,16 @@ async function settleTracked(env, feed) {
       settled.add(k);
       changed = true;
       if (result !== "void") warnTiers.add(t.tier);
-      await saveResult(env, t, result);
+      const decidedLate = !m && t.late; // match gone after 85': last score seen is the final score
+      const resultKey = await saveResult(env, t, result, decidedLate && t.lastGoals != null ? t.lastGoals : null);
+      // Decided by a goal while the match runs: watch on until full time for the final score.
+      if (m && result !== "void") {
+        delete t.late;
+        delete t.missingSince;
+        t.settledKey = resultKey;
+        t.result = result;
+        keep.push(t);
+      }
       try {
         await markPremiumPost(env, t, result);
       } catch (e) {}
@@ -1610,7 +1633,50 @@ async function markPremiumPost(env, t, result) {
   }).catch(() => null);
 }
 
-async function saveResult(env, t, result) {
+// Final score of a settled tip (since 01.11., for testing lines like Over 3.0 on real
+// outcomes): after the deciding goal the tip stays in track:open with settledKey and is
+// watched like an open one; when the match is gone after 85' the last score seen is the
+// final one. Returns "keep", "final" (write finalGoals) or "drop" (never seen late).
+function watchFinal(t, m, now) {
+  if (m) {
+    const minute = num(m.minute);
+    if (minute != null && minute >= TRACK_LOST_AFTER_MIN && !t.late) {
+      t.late = true;
+      t._changed = true;
+    }
+    if (t.missingSince) {
+      delete t.missingSince;
+      t._changed = true;
+    }
+    return "keep";
+  }
+  if (t.late) {
+    if (!t.missingSince) {
+      t.missingSince = now;
+      t._changed = true;
+      return "keep";
+    }
+    return now - t.missingSince >= TRACK_MISSING_GRACE_MS ? "final" : "keep";
+  }
+  return now - t.postedAt >= TRACK_GIVE_UP_MS ? "drop" : "keep";
+}
+
+async function addFinalGoals(env, key, goals) {
+  if (!key || goals == null) return;
+  const raw = await env.ACCESS_KV.get(key);
+  if (!raw) return;
+  let record;
+  try {
+    record = JSON.parse(raw);
+  } catch (e) {
+    return;
+  }
+  if (record.finalGoals === goals) return;
+  record.finalGoals = goals;
+  await env.ACCESS_KV.put(key, JSON.stringify(record), { expirationTtl: 365 * 24 * 60 * 60, metadata: resultMeta(record) });
+}
+
+async function saveResult(env, t, result, finalGoals = null) {
   const now = new Date();
   // Profit in units only where the logged quote is for the signal's own line.
   const quoteSide = t.under ? "under" : "over";
@@ -1632,17 +1698,20 @@ async function saveResult(env, t, result) {
     // Market's fair probability for the tip at signal time (from the card, margin removed).
     marketP: !t.under && t.signalQuote && t.signalQuote.p ? t.signalQuote.p : null,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
+    finalGoals,
   };
   // The record is also stored as key metadata, so listing results (public
   // results page, reports) needs one KV list call per 1000 tips, not one get each.
-  await env.ACCESS_KV.put(`result:${now.getTime()}:${t.id}`, JSON.stringify(record), {
+  const key = `result:${now.getTime()}:${t.id}`;
+  await env.ACCESS_KV.put(key, JSON.stringify(record), {
     expirationTtl: 365 * 24 * 60 * 60,
     metadata: resultMeta(record),
   });
+  return key;
 }
 
 const RESULT_CSV_COLS = ["postedAt", "settledAt", "tier", "home", "away", "line", "minute", "result", "resultMinute", "units",
-  "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom"];
+  "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom", "finalGoals"];
 function resultsCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
   const lines = rows.map((r) => {
@@ -1961,7 +2030,7 @@ async function sendDailyReport(env) {
   if (!env.ADMIN_CHAT_ID || new Date().getUTCDay() === 1) return;
   const now = Date.now();
   const [rows, open] = await Promise.all([listResults(env, now - 7 * DAY_MS), readTracked(env)]);
-  await sendTelegramMessage(env, env.ADMIN_CHAT_ID, dailyAdminText(rows, now, open.length));
+  await sendTelegramMessage(env, env.ADMIN_CHAT_ID, dailyAdminText(rows, now, open.filter((t) => !t.settledKey).length));
 }
 
 async function sendWeeklyReport(env) {
@@ -2216,6 +2285,7 @@ const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
 // Torminute videos, MoneyBag brand, no Torminute name; built by marketing/moneybag-videos.mjs into public/videos/).
 // Served from our own assets: no YouTube/TikTok player, no cookies. Newest first.
 const VIDEOS = [
+  ["elfmeter", "Elfmeter = sicheres Tor?"],
   ["jugend", "Jugend gegen Herren: Wer trifft öfter?"],
   ["abseits", "Abseits! Kennst du die Regel wirklich?"],
   ["nutzen", "Bauchgefühl oder Daten?"],
@@ -3841,7 +3911,7 @@ export default {
       const sum = summarize(rows);
       const to = new Date();
       return jsonResponse({
-        days, summary: sum, open: await readTracked(env), rows,
+        days, summary: sum, open: (await readTracked(env)).filter((t) => !t.settledKey), rows,
         reportPreview: weeklyReportText(sum, new Date(to.getTime() - days * DAY_MS), to),
       });
     }
