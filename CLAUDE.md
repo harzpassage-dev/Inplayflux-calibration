@@ -254,6 +254,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-01 night: **live quote in the premium post** (owner: "Kannst du die Live Quote im Signal schreiben"). Before posting,
+  `processPendingPremium` looks the match up in API-Football's live list and `odds/live` (`apiLiveQuote`, shared per run);
+  `stakeAdvice` then adds "📈 Live-Quote jetzt: 1,36 (Over 2.5) – über der Mindestquote ✅" or "… – noch unter der
+  Mindestquote ⏳ nur setzen, wenn sie steigt." (High Confidence checked/unchecked and Over 1.5 Test; the O1.5 "Quote:" line
+  is left out then). The live quote also becomes the tracked tip's `odds` (prices the profit lines) and its `afId`. No
+  live odds for the match → post as before (card quote hint). Test "live quote in the post".
+
 - 2026-11-01 night: **API plan points 1 + 2** (owner: "fang mit Punkt 1 und 2 an"; quota 7,500/day mostly unused).
   (1) **Real live odds per tip**: while a tip is open and has an `afId` (also looked up by name for tips the InPlayFlux
   feed shows), one `odds/live` call per run (`afSource().odds()`, `afOddsLines`: every full-match goal over/under bet,

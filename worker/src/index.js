@@ -890,7 +890,7 @@ async function maybePostHalfRisk(env, text, parsed, score) {
   const mq = minQuote(HALF_WR);
   const probaNote = score ? ` · Modell: ${Math.round(score.proba * 100)}%` : "";
   const post = await postPremium(env, buildPremiumMessage(text, `🟠 Half-Risiko-Signal (Minute ${parsed.minute}' · Tor-Score ${gs.points}${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
-      (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
+      (odds && !odds.live ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
       stakeAdvice(parsed.targetLine, mq, UNITS_HALF, odds));
   await trackSignal(env, {
     ...post,
@@ -1450,7 +1450,7 @@ async function postUnchecked(env, item, reason, label, afId = null) {
   // No "ohne Live-Prüfung" suffix since 17.10.: without a live source it was on every post (owner's call).
   label = label || `🔥 High Confidence (${Math.round(item.proba * 100)}%)`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n\n" +
-      stakeAdvice(item.parsed.targetLine, mq, units, item.signalOdds));
+      stakeAdvice(item.parsed.targetLine, mq, units, liveOdds(item, item.signalOdds)));
   await logPremiumForward(env, item.parsed, { proba: item.proba, threshold: null }, "premium:fwd", {
     signalOdds: item.signalOdds || null,
     unchecked: reason,
@@ -1458,8 +1458,9 @@ async function postUnchecked(env, item, reason, label, afId = null) {
   await logConfirmation(env, item, { reason: `ohne Prüfung gepostet: ${reason}` }, "premium:ok");
   await trackSignal(env, {
     ...post,
-    tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null, afId: afId || undefined,
-    line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units, odds: item.signalOdds || null,
+    tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: null,
+    afId: afId || (item.liveQuote && item.liveQuote.afId) || undefined,
+    line: item.parsed.targetLine, minute: item.parsed.minute, minQuote: mq, units, odds: liveOdds(item, item.signalOdds || null),
     signalQuote: cardQuote(item.parsed),
   });
 }
@@ -1474,18 +1475,22 @@ async function postO15Test(env, item, match) {
   if (match) {
     live = liveSnapshot(match);
     odds = oddsSnapshot(match) || odds;
+  }
+  odds = liveOdds(item, odds);
+  if (match) {
     const reason = live.goals > p.targetLine - 0.5 ? `Tor schon gefallen (${live.score})` : live.redCards > 0 ? "Rote Karte" : null;
     if (reason) return logConfirmation(env, item, { tier: "o15", reason, live }, "o15:rej");
   }
   const mq = minQuote(O15_WR);
   const label = `🧪 Over 1.5 Test (Minute ${p.minute}' · Vor-Spiel-Linie ${String(p.goallinePre).replace(".", ",")}${match ? " · live: kein Tor, keine Rote Karte" : ""})`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) +
-      (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
+      (odds && !odds.live ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
       "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.\n" +
       stakeAdvice(p.targetLine, mq, UNITS_HALF, odds));
   await trackSignal(env, {
     ...post,
     tier: "o15", home: p.homeTeam, away: p.awayTeam, matchId: match ? match.id || null : null,
+    afId: (item.liveQuote && item.liveQuote.afId) || undefined,
     line: p.targetLine, minute: live && live.minute != null ? live.minute : p.minute, minQuote: mq, units: UNITS_HALF, odds,
     signalQuote: cardQuote(p),
   });
@@ -1510,6 +1515,12 @@ async function processPendingPremium(env, due, feed, src = null) {
       continue;
     }
     seen.add(k);
+    // Real live quote of the tip's own line from API-Football for the post (owner's wish 01.11.).
+    if (src && !item.liveQuote) {
+      try {
+        item.liveQuote = await apiLiveQuote(src, item.parsed);
+      } catch (e) {}
+    }
     if (tier === "o15") {
       done.add(item.id);
       await postO15Test(env, item, Array.isArray(feed) ? findMatch(feed, item.parsed.homeTeam, item.parsed.awayTeam) : null);
@@ -1559,11 +1570,12 @@ async function processPendingPremium(env, due, feed, src = null) {
       const mq = minQuote(expected);
       const units = res.goal.points >= 1 || strongO05(item.parsed) ? UNITS_STRONG : UNITS_NORMAL;
       const post = await postPremium(env, buildPremiumMessage(item.text, label) + "\n" + confirmationBlock(res) + "\n\n" +
-          stakeAdvice(item.parsed.targetLine, mq, units, res.postOdds));
+          stakeAdvice(item.parsed.targetLine, mq, units, liveOdds(item, res.postOdds)));
       await trackSignal(env, {
         ...post,
         tier: "premium", home: item.parsed.homeTeam, away: item.parsed.awayTeam, matchId: match.id || null,
-        line: item.parsed.targetLine, minute: res.live.minute, minQuote: mq, units, odds: res.postOdds,
+        afId: (item.liveQuote && item.liveQuote.afId) || undefined,
+        line: item.parsed.targetLine, minute: res.live.minute, minQuote: mq, units, odds: liveOdds(item, res.postOdds),
         signalQuote: cardQuote(item.parsed),
       });
       await logPremiumForward(env, item.parsed, res.score, "premium:fwd", {
@@ -1605,10 +1617,26 @@ function fmtQuote(q) {
 
 // "Nur setzen ab …" line plus a warning when the logged live quote for the
 // target line is already below it.
+// Live over price of the tip's own line at posting time (API-Football odds/live), or null.
+async function apiLiveQuote(src, parsed) {
+  const live = await src.live();
+  const hit = findApiMatch(live, parsed.homeTeam, parsed.awayTeam);
+  if (!hit) return null;
+  const odds = await src.odds();
+  const own = odds && odds.get(hit.afId) && odds.get(hit.afId)[String(parsed.targetLine)];
+  if (!own || own.o == null) return { afId: hit.afId };
+  return { line: parsed.targetLine, over: own.o, under: own.u ?? null, minute: hit.minute, live: true, afId: hit.afId, at: new Date().toISOString() };
+}
+const liveOdds = (item, fallback) => (item.liveQuote && item.liveQuote.live ? item.liveQuote : fallback);
+
 function stakeAdvice(line, mq, units, odds) {
   const unitsText = String(units).replace(".", ",");
   const out = [`💶 Nur setzen ab Quote ${fmtQuote(mq)} (Over ${line}) · Einsatz: ${unitsText} ${units === 1 ? "Einheit" : "Einheiten"}`];
-  if (odds && odds.line === line && odds.over < mq) {
+  if (odds && odds.live && odds.line === line) {
+    out.push(odds.over >= mq
+      ? `📈 Live-Quote jetzt: ${fmtQuote(odds.over)} (Over ${line}) – über der Mindestquote ✅`
+      : `📈 Live-Quote jetzt: ${fmtQuote(odds.over)} (Over ${line}) – noch unter der Mindestquote ⏳ nur setzen, wenn sie steigt.`);
+  } else if (odds && odds.line === line && odds.over < mq) {
     out.push(`⏳ Aktuelle Quote ${fmtQuote(odds.over)} liegt darunter: nur setzen, wenn sie noch steigt.`);
   }
   return out.join("\n");
@@ -4540,7 +4568,7 @@ export default {
             const market = marketProb(snap.match, parsed.targetLine);
             const mq = minQuote(RISK_WR);
             const post = await postPremium(env, buildPremiumMessage(channelMsg.text, `⚠️ Risiko-Signal (Minute ${parsed.minute}'+${probaNote}${market != null ? ` · Markt ${Math.round(market * 100)}%` : ""})`) +
-                (odds ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
+                (odds && !odds.live ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
                 stakeAdvice(parsed.targetLine, mq, UNITS_RISK, odds));
             await trackSignal(env, {
               ...post,

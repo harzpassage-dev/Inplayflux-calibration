@@ -758,3 +758,25 @@ test("admin odds probe: live matches with over/under odds, example, open tips", 
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Quoten-Abdeckung prüfen") && html.includes("Spiele-Archiv CSV"));
 });
+
+test("live quote in the post: API-Football price of the own line, with a hint when it is below the Mindestquote", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net.apiOdds = [afOdds(41, { "2.5": [1.36, 3.0] })];
+  await at(130e3, () => cron(worker, env));
+  const post = premiumPosts(net)[0];
+  assert.ok(post && post.text.includes("📈 Live-Quote jetzt: 1,36 (Over 2.5) – über der Mindestquote ✅"), post && post.text);
+  assert.equal(tracked(env)[0].odds.over, 1.36, "live quote prices the tip");
+  // Over 1.5 Test below its Mindestquote 1.32
+  const net2 = mockNet({ feed: [] });
+  const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env2, card({ header: "💰  Over 1.5 Value", home: "Gamma", away: "Delta", score: "1-0", target: "Goal", minute: 58, pre: "3.0", live: "2.5" }));
+  net2.apiLive = [afFix({ id: 42, home: "Gamma", away: "Delta", minute: 59, gh: 1, goals: [20] })];
+  net2.apiOdds = [afOdds(42, { "1.5": [1.2, 4.0] })];
+  await cron(worker, env2);
+  const p2 = premiumPosts(net2)[0];
+  assert.ok(p2 && p2.text.includes("📈 Live-Quote jetzt: 1,20 (Over 1.5) – noch unter der Mindestquote ⏳"), p2 && p2.text);
+  assert.ok(!p2.text.includes("\nQuote: Over"), "no second quote line");
+});
