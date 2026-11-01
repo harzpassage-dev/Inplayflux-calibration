@@ -280,6 +280,12 @@ then decide per tier on the new days and apply.
   via the proxy (admin check shows "(eigener Server)"). DNS: A record `af` → server IP, DNS only (grey). Check from the
   container: `curl -s https://af.moneybag-signals.com/status` without the secret must give 403 "forbidden".
   Test "API-Football via own proxy server".
+  **Live since 01.11. 18:59 Berlin:** Hetzner Cloud project "moneybag", server `ubuntu-1gb-nbg1-9` (CPX02, 1 vCPU / 1 GB,
+  Nürnberg, 7.72 €/month incl. IPv4; Cost-Optimized was unavailable), IPv4 91.98.115.167, DNS `af` A record (DNS only).
+  Caddy got its certificate only after a server restart (first attempts ran before the DNS record existed). Admin check:
+  "(eigener Server) · Pro · 71 Live-Spiele · Limit 300/min (frei 289)". `AF_PROXY_URL` / `AF_PROXY_SECRET` were set as
+  plain Variables in Cloudflare (works the same; kept on deploy by `keep_vars`). Monthly cost now ~19 $ API + 7.72 €
+  server; review after 2–3 weeks (voids gone? exact minutes? real odds for Over 3.0 next). No refund requested.
 
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
