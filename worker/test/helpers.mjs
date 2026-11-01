@@ -38,6 +38,11 @@ export function mockNet(state) {
     url = String(url);
     if (url.includes("ir_token_refresh")) return new Response(null, { status: 200, headers: { "X-IR-Token": "a".repeat(64), "Set-Cookie": "s=1; path=/" } });
     if (url.includes("GETAllMatches")) return state.feed === undefined ? new Response("err", { status: 500 }) : new Response(JSON.stringify(state.feed));
+    if (url.includes("api-sports.io")) {
+      state.apiCalls = (state.apiCalls || 0) + 1;
+      if (url.endsWith("/status")) return new Response(JSON.stringify({ errors: [], response: { subscription: { plan: "Pro", active: true, end: "2026-12-01T00:00:00+00:00" }, requests: { current: 12, limit_day: 7500 } } }));
+      return new Response(JSON.stringify({ errors: [], response: state.apiLive || [] }));
+    }
     if (url.includes("api.telegram.org")) {
       const body = opts.body instanceof FormData ? Object.fromEntries(opts.body.entries()) : JSON.parse(opts.body);
       const method = url.split("/").pop();

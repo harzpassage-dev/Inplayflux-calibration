@@ -248,6 +248,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
+  the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
+  prüfen"** (`/admin/api/apifootball-status`, `apiFootballStatus`: `/status` plan/active/calls today + `fixtures?live=all`
+  count, 2 calls). Planned next with the key: settle every tip (no voids) + exact goal minute + final score from
+  API-Football, real live odds incl. Over 3.0 (check coverage of lower leagues first), instant check instead of the 2-min
+  wait. Test "admin API-Football check".
+
 - 2026-11-01: **final score per tip** (owner's yes, to test Over 3.0 / Over 2.0 on real outcomes instead of the hazard
   estimate): results get `finalGoals` (total goals at full time, also a column in the results CSV). A tip decided by its
   goal stays in `track:open` with `settledKey` (= its `result:*` key) and is watched like an open tip (`watchFinal`); when

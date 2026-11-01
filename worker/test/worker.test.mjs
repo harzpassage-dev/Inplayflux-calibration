@@ -581,3 +581,18 @@ test("automatic 24 h trial: start page button opens the bot, /start test gives i
   assert.ok(net.sent.some((m) => m.method === "unbanChatMember" && m.user_id === 4242));
   assert.match(net.sent.filter((m) => m.chat_id === "4242").pop().text, /Test ist vorbei/);
 });
+
+test("admin API-Football check: no key, key with plan and calls, password needed", async () => {
+  mockNet({ feed: [], apiLive: [{}, {}, {}] });
+  let env = makeEnv();
+  assert.equal((await (await admin(worker, env, "/admin/api/apifootball-status")).json()).key, false);
+  env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  const d = await (await admin(worker, env, "/admin/api/apifootball-status")).json();
+  assert.equal(d.ok, true);
+  assert.equal(d.plan, "Pro");
+  assert.equal(d.limit, 7500);
+  assert.equal(d.live, 3);
+  assert.equal((await admin(worker, env, "/admin/api/apifootball-status", { headers: { Authorization: "Bearer wrong" } })).status, 401);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(html.includes("API-Football prüfen"));
+});

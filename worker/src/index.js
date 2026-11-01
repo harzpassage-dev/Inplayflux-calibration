@@ -481,6 +481,42 @@ async function fetchApiFootballLive(env) {
   }
 }
 
+// Admin "API-Football prüfen" (since 01.11., paid plan): key set, plan, calls used today,
+// live matches right now. Costs 2 calls.
+async function apiFootballStatus(env) {
+  if (!env.APIFOOTBALL_KEY) return { key: false };
+  const call = async (path) => {
+    const resp = await fetch("https://v3.football.api-sports.io/" + path, {
+      headers: { "x-apisports-key": env.APIFOOTBALL_KEY },
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await resp.json().catch(() => null);
+    const errors = data && data.errors && !Array.isArray(data.errors) && Object.keys(data.errors).length ? data.errors : null;
+    return { http: resp.status, data, errors };
+  };
+  try {
+    const st = await call("status");
+    const r = st.data && st.data.response;
+    const out = {
+      key: true, ok: st.http === 200 && !st.errors && !!r && !Array.isArray(r),
+      errors: st.errors, http: st.http,
+      plan: r && r.subscription ? r.subscription.plan : null,
+      active: r && r.subscription ? r.subscription.active : null,
+      end: r && r.subscription ? r.subscription.end : null,
+      used: r && r.requests ? r.requests.current : null,
+      limit: r && r.requests ? r.requests.limit_day : null,
+    };
+    if (out.ok) {
+      const live = await call("fixtures?live=all");
+      out.live = live.data && Array.isArray(live.data.response) && !live.errors ? live.data.response.length : null;
+      if (live.errors) out.errors = live.errors;
+    }
+    return out;
+  } catch (e) {
+    return { key: true, ok: false, errors: { fetch: String(e && e.message || e) } };
+  }
+}
+
 // The checks of confirmLive that API-Football can answer.
 function confirmBasic(item, m) {
   const goalsAtSignal = item.parsed.targetLine - 0.5;
@@ -2830,6 +2866,8 @@ async function handleAdminPage() {
   <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
   <button id="test-o15-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 1.5 senden</button>
   <div class="out" id="test-o15-out" style="margin-bottom:10px;"></div>
+  <button id="af-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">API-Football prüfen</button>
+  <div class="out" id="af-out" style="margin-bottom:10px;"></div>
   <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -3376,6 +3414,21 @@ document.getElementById('fill-prev-btn').addEventListener('click', () => fillUnc
 document.getElementById('fill-apply-btn').addEventListener('click', () => fillUnclear(true));
 document.getElementById('res7-btn').addEventListener('click', () => loadResults(7));
 document.getElementById('res30-btn').addEventListener('click', () => loadResults(30));
+document.getElementById('af-btn').addEventListener('click', async () => {
+  const out = document.getElementById('af-out');
+  out.textContent = 'Prüfe …';
+  try {
+    const r = await fetch('/admin/api/apifootball-status', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    if (!d.key) { out.textContent = '❌ Kein Schlüssel: In Cloudflare fehlt das Secret APIFOOTBALL_KEY.'; return; }
+    if (!d.ok) { out.textContent = '❌ API antwortet nicht richtig: ' + JSON.stringify(d.errors || { http: d.http }); return; }
+    out.textContent = '✅ API-Football antwortet · Tarif: ' + (d.plan || '?') + (d.active === false ? ' (NICHT aktiv)' : '') +
+      ' · heute ' + d.used + ' von ' + d.limit + ' Abfragen genutzt' +
+      (d.live != null ? ' · gerade ' + d.live + ' Live-Spiele' : '') + (d.end ? ' · läuft bis ' + String(d.end).slice(0, 10) : '');
+  } catch (e) { out.textContent = e.message; }
+});
+
 document.getElementById('res-csv-btn').addEventListener('click', async () => {
   const out = document.getElementById('res-out');
   out.textContent = 'Erstelle CSV …';
@@ -3914,6 +3967,11 @@ export default {
         days, summary: sum, open: (await readTracked(env)).filter((t) => !t.settledKey), rows,
         reportPreview: weeklyReportText(sum, new Date(to.getTime() - days * DAY_MS), to),
       });
+    }
+
+    if (url.pathname === "/admin/api/apifootball-status" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      return jsonResponse(await apiFootballStatus(env));
     }
 
     // All settled tips of the last N days as CSV (owner, 31.10.: for the profit / market check per tier).
