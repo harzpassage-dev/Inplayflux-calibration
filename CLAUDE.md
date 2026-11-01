@@ -272,6 +272,14 @@ then decide per tier on the new days and apply.
   (preferred over `APIFOOTBALL_KEY`, `afOn`/`afRequest`), admin check shows "(RapidAPI)" or "(direkt)". Plan: owner tests
   RapidAPI's free Basic plan first; if the live list comes through → refund API-Sports, buy Pro on RapidAPI. Test
   "API-Football via RapidAPI".
+  RapidAPI no longer lists API-Football (page "API not found", 01.11.). Owner chose **option B: own small server with a
+  dedicated IPv4** (Hetzner Cloud, ~4–5 €/month) as proxy: `infra/af-proxy/cloud-init.yaml` (Ubuntu 24.04, Caddy reverse
+  proxy for `af.moneybag-signals.com` → v3.football.api-sports.io, forwards only with header `X-Proxy-Secret`, drops
+  X-Forwarded-*/CF-* headers, ufw 22/80/443, unattended upgrades; `__SECRET__` placeholder – the real value lives only in
+  Cloudflare `AF_PROXY_SECRET` and on the server). Worker: `AF_PROXY_URL` + `AF_PROXY_SECRET` + `APIFOOTBALL_KEY` → calls go
+  via the proxy (admin check shows "(eigener Server)"). DNS: A record `af` → server IP, DNS only (grey). Check from the
+  container: `curl -s https://af.moneybag-signals.com/status` without the secret must give 403 "forbidden".
+  Test "API-Football via own proxy server".
 
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football

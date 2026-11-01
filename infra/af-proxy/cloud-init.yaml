@@ -1,0 +1,59 @@
+#cloud-config
+# Small proxy with its own IPv4 for API-Football (owner's choice 01.11.2026): API-Football limits
+# requests per IP, and Cloudflare Workers share their outgoing IPs, so calls from the worker were
+# refused ("Too many requests ... per minute") although the Pro key had 299/300 left.
+# Paste into Hetzner Cloud "Cloud config" when creating the server (Ubuntu 24.04), after replacing
+# __SECRET__ with the value of the Cloudflare secret AF_PROXY_SECRET (never commit the real value).
+# DNS: A record af.moneybag-signals.com -> server IPv4, "DNS only" (grey cloud).
+# The proxy only forwards requests that carry the right X-Proxy-Secret; the API key stays in
+# Cloudflare and passes through. Client IP headers are dropped so API-Football sees only this IP.
+package_update: true
+package_upgrade: true
+packages:
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - curl
+  - gnupg
+  - ufw
+  - unattended-upgrades
+write_files:
+  - path: /root/Caddyfile.af
+    permissions: "0600"
+    content: |
+      {
+        email kontakt@moneybag-signals.com
+      }
+
+      af.moneybag-signals.com {
+        @allowed header X-Proxy-Secret "__SECRET__"
+        handle @allowed {
+          reverse_proxy https://v3.football.api-sports.io {
+            header_up Host {upstream_hostport}
+            header_up -X-Proxy-Secret
+            header_up -X-Forwarded-For
+            header_up -X-Forwarded-Proto
+            header_up -X-Forwarded-Host
+            header_up -X-Real-Ip
+            header_up -Cf-Connecting-Ip
+            header_up -Cf-Worker
+            header_up -Cf-Ray
+            header_up -Cf-Ipcountry
+            header_up -Cf-Visitor
+          }
+        }
+        handle {
+          respond "forbidden" 403
+        }
+      }
+runcmd:
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' -o /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y caddy
+  - install -m 0640 -o root -g caddy /root/Caddyfile.af /etc/caddy/Caddyfile
+  - systemctl restart caddy
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable

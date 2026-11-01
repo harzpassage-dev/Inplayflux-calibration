@@ -674,3 +674,16 @@ test("API-Football via RapidAPI: RAPIDAPI_KEY is used first, with the RapidAPI h
     assert.equal(h["x-rapidapi-host"], "api-football-v1.p.rapidapi.com");
   }
 });
+
+test("API-Football via own proxy server: URL, key and proxy secret", async () => {
+  const net = mockNet({ feed: [], apiLive: [{}, {}] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k", AF_PROXY_URL: "https://af.example.com/", AF_PROXY_SECRET: "geheim" });
+  const d = await (await admin(worker, env, "/admin/api/apifootball-status")).json();
+  assert.equal(d.via, "eigener Server");
+  assert.equal(d.live, 2);
+  for (const [url, h] of net.apiUrls) {
+    assert.ok(url === "https://af.example.com/status" || url === "https://af.example.com/fixtures?live=all", url);
+    assert.equal(h["x-apisports-key"], "k");
+    assert.equal(h["x-proxy-secret"], "geheim");
+  }
+});

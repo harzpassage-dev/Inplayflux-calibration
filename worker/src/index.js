@@ -452,8 +452,15 @@ const isGuestFeed = (feed) => Array.isArray(feed) && feed.length <= GUEST_FEED_M
 // Two ways in: direct (api-sports.io, secret APIFOOTBALL_KEY) or via RapidAPI (secret
 // RAPIDAPI_KEY, preferred when set). Direct calls from Cloudflare Workers hit API-Football's
 // per-IP limit (shared Cloudflare IPs, 01.11.); RapidAPI limits per key.
+// Since 01.11. evening a small own server with a dedicated IP (Caddy reverse proxy,
+// infra/af-proxy/) can sit in between: AF_PROXY_URL (https://af.moneybag-signals.com) and
+// AF_PROXY_SECRET (checked by the proxy, stripped before forwarding). The API key stays here.
 const afOn = (env) => !!(env.RAPIDAPI_KEY || env.APIFOOTBALL_KEY);
 function afRequest(env, path) {
+  if (env.AF_PROXY_URL && env.AF_PROXY_SECRET && env.APIFOOTBALL_KEY) {
+    return [String(env.AF_PROXY_URL).replace(/\/+$/, "") + "/" + path,
+      { "x-apisports-key": env.APIFOOTBALL_KEY, "x-proxy-secret": env.AF_PROXY_SECRET }];
+  }
   if (env.RAPIDAPI_KEY) {
     return ["https://api-football-v1.p.rapidapi.com/v3/" + path,
       { "x-rapidapi-key": env.RAPIDAPI_KEY, "x-rapidapi-host": "api-football-v1.p.rapidapi.com" }];
@@ -561,7 +568,7 @@ async function apiFootballStatus(env) {
     const st = await call("status");
     const r = st.data && st.data.response;
     const out = {
-      key: true, via: env.RAPIDAPI_KEY ? "RapidAPI" : "direkt", ok: st.http === 200 && !st.errors && !!r && !Array.isArray(r),
+      key: true, via: env.AF_PROXY_URL && env.AF_PROXY_SECRET && env.APIFOOTBALL_KEY ? "eigener Server" : env.RAPIDAPI_KEY ? "RapidAPI" : "direkt", ok: st.http === 200 && !st.errors && !!r && !Array.isArray(r),
       errors: st.errors, http: st.http, perMin: st.perMin, perMinLeft: st.perMinLeft, pausedByBot: Date.now() < afPauseUntil,
       plan: r && r.subscription ? r.subscription.plan : null,
       active: r && r.subscription ? r.subscription.active : null,
