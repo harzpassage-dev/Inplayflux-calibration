@@ -21,7 +21,7 @@ Premium tiers (all in `worker/src/index.js`):
 
 | Tier | Rule | Stake |
 |---|---|---|
-| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with the secret `APIFOOTBALL_KEY` set, such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
+| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with API-Football configured (**active since 01.11.**, via the own proxy server – see API-Football section) such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75, men's first teams only since 29.10. (`nonMenMatch`: league/teams with U19…, Youth, Junior, Primavera, Reserve, Women, (W) are skipped; parser reads `league` from the 🏆 line) (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
@@ -145,7 +145,13 @@ then decide per tier on the new days and apply.
 - KV writes cost money/limits: batch per day key, write only on change. Account is on Workers
   Paid since 2026-10-11.
 - Secrets live only in Cloudflare (ADMIN_PASSWORD, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
-  PREMIUM_CHANNEL_ID, ADMIN_CHAT_ID, optional APIFOOTBALL_KEY). Recovery steps: `RESTORE.md`.
+  PREMIUM_CHANNEL_ID, ADMIN_CHAT_ID, APIFOOTBALL_KEY; plain vars AF_PROXY_URL / AF_PROXY_SECRET for the API-Football proxy). Recovery steps: `RESTORE.md`.
+- **API-Football (since 01.11.)**: Pro plan (~19 $/month, 7,500 calls/day, until 01.12., credit card) reached only via the
+  own proxy server (Hetzner CPX02 Nürnberg, 91.98.115.167, `af.moneybag-signals.com`, Caddy, `infra/af-proxy/cloud-init.yaml`,
+  7.72 €/month) because API-Football rate-limits Cloudflare's shared IPs. Admin "API-Football prüfen" shows route, plan,
+  calls and live matches. If the server is down or the proxy vars are removed, the worker falls back to the InPlayFlux feed
+  (checks fail → unchecked posts, 4 h voids). Server care: unattended upgrades run on their own; a reboot (Hetzner
+  "Herunterfahren" → "Einschalten") fixes a missing certificate. Owner should enable 2FA at Hetzner.
 - Security: access tokens are 32 hex chars and share the KV namespace with everything else;
   `getAccess` only accepts that format and records with a numeric `expiresAt` (a guessable key
   like `premium:pending` used to open the tool). `/admin/api/*` locks an IP after 10 wrong
@@ -653,7 +659,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-10-31)
+## Open items (as of 2026-11-01)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -756,9 +762,11 @@ then decide per tier on the new days and apply.
   wins, ~1 pp too optimistic) and cost speed (2-min wait). API-Football Pro ~19 $/month (7,500 calls/day; prices from
   third-party listings, confirm on api-sports.io). Recommended to the owner: not now; if wanted, use the key for an
   instant check at posting time (no 2-min wait) instead of the delayed check.
-- Live check: none for now (guest feed ~15 matches; API-Football free plan suspended on Cloudflare IPs;
-  Highlightly lacks lower leagues). Re-enable by a paid API-Football plan + secret `APIFOOTBALL_KEY`
-  (code ready). Partnership/permission email to InPlayFlux **sent 30.10.** (see change log) – waiting for the answer.
+- Live check + settling via API-Football **active since 01.11. evening** (own proxy server, see conventions). To check in
+  the next days: voids in the morning report should drop to ~0; matches API-Football does not cover (very low leagues,
+  name mismatch in `sameTeam`) still void → look at those and widen the matcher if needed; calls/day in the admin check.
+  Next step: real live odds from API-Football (`odds/live`) for our leagues, incl. Over 3.0 → profit check of the
+  Over 3.0 / Over 2.0 idea with real odds and `finalGoals`. Review cost (~19 $ + 7.72 €/month) ~20.11. Partnership/permission email to InPlayFlux **sent 30.10.** (see change log) – waiting for the answer.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
@@ -785,7 +793,7 @@ then decide per tier on the new days and apply.
   `signalQuote.over` below a floor, or market p above our hit rate) from ~1 week of tips with quotes (parser fixed 31.10.
   evening), show the owner the numbers, then build it with a test; (3) Over 1.5 Test per strategy; (4) automatic 24 h trial
   (bot creates the token and sends the link – done 31.10.); (5) invite links per source; (6) fill the partner network; (7) legal check,
-  Gewerbe; (8) InPlayFlux answer; (9) API-Football once customers pay. Next: owner sends the 30-day CSV ~07./08.11.
+  Gewerbe; (8) InPlayFlux answer; (9) API-Football – done 01.11. (own proxy server). Next: owner sends the 30-day CSV ~07./08.11.
 - Higher thresholds checked 31.10. (`scripts/threshold_walkforward.py`, model refit weekly, tested on the next unseen week,
   10.–31.10., counts are cards): O2.5 0.75 82.0 % (~40/day) / 0.80 81.4 % (~25/day, now) / 0.82 81.1 % / 0.84 85.9 % (~6/day,
   weeks 78/88/90) – the model barely separates between 0.75 and 0.82; O3.5 0.75 80.3 % (~15/day, now) / 0.80 83.0 % (~2/day);
@@ -802,8 +810,8 @@ then decide per tier on the new days and apply.
   offered: owner notes real Asian Over 3.0 odds on such signals, and/or the worker logs the final score so the strategy can
   be tested on real outcomes.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
-  result. Current fix: CSV fill in admin + morning-report reminder (owner's choice). Revisit API-Football (~19 $/month,
-  daily fixtures call could settle all voids) once there are paying customers.
+  result. Since 01.11. API-Football settles them (live list, fixture id, day list); CSV fill in admin + morning-report
+  reminder stay as fallback.
 - Over 1.5 Test after the men filter (29.10.): 72.1 % on 68 unseen matches – at the 72 % cut. Decide at the next weekly
   routine; "Over 1.5 Value" (72.2 %, 72) is the weakest strategy this week.
 - Marketing images in design 6 for the free channel: weekly image (admin, `drawBilanz`), `marketing/roi-tabelle.png`
