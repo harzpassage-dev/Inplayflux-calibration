@@ -1807,10 +1807,20 @@ async function apiOddsProbe(env) {
     }
   }
   const ids = new Map(raw.map((e) => [e.fixture && e.fixture.id, afOddsLines(e)]));
-  const open = (await readTracked(env)).filter((t) => !t.settledKey).map((t) => ({
-    match: `${t.home} – ${t.away}`, line: t.line, afId: t.afId || null,
-    odds: t.afId && ids.has(t.afId) ? Object.keys(ids.get(t.afId)).length > 0 : false,
-  }));
+  const openTips = (await readTracked(env)).filter((t) => !t.settledKey);
+  // Matches of open tips that are not in the live list: are they in today's (or yesterday's) fixture list at all?
+  const needDay = openTips.some((t) => !(t.afId || findApiMatch(live, t.home, t.away)));
+  const day = needDay ? await src.day(new Date().toISOString().slice(0, 10)) : null;
+  const open = openTips.map((t) => {
+    const hit = (t.afId && live && live.find((x) => x.afId === t.afId)) || findApiMatch(live, t.home, t.away);
+    const fid = t.afId || (hit && hit.afId) || null;
+    const inDay = !fid && day ? findApiMatch(day, t.home, t.away) : null;
+    return {
+      match: `${t.home} – ${t.away}`, line: t.line, afId: fid, live: !!hit, inDay: !!inDay,
+      ageMin: Math.round((Date.now() - t.postedAt) / 60000),
+      odds: fid && ids.has(fid) ? Object.keys(ids.get(fid)).length > 0 : false,
+    };
+  });
   const today = new Date().toISOString().slice(0, 10);
   let stored = 0;
   try {
@@ -3912,12 +3922,13 @@ document.getElementById('odds-btn').addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
     if (!d.key) { out.textContent = 'Kein API-Football-Schlüssel.'; return; }
     if (!d.ok) { out.textContent = '❌ Keine Live-Quoten bekommen (API-Fehler oder Limit).'; return; }
-    const open = (d.open || []).map((t) => (t.odds ? '✅ ' : '— ') + t.match + ' (Over ' + t.line + ')').join('<br>');
+    const open = (d.open || []).map((t) => (t.odds ? '✅ ' : t.live ? '🔗 ' : t.afId || t.inDay ? '📅 ' : '— ') +
+      esc(t.match) + ' (Over ' + t.line + ', vor ' + t.ageMin + ' Min.)').join('<br>');
     out.innerHTML = 'Live-Spiele: ' + d.live + ' · mit Live-Quoten: ' + d.withOdds + ' · davon mit Über/Unter-Toren: ' + d.withOu +
       '<br>Spiele-Archiv heute: ' + d.storedToday + ' Spiele gespeichert' +
       (d.sample ? '<br>Beispiel: ' + esc(d.sample.match || String(d.sample.fixture)) + ' – Linien ' + esc(Object.keys(d.sample.lines).join(', ')) : '') +
       '<br>Wetten-Namen: ' + esc((d.topNames || []).map((n) => n[0] + ' (' + n[1] + ')').join(', ')) +
-      (open ? '<br><br>Offene Tipps (✅ = Quoten gefunden):<br>' + open : '');
+      (open ? '<br><br>Offene Tipps (✅ live mit Quoten · 🔗 live ohne Quoten · 📅 nur im Spielplan · — bei API-Football nicht gefunden):<br>' + open : '');
   } catch (e) { out.textContent = e.message; }
 });
 

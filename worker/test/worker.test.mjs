@@ -755,6 +755,7 @@ test("admin odds probe: live matches with over/under odds, example, open tips", 
   assert.equal(d.live, 2);
   assert.equal(d.withOu, 1);
   assert.deepEqual(Object.keys(d.sample.lines), ["2.5"]);
+  assert.deepEqual(d.open, []);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Quoten-Abdeckung prüfen") && html.includes("Spiele-Archiv CSV"));
 });
