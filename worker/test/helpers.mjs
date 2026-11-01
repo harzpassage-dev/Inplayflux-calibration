@@ -45,7 +45,7 @@ export function mockNet(state) {
         return new Response(JSON.stringify({ errors: [], response: state.apiById && state.apiById[id] ? [state.apiById[id]] : [] }));
       }
       if (url.includes("fixtures?date=")) { state.dayCalls = (state.dayCalls || 0) + 1; return new Response(JSON.stringify({ errors: [], response: state.apiDay || [] })); }
-      if (url.endsWith("/status")) return new Response(JSON.stringify({ errors: [], response: { subscription: { plan: "Pro", active: true, end: "2026-12-01T00:00:00+00:00" }, requests: { current: 12, limit_day: 7500 } } }));
+      if (url.endsWith("/status")) return new Response(JSON.stringify({ errors: [], response: { subscription: { plan: "Pro", active: true, end: "2026-12-01T00:00:00+00:00" }, requests: { current: 12, limit_day: 7500 } } }), { headers: { "x-ratelimit-limit": "300", "x-ratelimit-remaining": "299" } });
       return new Response(JSON.stringify({ errors: [], response: state.apiLive || [] }));
     }
     if (url.includes("api.telegram.org")) {

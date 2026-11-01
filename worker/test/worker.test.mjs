@@ -592,6 +592,7 @@ test("admin API-Football check: no key, key with plan and calls, password needed
   assert.equal(d.plan, "Pro");
   assert.equal(d.limit, 7500);
   assert.equal(d.live, 3);
+  assert.equal(d.perMin, "300", "per-minute limit from the response headers");
   assert.equal((await admin(worker, env, "/admin/api/apifootball-status", { headers: { Authorization: "Bearer wrong" } })).status, 401);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("API-Football prüfen"));

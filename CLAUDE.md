@@ -258,6 +258,10 @@ then decide per tier on the new days and apply.
   tracked tip. Without the key everything works as before (InPlayFlux feed, 4 h void). If the InPlayFlux feed is down,
   tips are still settled via the API. Calls: ~1 live call/min while tips are open + lookups (~1,500–3,000/day).
   Tests "API-Football: …" (3). Admin check shows the live-list error if that call fails.
+  Same evening the admin check showed "Too many requests … per minute" twice (17:31, 17:43; worked at 17:36): one
+  API-Football source per run now (live list shared by posting check and settling), max 8 id lookups per run, 60 s pause
+  per isolate after a rate-limit answer (`afPauseUntil`), and the admin check shows the per-minute limit from the
+  response headers (`x-ratelimit-limit` / `-remaining`). If the limit shows 10 (free plan), ask API-Football support.
 
 - 2026-11-01: owner bought **API-Football Pro** (credit card; plan: test one month, then decide with real numbers) and set
   the secret `APIFOOTBALL_KEY` → the 2-minute live check via API-Football is active again. Admin button **"API-Football
