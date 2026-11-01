@@ -542,6 +542,9 @@ then decide per tier on the new days and apply.
   green, indexing requested for `/` and `/ergebnisse` the same day. Check with `site:moneybag-signals.com` in ~1–2 weeks. 
   27.10.: coverage export (state 23.10.) showed 2 pages "blocked by 403" (before the start page existed; `/` and
   `/ergebnisse` answer Googlebot 200 now); owner started "Fehlerbehebung validieren" the same day.
+  01.11.: `site:moneybag-signals.com` on google.de shows `/` ("Live-Fußballsignale mit Datenmodell und offener Bilanz:
+  MoneyBag") and `/ergebnisse` → indexed. `/videos` and `/partner` not yet; owner advised to request indexing for both in
+  Search Console (URL-Prüfung → Indexierung beantragen).
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
