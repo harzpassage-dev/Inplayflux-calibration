@@ -790,3 +790,15 @@ test("team names: a word may be the start of the other (Sheff Utd (W) = Sheffiel
   await at(130e3, () => cron(worker, env));
   assert.equal(tracked(env)[0].afId, 51);
 });
+
+test("admin test post shows a real live quote from API-Football (other match if the sample has none)", async () => {
+  const net = mockNet({ feed: [], apiLive: [afFix({ id: 61, home: "Liverpool", away: "Arsenal", minute: 70 })],
+    apiOdds: [afOdds(61, { "1.5": [1.45, 2.7] })] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await admin(worker, env, "/admin/api/test-post?tier=o15", { method: "POST" });
+  const t = premiumPosts(net)[0].text;
+  assert.ok(t.includes("📈 Live-Quote jetzt: 1,45 (Over 1.5) – über der Mindestquote ✅"), t);
+  assert.ok(t.includes("(Live-Quote zum Test aus: Liverpool – Arsenal)"));
+  assert.ok(t.includes("TEST"));
+  assert.equal(tracked(env).length, 0);
+});

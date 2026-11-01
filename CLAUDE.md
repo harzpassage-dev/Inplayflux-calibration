@@ -260,6 +260,12 @@ then decide per tier on the new days and apply.
   Mindestquote ⏳ nur setzen, wenn sie steigt." (High Confidence checked/unchecked and Over 1.5 Test; the O1.5 "Quote:" line
   is left out then). The live quote also becomes the tracked tip's `odds` (prices the profit lines) and its `afId`. No
   live odds for the match → post as before (card quote hint). Test "live quote in the post".
+  Same night: admin test posts (High Confidence / Over 1.5) show a real 📈 line too (`testLiveQuote`: same match if
+  API-Football has the line, else any live match with it, named "(Live-Quote zum Test aus: …)"); team matching accepts
+  a 4+ letter word that starts the other ("Sheff"/"Sheffield"); "Quoten-Abdeckung prüfen" marks each open tip ✅ live with
+  odds / 🔗 live without / 📅 only in the day's fixtures / — not found, with similar fixtures. First check 19:13: API live
+  list 78 matches (62 with over/under), our 19 open tips: 0 live, 3 in the fixture list, 16 not found (women's/U19/
+  regional leagues) → API-Football may cover few of our matches; decide on the subscription by ~20.11.
 
 - 2026-11-01 night: **API plan points 1 + 2** (owner: "fang mit Punkt 1 und 2 an"; quota 7,500/day mostly unused).
   (1) **Real live odds per tip**: while a tip is open and has an `afId` (also looked up by name for tips the InPlayFlux

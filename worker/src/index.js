@@ -1628,6 +1628,24 @@ async function apiLiveQuote(src, parsed) {
   if (!own || own.o == null) return { afId: hit.afId };
   return { line: parsed.targetLine, over: own.o, under: own.u ?? null, minute: hit.minute, live: true, afId: hit.afId, at: new Date().toISOString() };
 }
+// Admin test posts: a real live quote for the line – from the same match if API-Football has it,
+// else from any live match with that line (named in the post), so the 📈 line can be seen.
+async function testLiveQuote(env, line, home, away) {
+  if (!afOn(env)) return null;
+  const src = afSource(env);
+  const live = await src.live();
+  const odds = await src.odds();
+  if (!live || !odds) return null;
+  const own = (f) => f && odds.get(f.afId) && odds.get(f.afId)[String(line)];
+  let f = home ? findApiMatch(live, home, away) : null;
+  if (!own(f)) f = live.find((x) => own(x));
+  if (!f) return null;
+  const o = own(f);
+  if (o.o == null) return null;
+  return { line, over: o.o, under: o.u ?? null, live: true, from: `${f.h} – ${f.a}` };
+}
+const testQuoteNote = (q) => (q ? `(Live-Quote zum Test aus: ${q.from})` : "(gerade keine Live-Quote für diese Linie bei API-Football)");
+
 const liveOdds = (item, fallback) => (item.liveQuote && item.liveQuote.live ? item.liveQuote : fallback);
 
 function stakeAdvice(line, mq, units, odds) {
@@ -4357,6 +4375,7 @@ export default {
         const pre = s.goallinePre;
         const wouldPass = s.minute <= O15_MAX_MINUTE && pre != null && pre >= O15_MIN_LINE_PRE && s.redCards === 0;
         matchInfo = pick ? `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})` : null;
+        const testQuote = await testLiveQuote(env, 1.5, pick && pick.m.h, pick && pick.m.a).catch(() => null);
         text = [
           "🧪 TEST – kein Tipp, bitte nicht setzen",
           `🧪 Over 1.5 Test (Minute ${s.minute}' · Vor-Spiel-Linie ${pre != null ? String(pre).replace(".", ",") : "–"})`,
@@ -4368,7 +4387,8 @@ export default {
           odds ? `Quote: ${oddsText(odds)}` : null,
           "",
           "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.",
-          stakeAdvice(1.5, minQuote(O15_WR), UNITS_HALF, odds),
+          stakeAdvice(1.5, minQuote(O15_WR), UNITS_HALF, testQuote || odds),
+          afOn(env) ? testQuoteNote(testQuote) : null,
           "",
           `Echt gepostet wird nur bei Over-1.5-Karten bis Minute ${O15_MAX_MINUTE} mit Vor-Spiel-Linie ab 2,75. ${pick ? `Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.` : "Gerade kein passendes Live-Spiel mit 1 Tor, daher Beispielspiel."}`,
         ].filter((x) => x != null).join("\n");
@@ -4434,6 +4454,7 @@ export default {
           const units = goal.points >= 1 || strongO05({ targetLine: line, goallinePre: s.goallinePre }) ? UNITS_STRONG : UNITS_NORMAL;
           const res = { live: s, score: score || { proba: proba || 0 }, goal, postOdds: oddsSnapshot(pick.m), signalOdds: null };
           matchInfo = `${pick.m.h} – ${pick.m.a} (${s.minute}' ${s.score})`;
+          const testQuote = await testLiveQuote(env, line, pick.m.h, pick.m.a).catch(() => null);
           text = [
             "🧪 TEST-SIGNAL – kein Tipp, bitte nicht setzen",
             "",
@@ -4442,10 +4463,11 @@ export default {
             `🎯 Beispiel-Ziel: Over ${line}`,
             confirmationBlock(res).replace("✅ Live bestätigt nach 2 min", "✅ Live-Daten abgerufen"),
             "",
-            stakeAdvice(line, mq, units, res.postOdds),
+            stakeAdvice(line, mq, units, testQuote || res.postOdds),
+            afOn(env) ? testQuoteNote(testQuote) : null,
             "",
             `Live-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele)`,
-          ].join("\n");
+          ].filter((x) => x != null).join("\n");
         } else {
           text = `🧪 TEST – kein Tipp\n\nLive-Feed von Cloudflare erreichbar: ja (${feed.length} Spiele), aber gerade kein laufendes ${only00 ? "0-0-" : ""}Spiel zwischen 20' und 85'.`;
         }
