@@ -500,13 +500,65 @@ function afFixture(f) {
     score: `${gh}-${ga}`,
     goalMinutes: goalMinutes && goalMinutes.length === gh + ga ? goalMinutes : null,
     redCards: events ? events.filter((e) => e.type === "Card" && /red/i.test(e.detail || "")).length : null,
+    // For the own match archive (afm:*, since 01.11.): league, kickoff, half-time score, compact events.
+    lg: f.league ? f.league.name : null,
+    c: f.league ? f.league.country : null,
+    lid: f.league ? f.league.id : null,
+    kick: f.fixture ? f.fixture.date : null,
+    ht: f.score && f.score.halftime && f.score.halftime.home != null ? `${f.score.halftime.home}-${f.score.halftime.away}` : null,
+    ev: events ? afEvents(events, f.teams && f.teams.home && f.teams.home.id) : null,
   };
+}
+
+// Events as a short string: type letter + minute (+stoppage) + side, e.g. "G23h,P45+2a,R60h,S70a".
+// G goal, P penalty goal, O own goal (side = team credited by API-Football), M missed penalty,
+// R red card, S substitution. Yellow cards and VAR notes are left out (size).
+function afEvents(events, homeId) {
+  const out = [];
+  for (const e of events) {
+    const d = String(e.detail || "");
+    let k = null;
+    if (e.type === "Goal") k = /missed/i.test(d) ? "M" : /penalty/i.test(d) ? "P" : /own/i.test(d) ? "O" : "G";
+    else if (e.type === "Card" && /red/i.test(d)) k = "R";
+    else if (e.type === "subst") k = "S";
+    if (!k || !e.time) continue;
+    const m = num(e.time.elapsed);
+    if (m == null) continue;
+    const x = num(e.time.extra);
+    const side = e.team && homeId != null && e.team.id === homeId ? "h" : "a";
+    out.push(`${k}${m}${x ? "+" + x : ""}${side}`);
+  }
+  return out.join(",");
+}
+
+// Live over/under odds of one fixture from odds/live: { "2.5": { o, u }, "3": {...} } (lines as numbers
+// in string form, suspended prices left out). Bet names differ, so every full-match goal total counts.
+const AF_OU_BET = /over\/?under|total goals|goals over|asian total|match goals|goal line/i;
+const AF_OU_SKIP = /1st|2nd|first|second|half|home|away|team|corner|card|booking|exact/i;
+function afOddsLines(entry) {
+  const lines = {};
+  for (const bet of (entry && entry.odds) || []) {
+    const name = String(bet.name || "");
+    if (!AF_OU_BET.test(name) || AF_OU_SKIP.test(name)) continue;
+    for (const v of bet.values || []) {
+      if (v.suspended) continue;
+      const val = String(v.value || "");
+      const side = /^over/i.test(val) ? "o" : /^under/i.test(val) ? "u" : null;
+      const h = num(v.handicap != null && v.handicap !== "" ? v.handicap : (val.match(/[\d.]+/) || [])[0]);
+      const odd = num(v.odd);
+      if (!side || h == null || odd == null || odd <= 1) continue;
+      const key = String(h);
+      lines[key] = lines[key] || {};
+      if (lines[key][side] == null) lines[key][side] = odd;
+    }
+  }
+  return lines;
 }
 
 // After a per-minute rate-limit answer no further calls for 60 s (per isolate),
 // so a busy minute does not keep hitting the limit.
 let afPauseUntil = 0;
-async function fetchApiFootball(env, path) {
+async function fetchApiFootball(env, path, map = afFixture) {
   if (!afOn(env) || Date.now() < afPauseUntil) return null;
   try {
     const [url, headers] = afRequest(env, path);
@@ -520,7 +572,7 @@ async function fetchApiFootball(env, path) {
     const errors = data && data.errors;
     if (errors && !Array.isArray(errors) && errors.rateLimit) afPauseUntil = Date.now() + 60 * 1000;
     if (!data || !Array.isArray(data.response) || (errors && Object.keys(errors).length)) return null;
-    return data.response.map(afFixture);
+    return map ? data.response.map(map) : data.response;
   } catch (e) {
     return null;
   }
@@ -1363,7 +1415,8 @@ async function runMinuteJobs(env) {
   ]);
   const due = pending.filter((p) => p.fast || now - p.receivedAt >= CONFIRM_DELAY_MS);
   const u35Open = u35Lists.some((l) => l.some((e) => u35Status(e, now) === "open"));
-  if (!due.length && !tracked.length && !u35Open) return; // the common case: KV reads only, no fetch, no writes
+  const collect = afOn(env); // own match archive from API-Football runs every minute (since 01.11.)
+  if (!due.length && !tracked.length && !u35Open && !collect) return; // without API-Football: KV reads only, no fetch, no writes
   // A slow feed can make one minute's run overlap the next. Both would then
   // post the same queued card and settle the same tip twice (seen 14.10.:
   // Aston Villa U19 twice in premium, results and the free channel). Only one
@@ -1372,12 +1425,17 @@ async function runMinuteJobs(env) {
   if (lock && now - Number(lock) < RUN_LOCK_MS) return;
   await env.ACCESS_KV.put(RUN_LOCK_KEY, String(now), { expirationTtl: 120 });
   try {
-    const feed = await fetchFeed();
+    const feed = due.length || tracked.length || u35Open ? await fetchFeed() : null;
     // One API-Football source per run: the live list is fetched once and shared.
     const src = afOn(env) ? afSource(env) : null;
     if (due.length) await processPendingPremium(env, due, feed, src);
     if (tracked.length) await settleTracked(env, feed, src);
     if (u35Open) await settleU35(env, feed, u35Keys.map((k, i) => [k, u35Lists[i]]));
+    if (src) {
+      try {
+        await collectMatches(env, src);
+      } catch (e) {}
+    }
   } finally {
     await env.ACCESS_KV.delete(RUN_LOCK_KEY);
   }
@@ -1594,6 +1652,7 @@ function afSource(env) {
   let live;
   const days = new Map();
   let idLeft = AF_ID_LOOKUPS_PER_RUN;
+  let oddsMap;
   return {
     async live() {
       if (live === undefined) live = await fetchApiFootballLive(env);
@@ -1608,7 +1667,133 @@ function afSource(env) {
       if (!days.has(date)) days.set(date, await fetchApiFootball(env, "fixtures?date=" + date));
       return days.get(date);
     },
+    // All live odds in one call, as Map fixture id -> over/under lines (fetched once per run).
+    async odds() {
+      if (oddsMap === undefined) {
+        const raw = await fetchApiFootball(env, "odds/live", null);
+        oddsMap = raw ? new Map(raw.map((e) => [e.fixture && e.fixture.id, afOddsLines(e)])) : null;
+      }
+      return oddsMap;
+    },
+    async ids(list) {
+      return fetchApiFootball(env, "fixtures?ids=" + list.join("-"));
+    },
   };
+}
+
+// Own match archive (point 2 of the API plan, 01.11.): every match in API-Football's live list is
+// remembered by id (af:prev); once it leaves the list it is fetched by id (20 per call, max 60 per
+// run) and its final record goes into the day bucket afm:<kickoff date> (180 days). Not yet finished
+// (interrupted, or briefly missing) → retried up to 10 runs. Costs ~1 call per 20 matches.
+const AF_PREV_KEY = "af:prev";
+const AF_IDS_PER_RUN = 60;
+async function collectMatches(env, src) {
+  const live = await src.live();
+  if (!Array.isArray(live)) return;
+  let prev = { ids: [], pend: [] };
+  try {
+    prev = JSON.parse((await env.ACCESS_KV.get(AF_PREV_KEY)) || "") || prev;
+  } catch (e) {}
+  const cur = live.map((f) => f.afId).filter((id) => id != null);
+  const curSet = new Set(cur);
+  const pend = new Map((prev.pend || []).filter(([id]) => !curSet.has(id)));
+  for (const id of prev.ids || []) if (!curSet.has(id) && !pend.has(id)) pend.set(id, 0);
+  const todo = [...pend.keys()].slice(0, AF_IDS_PER_RUN);
+  const done = [];
+  for (let i = 0; i < todo.length; i += 20) {
+    const got = await src.ids(todo.slice(i, i + 20));
+    if (!got) break;
+    for (const f of got) {
+      if (f.finished || f.voided) {
+        done.push(f);
+        pend.delete(f.afId);
+      }
+    }
+    for (const id of todo.slice(i, i + 20)) if (pend.has(id)) pend.set(id, pend.get(id) + 1);
+  }
+  for (const [id, n] of pend) if (n >= 10) pend.delete(id);
+  if (done.length) {
+    const byDay = new Map();
+    for (const f of done) {
+      const day = String(f.kick || new Date().toISOString()).slice(0, 10);
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push({ id: f.afId, k: f.kick, c: f.c, lg: f.lg, lid: f.lid, h: f.h, a: f.a, st: f.status, ht: f.ht,
+        ft: f.score, ev: f.ev });
+    }
+    for (const [day, recs] of byDay) {
+      const key = "afm:" + day;
+      let list = [];
+      try {
+        list = JSON.parse((await env.ACCESS_KV.get(key)) || "[]");
+      } catch (e) {}
+      const have = new Set(list.map((r) => r.id));
+      const add = recs.filter((r) => !have.has(r.id));
+      if (add.length) await env.ACCESS_KV.put(key, JSON.stringify(list.concat(add)), { expirationTtl: 180 * 24 * 60 * 60 });
+    }
+  }
+  const next = { ids: cur, pend: [...pend.entries()] };
+  const same = JSON.stringify(next) === JSON.stringify({ ids: prev.ids || [], pend: prev.pend || [] });
+  if (!same) await env.ACCESS_KV.put(AF_PREV_KEY, JSON.stringify(next), { expirationTtl: 2 * 24 * 60 * 60 });
+}
+
+async function listMatches(env, days) {
+  const since = new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
+  const rows = [];
+  let cursor;
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: "afm:", cursor });
+    for (const k of list.keys) {
+      if (k.name.slice(4) < since) continue;
+      try {
+        rows.push(...JSON.parse((await env.ACCESS_KV.get(k.name)) || "[]"));
+      } catch (e) {}
+    }
+    cursor = list.list_complete ? null : list.cursor;
+  } while (cursor);
+  return rows;
+}
+
+const MATCH_CSV_COLS = ["id", "k", "c", "lg", "lid", "h", "a", "st", "ht", "ft", "ev"];
+function matchesCsv(rows) {
+  const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const head = ["fixtureId", "kickoff", "country", "league", "leagueId", "home", "away", "status", "halftime", "fulltime", "events"];
+  return [head.join(",")].concat(rows.map((r) => MATCH_CSV_COLS.map((c) => cell(r[c])).join(","))).join("\n") + "\n";
+}
+
+// Admin "Quoten-Abdeckung prüfen": how many live matches have live over/under odds right now,
+// which bet names come back, an example, and the open tips with/without odds.
+async function apiOddsProbe(env) {
+  if (!afOn(env)) return { key: false };
+  const src = afSource(env);
+  const [live, raw] = await Promise.all([src.live(), fetchApiFootball(env, "odds/live", null)]);
+  if (!raw) return { key: true, ok: false };
+  const names = {};
+  let withOu = 0;
+  let sample = null;
+  for (const e of raw) {
+    for (const b of e.odds || []) names[b.name] = (names[b.name] || 0) + 1;
+    const lines = afOddsLines(e);
+    if (Object.keys(lines).length) {
+      withOu++;
+      if (!sample) sample = { fixture: e.fixture && e.fixture.id, lines };
+    }
+  }
+  const ids = new Map(raw.map((e) => [e.fixture && e.fixture.id, afOddsLines(e)]));
+  const open = (await readTracked(env)).filter((t) => !t.settledKey).map((t) => ({
+    match: `${t.home} – ${t.away}`, line: t.line, afId: t.afId || null,
+    odds: t.afId && ids.has(t.afId) ? Object.keys(ids.get(t.afId)).length > 0 : false,
+  }));
+  const today = new Date().toISOString().slice(0, 10);
+  let stored = 0;
+  try {
+    stored = JSON.parse((await env.ACCESS_KV.get("afm:" + today)) || "[]").length;
+  } catch (e) {}
+  if (sample) {
+    const f = live && live.find((x) => x.afId === sample.fixture);
+    if (f) sample.match = `${f.h} – ${f.a} (${f.c || ""} · ${f.lg || ""}, ${f.minute}')`;
+  }
+  const topNames = Object.entries(names).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  return { key: true, ok: true, live: live ? live.length : null, withOdds: raw.length, withOu, topNames, sample, open, storedToday: stored };
 }
 
 async function findApiFixture(env, src, t, now) {
@@ -1655,6 +1840,23 @@ async function settleTracked(env, feed, srcIn = null) {
     if (t._dayTried) {
       delete t._dayTried;
       changed = true; // remember the throttle
+    }
+    // Real live odds while the tip is open (since 01.11.): fixture id from the live list if the
+    // match came from the InPlayFlux feed, then the over/under lines from odds/live.
+    if (src && !t.settledKey && !t.under) {
+      if (!t.afId && m) {
+        const hit = findApiMatch(await src.live(), t.home, t.away);
+        if (hit) {
+          t.afId = hit.afId;
+          changed = true;
+        }
+      }
+      const live = af || m;
+      if (t.afId && live && !(af && (af.finished || af.voided))) {
+        const odds = await src.odds();
+        const lines = odds && odds.get(t.afId);
+        if (lines && recordOdds(t, lines, num(live.minute), now)) changed = true;
+      }
     }
     const seenGoals = m ? (num(m.hg) || 0) + (num(m.ag) || 0) : af ? af.goals : null;
     if (seenGoals != null && t.lastGoals !== seenGoals) {
@@ -1904,6 +2106,49 @@ async function addFinalGoals(env, key, goals) {
   await env.ACCESS_KV.put(key, JSON.stringify(record), { expirationTtl: 365 * 24 * 60 * 60, metadata: resultMeta(record) });
 }
 
+// Odds log of a tip (t.ol): first sighting (minute, lines from line − 0.5 to line + 1), the highest
+// over price of the tip's own line and its minute, and the first minute it reached 1.40 (the owner's
+// "wait for 1.40" entry). Returns true when something new was stored.
+function recordOdds(t, lines, minute, now) {
+  let changed = false;
+  if (!t.ol) {
+    const f = {};
+    for (const [k, v] of Object.entries(lines)) {
+      const h = Number(k);
+      if (h >= t.line - 0.5 && h <= t.line + 1) f[k] = v;
+    }
+    if (!Object.keys(f).length) return false;
+    t.ol = { m: minute, at: now, f };
+    changed = true;
+  }
+  const own = lines[String(t.line)];
+  const over = own && own.o;
+  if (over != null) {
+    if (t.ol.mx == null || over > t.ol.mx) {
+      t.ol.mx = over;
+      t.ol.mxm = minute;
+      changed = true;
+    }
+    if (over >= WAIT_QUOTE && t.ol.r140 == null) {
+      t.ol.r140 = minute;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+// Scalar odds fields for the result record and its metadata (CSV, analysis).
+function oddsFields(t) {
+  const ol = t.ol;
+  if (!ol) return {};
+  const at = (h) => ol.f[String(h)] || {};
+  return {
+    oddsMinute: ol.m, oddsOver: at(t.line).o ?? null, oddsUnder: at(t.line).u ?? null,
+    oddsMax: ol.mx ?? null, oddsMaxMinute: ol.mxm ?? null, odds140Minute: ol.r140 ?? null,
+    oddsQuarterOver: at(t.line + 0.25).o ?? null, oddsNextOver: at(t.line + 0.5).o ?? null, oddsNextUnder: at(t.line + 0.5).u ?? null,
+  };
+}
+
 async function saveResult(env, t, result, finalGoals = null) {
   const now = new Date();
   // Profit in units only where the logged quote is for the signal's own line.
@@ -1927,6 +2172,8 @@ async function saveResult(env, t, result, finalGoals = null) {
     marketP: !t.under && t.signalQuote && t.signalQuote.p ? t.signalQuote.p : null,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
     finalGoals,
+    ...oddsFields(t),
+    liveOdds: t.ol || null,
   };
   // The record is also stored as key metadata, so listing results (public
   // results page, reports) needs one KV list call per 1000 tips, not one get each.
@@ -1939,7 +2186,8 @@ async function saveResult(env, t, result, finalGoals = null) {
 }
 
 const RESULT_CSV_COLS = ["postedAt", "settledAt", "tier", "home", "away", "line", "minute", "result", "resultMinute", "units",
-  "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom", "finalGoals"];
+  "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom", "finalGoals",
+  "oddsMinute", "oddsOver", "oddsUnder", "oddsMax", "oddsMaxMinute", "odds140Minute", "oddsQuarterOver", "oddsNextOver", "oddsNextUnder"];
 function resultsCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
   const lines = rows.map((r) => {
@@ -1952,7 +2200,9 @@ function resultsCsv(rows) {
 
 // KV metadata is limited to 1024 bytes; team names are cut to stay well below.
 function resultMeta(record) {
-  return { ...record, home: String(record.home || "").slice(0, 40), away: String(record.away || "").slice(0, 40) };
+  const meta = { ...record, home: String(record.home || "").slice(0, 40), away: String(record.away || "").slice(0, 40) };
+  delete meta.liveOdds; // full odds log only in the value (metadata max 1024 bytes)
+  return meta;
 }
 
 async function listResults(env, sinceMs) {
@@ -3060,6 +3310,9 @@ async function handleAdminPage() {
   <div class="out" id="test-o15-out" style="margin-bottom:10px;"></div>
   <button id="af-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">API-Football prüfen</button>
   <div class="out" id="af-out" style="margin-bottom:10px;"></div>
+  <button id="odds-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Quoten-Abdeckung prüfen</button>
+  <button id="matches-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Spiele-Archiv CSV (7 Tage)</button>
+  <div class="out" id="odds-out" style="margin-bottom:10px;"></div>
   <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -3622,6 +3875,40 @@ document.getElementById('af-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+document.getElementById('odds-btn').addEventListener('click', async () => {
+  const out = document.getElementById('odds-out');
+  out.textContent = 'Prüfe Quoten …';
+  try {
+    const r = await fetch('/admin/api/odds-probe', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    if (!d.key) { out.textContent = 'Kein API-Football-Schlüssel.'; return; }
+    if (!d.ok) { out.textContent = '❌ Keine Live-Quoten bekommen (API-Fehler oder Limit).'; return; }
+    const open = (d.open || []).map((t) => (t.odds ? '✅ ' : '— ') + t.match + ' (Over ' + t.line + ')').join('<br>');
+    out.innerHTML = 'Live-Spiele: ' + d.live + ' · mit Live-Quoten: ' + d.withOdds + ' · davon mit Über/Unter-Toren: ' + d.withOu +
+      '<br>Spiele-Archiv heute: ' + d.storedToday + ' Spiele gespeichert' +
+      (d.sample ? '<br>Beispiel: ' + esc(d.sample.match || String(d.sample.fixture)) + ' – Linien ' + esc(Object.keys(d.sample.lines).join(', ')) : '') +
+      '<br>Wetten-Namen: ' + esc((d.topNames || []).map((n) => n[0] + ' (' + n[1] + ')').join(', ')) +
+      (open ? '<br><br>Offene Tipps (✅ = Quoten gefunden):<br>' + open : '');
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('matches-btn').addEventListener('click', async () => {
+  const out = document.getElementById('odds-out');
+  out.textContent = 'Erstelle CSV …';
+  try {
+    const r = await fetch('/admin/api/matches-csv?days=7', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status);
+    const csv = await r.text();
+    const name = 'moneybag_spiele_7tage_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    out.textContent = (csv.trim().split('\\n').length - 1) + ' Spiele. Datei ' + name + ' gespeichert (iPad: Dateien-App → Downloads).';
+  } catch (e) { out.textContent = e.message; }
+});
+
 document.getElementById('res-csv-btn').addEventListener('click', async () => {
   const out = document.getElementById('res-out');
   out.textContent = 'Erstelle CSV …';
@@ -4160,6 +4447,18 @@ export default {
         days, summary: sum, open: (await readTracked(env)).filter((t) => !t.settledKey), rows,
         reportPreview: weeklyReportText(sum, new Date(to.getTime() - days * DAY_MS), to),
       });
+    }
+
+    if (url.pathname === "/admin/api/odds-probe" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      return jsonResponse(await apiOddsProbe(env));
+    }
+
+    // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).
+    if (url.pathname === "/admin/api/matches-csv" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 7, 180);
+      return new Response(matchesCsv(await listMatches(env, days)), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
     }
 
     if (url.pathname === "/admin/api/apifootball-status" && request.method === "GET") {

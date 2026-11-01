@@ -41,6 +41,12 @@ export function mockNet(state) {
     if (url.includes("api-sports.io") || url.includes("api-football-v1.p.rapidapi.com") || url.startsWith("https://af.example.com/")) {
       state.apiCalls = (state.apiCalls || 0) + 1;
       state.apiUrls = (state.apiUrls || []).concat([[url, opts.headers || {}]]);
+      if (url.includes("odds/live")) return new Response(JSON.stringify({ errors: [], response: state.apiOdds || [] }));
+      if (url.includes("fixtures?ids=")) {
+        const ids = decodeURIComponent(url.split("fixtures?ids=")[1]).split("-");
+        state.idsCalls = (state.idsCalls || 0) + 1;
+        return new Response(JSON.stringify({ errors: [], response: ids.map((id) => state.apiById && state.apiById[id]).filter(Boolean) }));
+      }
       if (url.includes("fixtures?id=")) {
         const id = decodeURIComponent(url.split("fixtures?id=")[1]);
         return new Response(JSON.stringify({ errors: [], response: state.apiById && state.apiById[id] ? [state.apiById[id]] : [] }));
@@ -95,8 +101,20 @@ export const tracked = (env) => JSON.parse(env.ACCESS_KV.store.get("track:open")
 export const results = (env) => [...env.ACCESS_KV.meta.values()].filter((r) => r && r.result);
 
 // An API-Football fixture in the API's own format.
-export function afFix({ id = 1, home = "Alpha", away = "Beta", status = "2H", minute = 60, gh = 2, ga = 0, goals = [] } = {}) {
-  return { fixture: { id, status: { short: status, elapsed: minute } }, teams: { home: { name: home }, away: { name: away } },
-    goals: { home: gh, away: ga }, score: { fulltime: { home: status === "FT" ? gh : null, away: status === "FT" ? ga : null } },
-    events: goals.map((m) => ({ type: "Goal", detail: "Normal Goal", time: { elapsed: m } })) };
+export function afFix({ id = 1, home = "Alpha", away = "Beta", status = "2H", minute = 60, gh = 2, ga = 0, goals = [], extra = [] } = {}) {
+  return { fixture: { id, status: { short: status, elapsed: minute }, date: "2026-11-01T14:00:00+00:00" },
+    league: { id: 103, name: "Eliteserien", country: "Norway" },
+    teams: { home: { id: 10, name: home }, away: { id: 20, name: away } },
+    goals: { home: gh, away: ga }, score: { halftime: { home: 1, away: 0 }, fulltime: { home: status === "FT" ? gh : null, away: status === "FT" ? ga : null } },
+    events: goals.map((m) => ({ type: "Goal", detail: "Normal Goal", time: { elapsed: m }, team: { id: 10 } })).concat(extra) };
+}
+
+// An odds/live entry with full-match over/under lines { "2.5": [over, under], ... }.
+export function afOdds(id, lines) {
+  return { fixture: { id }, odds: [
+    { id: 36, name: "Over/Under Line", values: Object.entries(lines).flatMap(([h, [o, u]]) => [
+      { value: "Over", odd: String(o), handicap: h, main: h === "2.5", suspended: false },
+      { value: "Under", odd: String(u), handicap: h, main: h === "2.5", suspended: false }]) },
+    { id: 50, name: "1st Half Over/Under", values: [{ value: "Over", odd: "9.0", handicap: "2.5", suspended: false }] },
+  ] };
 }

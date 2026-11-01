@@ -254,6 +254,25 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-01 night: **API plan points 1 + 2** (owner: "fang mit Punkt 1 und 2 an"; quota 7,500/day mostly unused).
+  (1) **Real live odds per tip**: while a tip is open and has an `afId` (also looked up by name for tips the InPlayFlux
+  feed shows), one `odds/live` call per run (`afSource().odds()`, `afOddsLines`: every full-match goal over/under bet,
+  half/team/corner bets and suspended prices skipped) feeds `recordOdds` → `t.ol` = first sighting (minute + lines from
+  line − 0.5 to line + 1, e.g. 2.5/2.75/3/3.5 for an O2.5 tip), highest over price of the own line + minute, first minute
+  ≥ 1.40 (`r140`, the owner's real entry). `saveResult` adds `oddsMinute/oddsOver/oddsUnder/oddsMax/oddsMaxMinute/
+  odds140Minute/oddsQuarterOver/oddsNextOver/oddsNextUnder` (metadata + results CSV) and the full log `liveOdds` (value
+  only, `resultMeta` drops it). Coverage of lower leagues unknown → admin button **"Quoten-Abdeckung prüfen"**
+  (`/admin/api/odds-probe`: live matches, how many with live odds / with over-under, bet names, example, open tips ✅/—,
+  archive count today). (2) **Own match archive**: the minute cron now runs every minute while API-Football is on
+  (`collect`; the InPlayFlux feed is only fetched when there is work), `collectMatches` keeps the live ids in `af:prev`,
+  fetches matches that left the list by id (`fixtures?ids=`, 20 per call, ≤ 60 per run, retried ≤ 10 runs) and stores
+  finished/voided ones in `afm:<kickoff date>` (180 days): id, kickoff, country, league, teams, status, HT/FT score,
+  events `G23h,P45+2a,O..,M..,R60h,S70a` (`afEvents`; no yellows). Admin **"Spiele-Archiv CSV (7 Tage)"**
+  (`/admin/api/matches-csv?days=N`, max 180). Expected calls ~1,440 live + ~1,440 odds (only with open tips) + ~50 ids
+  per day. Tests "API-Football live odds …", "own match archive …", "admin odds probe …".
+  Next: owner taps "Quoten-Abdeckung prüfen" during busy hours → decide whether odds cover our leagues; after ~1 week the
+  results CSV has real odds → quote filter (plan point 2) and the Over 3.0 test (`oddsNextOver`, `finalGoals`).
+
 - 2026-11-01 evening: **settling via API-Football** (Pro plan active, admin check green: Pro, 7,500/day). A tip missing from
   the InPlayFlux guest feed is looked up at API-Football (`settleTracked` → `findApiFixture`, `afSource`): live list
   (`fixtures?live=all`, by stored `afId` or by team names – `findApiMatch`/`sameTeam`, tolerant to ø/æ/ß, hyphens, "FC"

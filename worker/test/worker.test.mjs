@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix } from "./helpers.mjs";
+import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix, afOdds } from "./helpers.mjs";
 
 const worker = await loadWorker();
 const premiumPosts = (net) => net.sent.filter((m) => m.method === "sendMessage" && m.chat_id === "-100");
@@ -149,7 +149,7 @@ test("final score: logged when the match is gone after 85', for won and lost tip
   assert.equal(byHome["Gamma"].finalGoals, 2);
   assert.equal(tracked(env).length, 0);
   const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();
-  assert.ok(csv.split("\n")[0].endsWith(",finalGoals"));
+  assert.ok(csv.split("\n")[0].includes(",finalGoals,"));
 });
 
 test("settling with two goals: minute unknown, banner without minute", async () => {
@@ -686,4 +686,75 @@ test("API-Football via own proxy server: URL, key and proxy secret", async () =>
     assert.equal(h["x-apisports-key"], "k");
     assert.equal(h["x-proxy-secret"], "geheim");
   }
+});
+
+test("API-Football live odds: first prices, highest over, minute it reached 1.40 and the next lines are stored with the result", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 31, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net.apiOdds = [afOdds(31, { "2.5": [1.3, 3.4], "2.75": [1.55, 2.4], "3": [1.95, 1.85], "3.5": [2.9, 1.4], "5.5": [20, 1.01] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1);
+  await at(140e3, () => cron(worker, env)); // first odds sighting
+  net.apiLive = [afFix({ id: 31, home: "Alpha FC", away: "Beta FC", minute: 66, goals: [10, 30] })];
+  net.apiOdds = [afOdds(31, { "2.5": [1.45, 2.6] })];
+  await at(10 * 60e3, () => cron(worker, env));
+  const ol = tracked(env)[0].ol;
+  assert.equal(ol.m, 57);
+  assert.deepEqual(Object.keys(ol.f).sort(), ["2.5", "2.75", "3", "3.5"], "lines from line - 0.5 to line + 1 only, no half-time bet");
+  assert.equal(ol.mx, 1.45);
+  assert.equal(ol.r140, 66);
+  net.apiLive = [afFix({ id: 31, home: "Alpha FC", away: "Beta FC", minute: 71, gh: 3, goals: [10, 30, 70] })];
+  await at(15 * 60e3, () => cron(worker, env));
+  const r = results(env)[0];
+  assert.equal(r.result, "won");
+  assert.equal(r.oddsOver, 1.3);
+  assert.equal(r.oddsUnder, 3.4);
+  assert.equal(r.oddsMax, 1.45);
+  assert.equal(r.oddsMaxMinute, 66);
+  assert.equal(r.odds140Minute, 66);
+  assert.equal(r.oddsQuarterOver, 1.55);
+  assert.equal(r.oddsNextOver, 1.95);
+  assert.equal(r.liveOdds, undefined, "full odds log not in the metadata");
+  const key = [...env.ACCESS_KV.store.keys()].find((k) => k.startsWith("result:"));
+  assert.ok(JSON.parse(env.ACCESS_KV.store.get(key)).liveOdds.f["3"], "full log in the value");
+  const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();
+  assert.ok(csv.split("\n")[0].includes("oddsNextOver"));
+});
+
+test("own match archive: finished matches leave the live list, are fetched by id and stored per kickoff day", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  net.apiLive = [afFix({ id: 1, minute: 80 }), afFix({ id: 2, minute: 30 })];
+  await cron(worker, env); // nothing open: the archive still runs
+  assert.deepEqual(JSON.parse(env.ACCESS_KV.store.get("af:prev")).ids, [1, 2]);
+  net.apiLive = [afFix({ id: 2, minute: 31 })];
+  net.apiById = { 1: afFix({ id: 1, status: "FT", minute: 90, gh: 3, ga: 1, goals: [12, 50, 88],
+    extra: [{ type: "Card", detail: "Red Card", time: { elapsed: 60 }, team: { id: 20 } },
+      { type: "Goal", detail: "Penalty", time: { elapsed: 90, extra: 3 }, team: { id: 20 } }] }) };
+  await cron(worker, env);
+  const day = JSON.parse(env.ACCESS_KV.store.get("afm:2026-11-01"));
+  assert.equal(day.length, 1);
+  assert.equal(day[0].ft, "3-1");
+  assert.equal(day[0].lg, "Eliteserien");
+  assert.equal(day[0].ev, "G12h,G50h,G88h,R60a,P90+3a");
+  await cron(worker, env); // stored once only
+  assert.equal(JSON.parse(env.ACCESS_KV.store.get("afm:2026-11-01")).length, 1);
+  const csv = await (await admin(worker, env, "/admin/api/matches-csv?days=400")).text();
+  assert.ok(csv.startsWith("fixtureId,kickoff,country,league"));
+  assert.ok(csv.includes("Eliteserien") && csv.includes("G12h"));
+  assert.equal((await admin(worker, env, "/admin/api/matches-csv", { headers: { Authorization: "Bearer wrong" } })).status, 401);
+});
+
+test("admin odds probe: live matches with over/under odds, example, open tips", async () => {
+  mockNet({ feed: [], apiLive: [afFix({ id: 5 }), afFix({ id: 6 })], apiOdds: [afOdds(5, { "2.5": [1.8, 2.0] })] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  const d = await (await admin(worker, env, "/admin/api/odds-probe")).json();
+  assert.equal(d.ok, true);
+  assert.equal(d.live, 2);
+  assert.equal(d.withOu, 1);
+  assert.deepEqual(Object.keys(d.sample.lines), ["2.5"]);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(html.includes("Quoten-Abdeckung prüfen") && html.includes("Spiele-Archiv CSV"));
 });
