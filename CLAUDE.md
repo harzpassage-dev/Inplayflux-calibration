@@ -21,7 +21,8 @@ Premium tiers (all in `worker/src/index.js`):
 
 | Tier | Rule | Stake |
 |---|---|---|
-| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with API-Football configured (**active since 01.11.**, via the own proxy server – see API-Football section) such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
+| 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with API-Football configured (**active since 01.11.**, via the own proxy server – see API-Football section) such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked); since 01.11. every post also shows the
+real API-Football live quote of the own line when there is one ("📈 Live-Quote jetzt: … ✅/⏳", `apiLiveQuote`) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
 | 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75, men's first teams only since 29.10. (`nonMenMatch`: league/teams with U19…, Youth, Junior, Primavera, Reserve, Women, (W) are skipped; parser reads `league` from the 🏆 line) (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
@@ -162,7 +163,8 @@ then decide per tier on the new days and apply.
   show `x-frame-options: DENY`. If the owner gets "Zu viele Fehlversuche", they just wait
   15 min (or delete `adminfail:<ip>` in KV). Recommended to them: admin password ≥ 16 chars.
 - Admin test posts (`/admin/api/test-post`, `?line=0.5`, `?tier=half`, `?tier=under`, `?tier=o15`,
-  `?target=free`) are marked TEST and are never tracked or logged. Admin "Bilanz-Grafik
+  `?target=free`) are marked TEST and are never tracked or logged (High Confidence / Over 1.5 tests show a real 📈 live
+  quote from any live API-Football match with that line, named in the post). Admin "Bilanz-Grafik
   erstellen" draws the 7-day results as a 1080×1350 PNG in the browser; its button "An Gratis-Kanal senden" (double tap)
   uploads the PNG to `/admin/api/post-bilanz`, which posts it to the free channel with `sendPhoto` (Workers have no
   canvas, so drawing stays in the browser; the Monday "Wochen-Check" reminds the owner).
@@ -691,7 +693,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-01)
+## Open items (as of 2026-11-01, night)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -797,8 +799,12 @@ then decide per tier on the new days and apply.
 - Live check + settling via API-Football **active since 01.11. evening** (own proxy server, see conventions). To check in
   the next days: voids in the morning report should drop to ~0; matches API-Football does not cover (very low leagues,
   name mismatch in `sameTeam`) still void → look at those and widen the matcher if needed; calls/day in the admin check.
-  Next step: real live odds from API-Football (`odds/live`) for our leagues, incl. Over 3.0 → profit check of the
-  Over 3.0 / Over 2.0 idea with real odds and `finalGoals`. Review cost (~19 $ + 7.72 €/month) ~20.11. Partnership/permission email to InPlayFlux **sent 30.10.** (see change log) – waiting for the answer.
+  Live odds per tip, live quote in the post and the own match archive are built (01.11. night, see change log). First
+  real post with a live quote: Brøndby – AGF (Danish Superliga, Over 1.5) 1.30, below the Mindestquote 1.32. Coverage
+  worry: at 19:13 our 19 open tips were 0 live / 3 in the fixture list / 16 not found (women's, U19, regional leagues)
+  → check with "Quoten-Abdeckung prüfen" on a few more days; in the ~07./08.11. results CSV count how many tips have
+  `oddsOver` and `finalGoals`. Review cost (~19 $ + 7.72 €/month) ~20.11.: keep only if voids dropped clearly and enough
+  tips carry real odds; else cancel API-Football (by 01.12.) and delete the Hetzner server + DNS record `af`. Partnership/permission email to InPlayFlux **sent 30.10.** (see change log) – waiting for the answer.
 - Marketing plan `marketing/werbeplan.md` (from 15.10.): funnel Torminute (stats only) → free
   channel → premium; per-source Telegram invite links for tracking; week 3–4 paid Telega.io
   test (50–150 €, target < 0.50 € per free subscriber); weekly KPI table to fill in.
