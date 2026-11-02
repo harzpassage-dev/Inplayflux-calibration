@@ -264,6 +264,9 @@ then decide per tier on the new days and apply.
   `worker/public/index.html`; re-run it when the tool layout changes), served by the worker at `/tool/schrittN.jpg`
   (assets are behind the worker). Linked from the menu (Start group), a line under "So funktioniert MoneyBag" on `/`,
   the footers; robots.txt + sitemap. CTA to the 24 h test; 18+ / no-guarantee note. Test "analyse-tool guide page".
+  Same day (owner): step 1 says signals are copied from the **Signal-Kanal** (not the premium channel) and explains the
+  button "📡 Aus Telegram importieren" (`/api/latest-signal`): it always loads only the **latest** card received, older
+  ones are copied by hand. Owner keeps the other "Premium" wording (tool belongs to the premium access).
 
 - 2026-11-01 night: **live quote in the premium post** (owner: "Kannst du die Live Quote im Signal schreiben"). Before posting,
   `processPendingPremium` looks the match up in API-Football's live list and `odds/live` (`apiLiveQuote`, shared per run);
