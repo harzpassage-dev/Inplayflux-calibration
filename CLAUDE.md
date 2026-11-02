@@ -557,6 +557,7 @@ then decide per tier on the new days and apply.
   01.11.: `site:moneybag-signals.com` on google.de shows `/` ("Live-Fußballsignale mit Datenmodell und offener Bilanz:
   MoneyBag") and `/ergebnisse` → indexed. `/videos` and `/partner` not yet; owner advised to request indexing for both in
   Search Console (URL-Prüfung → Indexierung beantragen).
+  02.11.: owner requested indexing for `/analyse-tool`, `/videos` and `/partner`; check `site:` again ~09.11.
 
 - 2026-10-25: YouTube channel set up (banner, description); Shorts = TikTok videos.
 
