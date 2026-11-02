@@ -256,6 +256,13 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-02: weekly check with export 11-02 (`data/inplayflux_sinyaller_2026-11-02.csv`, shift 0, report
+  `reports/2026-11-02-recalibration.md` + `-wochen-check.txt`), **no refit** (only ~2.3 new days since 31.10.), thresholds
+  unchanged. Unseen 31.10. 10:53 – 02.11.: O2.5 72.5 % (109) vs raw 74.0 % (weak weekend; ≥ 0.83 77 % (31), too small),
+  O3.5 78.8 % (99) vs 69.6 %, O0.5 72.3 % (47) vs 65.6 %, O0.5 line ≥ 4 4/7. **Over 1.5 Test falling**: men, unique matches
+  80.0 → 75.5 → 73.1 → 68.1 % (163) by week, 69.7 % (241) since the men filter; Money Bag Over 1.5 67 % (119), Value 75 % (28),
+  ValueShots15 63 % (16); live page 7 days 73.1 % (219). Recommended to the owner: switch it off (`O15_TEST_ENABLED = false`).
+
 - 2026-11-02: **guide page `/analyse-tool`** (owner: "Link zu so funktioniert das Analyse-Tool, mit Bildern und
   Beschreibung"): `toolGuidePage` / `TOOL_STEPS`, four steps (Signal einfügen → Parsen, erkannte Werte prüfen →
   Berechnen, Ergebnis lesen: Poisson tempo / bucket model from 15,000+ signals / market without margin, optional quote
