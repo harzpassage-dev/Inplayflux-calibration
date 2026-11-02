@@ -2861,7 +2861,7 @@ ${ogMeta("MoneyBag – Daten-Videos", "Kurze Videos mit eigenen Fußball-Auswert
 // (worker/public/tool/schritt1-4.jpg, made with Playwright from worker/public/index.html).
 const TOOL_STEPS = [
   ["1", "Signal einfügen", "schritt1.jpg", "Signal-Karte aus dem Signal-Kanal einfügen",
-    "Du kopierst ein Signal aus dem Signal-Kanal (lange auf die Nachricht tippen → „Kopieren“) und fügst es oben in das Feld ein. Dann tippst du auf <b>„Parsen“</b>. Das Tool liest die Karte selbst aus – abtippen musst du nichts."],
+    "Du kopierst ein Signal aus dem Signal-Kanal (lange auf die Nachricht tippen → „Kopieren“) und fügst es oben in das Feld ein. Dann tippst du auf <b>„Parsen“</b>. Das Tool liest die Karte selbst aus – abtippen musst du nichts.<br>Schneller geht es mit dem Knopf <b>„📡 Aus Telegram importieren“</b>: Er holt das Signal ins Feld, das <b>zuletzt</b> im Signal-Kanal angekommen ist (immer nur das neueste, mit Alter in Minuten). Willst du ein älteres Signal prüfen, kopierst du es wie oben von Hand."],
   ["2", "Erkannte Werte prüfen", "schritt2.jpg", "Liste der erkannten Werte: Ziellinie, Spielstand, Minute, Torschüsse, Quoten",
     "Das Tool zeigt, was es aus der Karte gelesen hat: Ziel-Linie, Spielstand, Minute, Torschüsse aufs Tor, Vor-Spiel- und Live-Linie mit Quoten. „nicht erkannt“ heißt nur, dass die Karte diesen Wert nicht enthält – das ist normal. Passt alles, tippst du auf <b>„Berechnen“</b>."],
   ["3", "Ergebnis lesen", "schritt3.jpg", "Ergebnis mit drei Blickwinkeln: Poisson-Tempo, Bucket-Modell, Markt",
