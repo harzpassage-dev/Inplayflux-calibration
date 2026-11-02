@@ -2828,6 +2828,7 @@ const CONTACT_EMAIL = "kontakt@moneybag-signals.com";
 // Torminute videos, MoneyBag brand, no Torminute name; built by marketing/moneybag-videos.mjs into public/videos/).
 // Served from our own assets: no YouTube/TikTok player, no cookies. Newest first.
 const VIDEOS = [
+  ["rotekarte", "Rote Karte = mehr Tore?"],
   ["elfmeter", "Elfmeter = sicheres Tor?"],
   ["jugend", "Jugend gegen Herren: Wer trifft öfter?"],
   ["abseits", "Abseits! Kennst du die Regel wirklich?"],

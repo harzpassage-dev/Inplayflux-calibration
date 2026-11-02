@@ -365,11 +365,11 @@ test("start page: shows the weekly own analysis (Daten der Woche) with bars and 
   assert.match(html, /eigene Auswertung/);
 });
 
-test("videos page: 15 MoneyBag videos from our own assets, byte ranges for Safari, no Torminute name", async () => {
+test("videos page: 16 MoneyBag videos from our own assets, byte ranges for Safari, no Torminute name", async () => {
   mockNet({ feed: [] });
   const env = makeEnv({ ASSETS: { fetch: () => new Response("0123456789") } });
   const html = await (await worker.fetch(new Request("https://moneybag-signals.com/videos"), env, {})).text();
-  assert.equal((html.match(/<video /g) || []).length, 15);
+  assert.equal((html.match(/<video /g) || []).length, 16);
   assert.doesNotMatch(html, /torminute|youtube|tiktok/i);
   const v = await worker.fetch(new Request("https://moneybag-signals.com/videos/jugend.mp4", { headers: { Range: "bytes=2-4" } }), env, {});
   assert.equal(v.status, 206);
