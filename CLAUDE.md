@@ -720,7 +720,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-01, night)
+## Open items (as of 2026-11-02)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -792,7 +792,8 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Next (from 31.10.): weekly routine done 31.10. (export 10-31); next ~Mon 09.11. (or 02.11. if the owner sends one); bot "Wochen-Check" → new CSV → skill `wochen-routine`;
+- Next (from 02.11.): weekly check done 02.11. (export 11-02, no refit; O2.5 weak weekend 72.5 % (109) – watch, raise the
+  threshold only if the next export confirms); next ~Mon 09.11. with refit; bot "Wochen-Check" → new CSV → skill `wochen-routine`;
   market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
   legal advice); trial is automatic since 31.10. (owner should test it once with a second Telegram account; customers from a
@@ -877,8 +878,9 @@ then decide per tier on the new days and apply.
 - Voids ("ungewertet", 31.10.): the guest feed misses many matches on busy days; InPlayFlux never marks cards with the
   result. Since 01.11. API-Football settles them (live list, fixture id, day list); CSV fill in admin + morning-report
   reminder stay as fallback.
-- Over 1.5 Test after the men filter (29.10.): 72.1 % on 68 unseen matches – at the 72 % cut. Decide at the next weekly
-  routine; "Over 1.5 Value" (72.2 %, 72) is the weakest strategy this week.
+- Over 1.5 Test: since 02.11. only pre-match line ≥ 3.75 (was 2.75, fell to 68 % on 31.10.–02.11.; ≥ 3.75 85 %, n=89 in
+  total, see change log). ~4 tips/day, Mindestquote 1.25. Check at ~50 live tips on `/ergebnisse` (only tips from 02.11.
+  evening count); switch off if below ~78 %, and watch the 📈 live quotes – at such high lines they may sit below 1.25.
 - Marketing images in design 6 for the free channel: weekly image (admin, `drawBilanz`), `marketing/roi-tabelle.png`
   (ROI at quotes 1.30/1.40/1.50 from live hit rates, 31.10.; no euro gain example – reads like a promise). Telegram only,
   never Torminute.
