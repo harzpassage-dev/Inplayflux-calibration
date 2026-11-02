@@ -66,7 +66,7 @@ bot (`/test-starten` → `/start test` → invite + tool link, removed after 24 
 opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
 (`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
 are noindex), `/videos` (MoneyBag versions of the statistics videos), `/partner` (partner network + join form),
-`/robots.txt` + `/sitemap.xml` (`/`, `/ergebnisse`, `/videos`, `/partner`; site verified in Google Search Console). Every
+`/analyse-tool` (step-by-step guide to the tool with screenshots), `/robots.txt` + `/sitemap.xml` (`/`, `/ergebnisse`, `/videos`, `/partner`, `/analyse-tool`; site verified in Google Search Console). Every
 public page has the fold-out menu (`NAV_LINKS`, "MENÜ" button left of the logo); new pages/sections go into it. The
 privacy policy lists every data flow (Cloudflare, cookie, contact form → Telegram, GMX, PayPal, Telegram, optional
 The Odds API key): any new external resource, cookie or tracker needs an update there first.
@@ -255,6 +255,15 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-11-02: **guide page `/analyse-tool`** (owner: "Link zu so funktioniert das Analyse-Tool, mit Bildern und
+  Beschreibung"): `toolGuidePage` / `TOOL_STEPS`, four steps (Signal einfügen → Parsen, erkannte Werte prüfen →
+  Berechnen, Ergebnis lesen: Poisson tempo / bucket model from 15,000+ signals / market without margin, optional quote
+  check with Mindestquote = 1 / probability), each with a screenshot of a made-up sample signal (Heim FC – Gast FC) from
+  the real tool: `worker/public/tool/schritt1-4.jpg` (made by `marketing/tool-screenshots.mjs`, Playwright on
+  `worker/public/index.html`; re-run it when the tool layout changes), served by the worker at `/tool/schrittN.jpg`
+  (assets are behind the worker). Linked from the menu (Start group), a line under "So funktioniert MoneyBag" on `/`,
+  the footers; robots.txt + sitemap. CTA to the 24 h test; 18+ / no-guarantee note. Test "analyse-tool guide page".
 
 - 2026-11-01 night: **live quote in the premium post** (owner: "Kannst du die Live Quote im Signal schreiben"). Before posting,
   `processPendingPremium` looks the match up in API-Football's live list and `odds/live` (`apiLiveQuote`, shared per run);

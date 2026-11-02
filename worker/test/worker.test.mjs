@@ -802,3 +802,19 @@ test("admin test post shows a real live quote from API-Football (other match if 
   assert.ok(t.includes("TEST"));
   assert.equal(tracked(env).length, 0);
 });
+
+test("analyse-tool guide page: 4 steps with images, linked from menu, start page, sitemap", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  const r = await worker.fetch(new Request("https://x/analyse-tool"), env, {});
+  assert.equal(r.status, 200);
+  const html = await r.text();
+  for (const n of [1, 2, 3, 4]) assert.ok(html.includes(`/tool/schritt${n}.jpg`), "step " + n);
+  assert.ok(html.includes("Keine Gewinngarantie"));
+  const img = await worker.fetch(new Request("https://x/tool/schritt1.jpg"), env, {});
+  assert.equal(img.headers.get("content-type"), "image/jpeg");
+  const start = await (await worker.fetch(new Request("https://x/"), env, { waitUntil: () => {} })).text();
+  assert.ok(start.includes('href="/analyse-tool"'), "start page + menu link");
+  const sm = await (await worker.fetch(new Request("https://x/sitemap.xml"), env, {})).text();
+  assert.ok(sm.includes("/analyse-tool"));
+});

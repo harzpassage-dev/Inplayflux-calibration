@@ -2739,7 +2739,7 @@ ${profit}
 <p>3 Signale pro Tag gratis (mit Ergebnis) und die Wochenbilanz im Telegram-Kanal – oder Premium 24 Stunden kostenlos testen:</p>
 <a class="cta" href="${freeLink}">📢 Gratis-Kanal öffnen</a> <a class="cta k" href="/#test">🎁 24 h gratis testen</a>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie · Vergangene Ergebnisse sagen nichts über künftige aus.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/">Startseite</a> · <a href="/videos">Videos</a> · <a href="/analyse-tool">Analyse-Tool</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -2759,7 +2759,7 @@ const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 2
 // Fold-out menu next to the logo on every public page (since 30.10., owner: "schnelles Navigieren"). Pure HTML
 // <details>, no script needed; a tap on a link also closes it (same-page anchors). New public pages go into NAV_LINKS (legal pages stay in the footers).
 const NAV_LINKS = [
-  ["Start", [["/", "🏠 Startseite"], ["/#daten", "📈 Daten der Woche"], ["/#so", "⚙️ So funktioniert's"], ["/#faq", "❓ Häufige Fragen"]]],
+  ["Start", [["/", "🏠 Startseite"], ["/#daten", "📈 Daten der Woche"], ["/#so", "⚙️ So funktioniert's"], ["/analyse-tool", "🧮 So funktioniert das Analyse-Tool"], ["/#faq", "❓ Häufige Fragen"]]],
   ["Zahlen & Inhalte", [["/ergebnisse", "📊 Alle Ergebnisse"], ["/videos", "🎬 Daten-Videos"]]],
   ["Mitmachen", [["/#test", "🎁 24 h gratis testen"], ["/#preis", "🔒 Premium & Preis"], ["https://t.me/MoneyBagAnalyst", "📢 Gratis-Kanal (Telegram)"], ["/partner", "🤝 Partner-Netzwerk"], ["/partner#mitmachen", "✍️ Partner werden"]]],
 ];
@@ -2787,7 +2787,7 @@ main p{color:#222}.note{color:var(--muted);font-size:14px}
 footer{margin-top:40px;background:#111;color:#aaa;font-size:13px;padding:20px 0 28px}footer a{color:#ddd}
 @media(max-width:520px){.hero h1{font-size:28px}.hero{background:linear-gradient(115deg,#111 0 76%,var(--red) 76% 86%,#111 86%)}}`;
 const magHead = (title) => `<header class="hero"><div class="wrap">${LOGO_HTML}<h1>${title}</h1></div></header>`;
-const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
+const MAG_FOOT = `<footer><div class="wrap">18+ · Keine Gewinngarantie · MoneyBag ist kein Wettanbieter.<br><a href="/">Startseite</a> · <a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/analyse-tool">Analyse-Tool</a> · <a href="/partner">Partner</a> · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a></div></footer>`;
 
 // Legal notice (§ 5 DDG). Name and postal address come from the Cloudflare
 // variables IMPRESSUM_NAME and IMPRESSUM_ADDRESS (address lines separated by
@@ -2852,6 +2852,46 @@ ${ogMeta("MoneyBag – Daten-Videos", "Kurze Videos mit eigenen Fußball-Auswert
 <p style="margin-top:22px">Kurze Videos mit unseren eigenen Auswertungen – nur Zahlen, keine Tipps. Jede Zahl wurde in beiden Hälften des Zeitraums geprüft; die Datenbasis steht am Ende jedes Videos.</p>
 <div class="vids">${cards}</div>
 <div class="cta">Neue Auswertung jede Woche: <a href="/#daten">Daten der Woche</a> · Alle Signale mit Ergebnis: <a href="/ergebnisse">Ergebnisse</a> · <a href="/#test">24 h gratis testen</a></div>
+</main>${MAG_FOOT}</body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } });
+}
+
+// "/analyse-tool" (since 02.11., owner: "Link zu so funktioniert das Analyse-Tool, mit Bildern und Beschreibung"):
+// public step-by-step guide to the customer tool with screenshots of a made-up sample signal
+// (worker/public/tool/schritt1-4.jpg, made with Playwright from worker/public/index.html).
+const TOOL_STEPS = [
+  ["1", "Signal einfügen", "schritt1.jpg", "Signal-Karte aus dem Premium-Kanal einfügen",
+    "Du kopierst ein Signal aus dem Premium-Kanal (lange auf die Nachricht tippen → „Kopieren“) und fügst es oben in das Feld ein. Dann tippst du auf <b>„Parsen“</b>. Das Tool liest die Karte selbst aus – abtippen musst du nichts."],
+  ["2", "Erkannte Werte prüfen", "schritt2.jpg", "Liste der erkannten Werte: Ziellinie, Spielstand, Minute, Torschüsse, Quoten",
+    "Das Tool zeigt, was es aus der Karte gelesen hat: Ziel-Linie, Spielstand, Minute, Torschüsse aufs Tor, Vor-Spiel- und Live-Linie mit Quoten. „nicht erkannt“ heißt nur, dass die Karte diesen Wert nicht enthält – das ist normal. Passt alles, tippst du auf <b>„Berechnen“</b>."],
+  ["3", "Ergebnis lesen", "schritt3.jpg", "Ergebnis mit drei Blickwinkeln: Poisson-Tempo, Bucket-Modell, Markt",
+    "Das Tool schaut aus drei Richtungen auf dieselbe Frage – <b>fällt noch das eine nötige Tor?</b><br>"
+    + "<b>1. Tempo des Spiels (Poisson):</b> Wie viele Tore pro Minute bisher fielen, hochgerechnet auf die Restzeit.<br>"
+    + "<b>2. Erfahrungswerte (Bucket-Modell):</b> Wie oft fiel in ähnlichen Szenen (gleiche Linie, ähnliche Minute) aus über 15.000 ausgewerteten Signalen noch ein Tor – als Spanne und als Punktwert.<br>"
+    + "<b>3. Markt:</b> Welche Wahrscheinlichkeit die Quote des Buchmachers enthält, ohne seine Marge.<br>"
+    + "Im Beispiel sagen die Erfahrungswerte 76 %, der Markt nur 66 %. Liegt unsere Zahl deutlich über der des Marktes, kann der Tipp einen Vorteil haben – eine Garantie ist das nie."],
+  ["4", "Quote prüfen (optional)", "schritt4.jpg", "Feld für die eigene Live-Quote und Knopf Edge berechnen",
+    "Du trägst die Quote ein, die dein Buchmacher gerade bietet, und tippst auf <b>„Edge berechnen“</b>. Das Tool rechnet aus, ob sich der Tipp auf Dauer lohnen würde: Wahrscheinlichkeit × Quote − 1. Ein Beispiel: Bei 76 % rechnet sich ein Tipp erst ab einer Quote von 1,32 (die <b>Mindestquote</b>, die auch in jedem Premium-Signal steht). Liegt die Quote darunter: lieber nicht setzen."],
+];
+function toolGuidePage() {
+  const steps = TOOL_STEPS.map(([n, title, img, alt, text]) => `<section class="step"><div class="num">${n}</div><div class="txt"><h2>${title}</h2><p>${text}</p></div>
+<figure><img src="/tool/${img}" alt="${alt}" loading="lazy" width="402"><figcaption>Beispiel mit erfundenem Spiel (Heim FC – Gast FC)</figcaption></figure></section>`).join("");
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoneyBag – So funktioniert das Analyse-Tool</title>${ICON_LINK}<link rel="canonical" href="https://moneybag-signals.com/analyse-tool"><meta name="description" content="Schritt für Schritt erklärt: Signal einfügen, Werte prüfen, Ergebnis aus Spieltempo, Erfahrungswerten und Markt lesen, Quote prüfen.">
+${ogMeta("MoneyBag – So funktioniert das Analyse-Tool", "Signal einfügen, Werte prüfen, Ergebnis lesen, Quote prüfen – in vier Schritten erklärt.", "/analyse-tool")}
+<style>${MAG_CSS}
+.step{display:grid;grid-template-columns:52px 1fr;gap:6px 16px;margin-top:34px;padding-top:24px;border-top:3px solid #111}
+.step .num{width:44px;height:44px;background:var(--red);color:#fff;font:italic 900 26px/44px Arial,sans-serif;text-align:center;transform:skewX(-8deg)}
+.step h2{margin:6px 0 6px}.step figure{grid-column:1/-1;margin:10px 0 0}
+.step img{display:block;width:100%;max-width:402px;height:auto;border:2px solid #111;box-shadow:8px 8px 0 var(--red)}
+.step figcaption{font-size:12px;color:var(--muted);margin-top:12px}
+.intro{margin-top:22px;border-left:6px solid var(--red);background:#f4f4f6;padding:14px 16px}
+.cta{background:#111;color:#fff;padding:20px;margin-top:36px}.cta a{color:#ff6b72;font-weight:900}
+@media(min-width:760px){.step{grid-template-columns:52px 1fr 410px}.step figure{grid-column:3;grid-row:1/3;margin:0}}</style></head><body>${magHead("So funktioniert das Analyse-Tool")}<main class="wrap">
+<p class="intro">Das Analyse-Tool gehört zum Premium-Zugang. Du fügst ein Signal ein und siehst in Sekunden, <b>wie wahrscheinlich das nötige Tor noch ist</b> – aus drei Blickwinkeln, jede Zahl nachvollziehbar, keine Blackbox. Es ersetzt nicht dein eigenes Urteil: Es hilft dir, nur Tipps zu spielen, die sich auch rechnen.</p>
+${steps}
+<div class="cta">Selbst ausprobieren: <a href="/#test">24 h gratis testen</a> (Premium-Kanal + Analyse-Tool) · <a href="/#preis">Premium & Preis</a> · <a href="/ergebnisse">Alle Ergebnisse</a></div>
+<p class="note" style="margin-top:18px">18+ · Keine Gewinngarantie. Die Zahlen sind Wahrscheinlichkeiten aus vergangenen Spielen, keine Vorhersage. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a></p>
 </main>${MAG_FOOT}</body></html>`;
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=600" } });
 }
@@ -3035,6 +3075,7 @@ ${DATEN_DER_WOCHE.bars.map(([l, v, n], i, a) => `<div class="r${i === a.length -
 <div class="box"><h3>📏 Einsatz in Einheiten</h3><p>0,5 bis 2 Einheiten je nach Stärke des Signals – nie mehr setzen, als man verlieren kann.</p></div>
 <div class="box"><h3>📊 Offene Bilanz</h3><p>Jedes Ergebnis steht auf der <a href="/ergebnisse">Ergebnisseite</a>. Nichts gelöscht, nichts ausgewählt.</p></div>
 </div>
+<p style="margin:14px 0 0"><a href="/analyse-tool" style="font-weight:900">🧮 So funktioniert das Analyse-Tool – Schritt für Schritt mit Bildern →</a></p>
 <h2 id="preis">Gratis oder Premium</h2>
 <div class="grid">
 <div class="box"><h3>📢 Gratis-Kanal</h3><p>Täglich 3 abgeschlossene Signale mit Ergebnis und die Wochenbilanz auf Telegram.</p><a class="btn k" href="${freeLink}" style="margin-top:14px">Kanal öffnen</a></div>
@@ -3061,7 +3102,7 @@ document.getElementById("t-go").addEventListener("click", function (e) {
 <dt>Ich habe einen Zugangslink.</dt><dd>Öffne ihn einfach direkt – er führt dich zu deinem Zugang.</dd>
 </dl>
 </main>
-<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
+<footer><div class="wrap">18+ · Sportwetten bergen Verlustrisiken · Keine Gewinngarantie. MoneyBag ist kein Wettanbieter und vermittelt keine Wetten.<br>Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a> · BZgA-Hotline 0800 1 37 27 00<br><a href="/ergebnisse">Ergebnisse</a> · <a href="/videos">Videos</a> · <a href="/analyse-tool">Analyse-Tool</a> · <a href="/partner">Partner</a>${env.IMPRESSUM_NAME && env.IMPRESSUM_ADDRESS ? ' · <a href="/impressum">Impressum</a> · <a href="/agb">AGB</a> · <a href="/widerruf">Widerrufsbelehrung</a> · <a href="/datenschutz">Datenschutz</a>' : ""}</div></footer>
 </body></html>`;
 }
 
@@ -4029,6 +4070,11 @@ export default {
       return Response.redirect(`https://t.me/${bot}?start=test`, 302);
     }
     if (url.pathname === "/partner" || url.pathname === "/partner/") return partnerPage();
+    if (url.pathname === "/analyse-tool" || url.pathname === "/analyse-tool/") return toolGuidePage();
+    if (/^\/tool\/schritt[1-4]\.jpg$/.test(url.pathname)) {
+      const img = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin)));
+      return new Response(img.body, { status: img.status, headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" } });
+    }
     {
       const pm = url.pathname.match(/^\/partner\/([A-Za-z0-9_-]+\.(png|jpg|webp))$/);
       if (pm && PARTNERS.some((p) => p[4] === pm[1])) {
@@ -4070,11 +4116,11 @@ export default {
     }
     // --- Search engines: only the public results page is meant to be found ---
     if (url.pathname === "/robots.txt") {
-      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nAllow: /videos\nAllow: /partner\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
+      return new Response(`User-agent: *\nAllow: /$\nAllow: /ergebnisse\nAllow: /videos\nAllow: /partner\nAllow: /analyse-tool\nAllow: /tool/\nDisallow: /admin\nDisallow: /api/\nDisallow: /telegram-webhook\n\nSitemap: ${url.origin}/sitemap.xml\n`,
         { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
     if (url.pathname === "/sitemap.xml") {
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n<url><loc>${url.origin}/videos</loc><changefreq>weekly</changefreq></url>\n<url><loc>${url.origin}/partner</loc><changefreq>weekly</changefreq></url>\n</urlset>\n`,
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url><loc>${url.origin}/</loc><changefreq>daily</changefreq></url>\n<url><loc>${url.origin}/ergebnisse</loc><changefreq>hourly</changefreq></url>\n<url><loc>${url.origin}/videos</loc><changefreq>weekly</changefreq></url>\n<url><loc>${url.origin}/partner</loc><changefreq>weekly</changefreq></url>\n<url><loc>${url.origin}/analyse-tool</loc><changefreq>monthly</changefreq></url>\n</urlset>\n`,
         { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
     }
 
