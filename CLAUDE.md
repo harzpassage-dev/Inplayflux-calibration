@@ -24,7 +24,7 @@ Premium tiers (all in `worker/src/index.js`):
 | 🔥 High Confidence | confidence model ≥ threshold (O2.5 0.80, O3.5 0.75, O0.5 0.75; **O1.5 off** since 2026-10-17 via `LINES_OFF`, also for Half-Risiko); queued, re-checked live after 2 min (model with 5 pp tolerance, goal score ≥ −2, no goal/red card, market ≥ 60 %), then posted; unchecked fallback if the feed is down, and posted unchecked **at once** when the feed is only the guest preview (≤ `GUEST_FEED_MAX` 20 matches) and the match is not in it; with API-Football configured (**active since 01.11.**, via the own proxy server – see API-Football section) such cards wait the 2 min and are checked via API-Football instead (`fetchApiFootballLive`/`confirmBasic`: no goal, no red card, minute < 70 → posted as "live geprüft: kein Tor, keine Rote Karte"; goal/red → rejected; not found there until 4 min or API error/quota → unchecked); since 01.11. every post also shows the
 real API-Football live quote of the own line when there is one ("📈 Live-Quote jetzt: … ✅/⏳", `apiLiveQuote`) | 1 (2 if goal score ≥ +1, or O0.5 with pre-match line ≥ 4 – `strongO05`, since 2026-10-22) |
 | 🟠 Half-Risiko | minute 68–69, below threshold, live goal score ≥ −7 | 0.5 |
-| 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ 2.75, men's first teams only since 29.10. (`nonMenMatch`: league/teams with U19…, Youth, Junior, Primavera, Reserve, Women, (W) are skipped; parser reads `league` from the 🏆 line) (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.76 → Mindestquote 1.32; own tier on results page / weekly report / free channel | 0.5 |
+| 🧪 Over 1.5 Test (since 2026-10-21, `O15_TEST_ENABLED`) | O1.5 card, minute ≤ 61, pre-match line ≥ **3.75** (since 02.11., was 2.75), men's first teams only since 29.10. (`nonMenMatch`: league/teams with U19…, Youth, Junior, Primavera, Reserve, Women, (W) are skipped; parser reads `league` from the 🏆 line) (model not used); webhook queues (`tier: "o15"`, fast), next minute run posts (`postO15Test`; goal/red card since the card → `o15:rej` if the match is in the feed); `O15_WR` 0.80 → Mindestquote 1.25; own tier on results page / weekly report / free channel | 0.5 |
 | ⚠️ Risiko (**off** since 2026-10-13, `RISK_ENABLED`) | minute ≥ 70 and (≥ 72 or radar ≥ 410) | 0.5 |
 | 🛡️ Under 3.5 ("mit Vorsicht setzen", **paused** since 2026-10-21, `UNDER_ENABLED`; shadow log keeps running) | non-premium O2.5 card, 2 goals, no red card, goal score ≤ 0, live line ≤ 3.5 (at 3.5 the under quote must be ≥ minimum quote 1.48; below 3.5 the post asks to check the Under 3.5 quote at the bookmaker); `UNDER_WR` 0.68 | 0.5 |
 
@@ -262,6 +262,10 @@ then decide per tier on the new days and apply.
   O3.5 78.8 % (99) vs 69.6 %, O0.5 72.3 % (47) vs 65.6 %, O0.5 line ≥ 4 4/7. **Over 1.5 Test falling**: men, unique matches
   80.0 → 75.5 → 73.1 → 68.1 % (163) by week, 69.7 % (241) since the men filter; Money Bag Over 1.5 67 % (119), Value 75 % (28),
   ValueShots15 63 % (16); live page 7 days 73.1 % (219). Recommended to the owner: switch it off (`O15_TEST_ENABLED = false`).
+  Owner chose instead **"Schwelle höher"** (good own experience, "maybe luck"): `O15_MIN_LINE_PRE` 2.75 → **3.75**
+  (men, unique matches 17.10.–02.11.: 85.3 % (68), 83/88/83 % in three periods, Sept 83 % (12), 1.–17.10. 89 % (9);
+  ≥ 3.5 only 77 % with 69 % on the new days), `O15_WR` 0.76 → 0.80 (Mindestquote 1.32 → 1.25), `WARN_EXPECTED.o15` 0.80.
+  ~4 tips/day instead of ~36. Small n (89 in total) → check at ~50 live tips; quotes at line ≥ 3.75 will be lower.
 
 - 2026-11-02: **guide page `/analyse-tool`** (owner: "Link zu so funktioniert das Analyse-Tool, mit Bildern und
   Beschreibung"): `toolGuidePage` / `TOOL_STEPS`, four steps (Signal einfügen → Parsen, erkannte Werte prüfen →

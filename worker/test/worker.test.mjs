@@ -64,12 +64,14 @@ test("0:0 card with the new target wording \"Any goal scored\" is read as O0.5",
   }
 });
 
-test("Over 1.5 Test: rule minute <= 61 and line >= 2.75, rejected after a goal", async () => {
+test("Over 1.5 Test: rule minute <= 61 and line >= 3.75 (since 02.11.), rejected after a goal", async () => {
   const cases = [
-    { minute: 58, pre: "3.0", feed: [], posts: 1 },
-    { minute: 62, pre: "3.0", feed: [], posts: 0 },
+    { minute: 58, pre: "4.0", feed: [], posts: 1 },
+    { minute: 58, pre: "3.75", feed: [], posts: 1 },
+    { minute: 58, pre: "3.5", feed: [], posts: 0 },
+    { minute: 62, pre: "4.0", feed: [], posts: 0 },
     { minute: 58, pre: "2.5", feed: [], posts: 0 },
-    { minute: 58, pre: "3.0", feed: [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "59", hg: "1", ag: "1", ou_odds: ["1.9", "1.9", "2.5"] }], posts: 0 },
+    { minute: 58, pre: "4.0", feed: [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "59", hg: "1", ag: "1", ou_odds: ["1.9", "1.9", "2.5"] }], posts: 0 },
   ];
   for (const c of cases) {
     const net = mockNet({ feed: c.feed });
@@ -93,7 +95,7 @@ test("Over 1.5 Test: women, youth and reserve games are not posted (men only sin
   for (const c of cases) {
     const net = mockNet({ feed: [] });
     const env = makeEnv();
-    await webhook(worker, env, card({ header: "💰  Over 1.5 Value", league: c.league, home: c.home, away: c.away, score: "1-0", target: "Goal", minute: 58, pre: "3.0", live: "2.5" }));
+    await webhook(worker, env, card({ header: "💰  Over 1.5 Value", league: c.league, home: c.home, away: c.away, score: "1-0", target: "Goal", minute: 58, pre: "4.0", live: "2.5" }));
     await cron(worker, env);
     assert.equal(premiumPosts(net).length, c.posts, JSON.stringify(c));
   }
@@ -770,10 +772,10 @@ test("live quote in the post: API-Football price of the own line, with a hint wh
   const post = premiumPosts(net)[0];
   assert.ok(post && post.text.includes("📈 Live-Quote jetzt: 1,36 (Over 2.5) – über der Mindestquote ✅"), post && post.text);
   assert.equal(tracked(env)[0].odds.over, 1.36, "live quote prices the tip");
-  // Over 1.5 Test below its Mindestquote 1.32
+  // Over 1.5 Test below its Mindestquote 1.25
   const net2 = mockNet({ feed: [] });
   const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
-  await webhook(worker, env2, card({ header: "💰  Over 1.5 Value", home: "Gamma", away: "Delta", score: "1-0", target: "Goal", minute: 58, pre: "3.0", live: "2.5" }));
+  await webhook(worker, env2, card({ header: "💰  Over 1.5 Value", home: "Gamma", away: "Delta", score: "1-0", target: "Goal", minute: 58, pre: "4.0", live: "2.5" }));
   net2.apiLive = [afFix({ id: 42, home: "Gamma", away: "Delta", minute: 59, gh: 1, goals: [20] })];
   net2.apiOdds = [afOdds(42, { "1.5": [1.2, 4.0] })];
   await cron(worker, env2);

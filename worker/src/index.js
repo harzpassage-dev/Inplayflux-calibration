@@ -696,8 +696,12 @@ const UNITS_HALF = 0.5;
 // since the card if the match is in the feed). Re-check at >= 100 live tips.
 const O15_TEST_ENABLED = true;
 const O15_MAX_MINUTE = 61;
-const O15_MIN_LINE_PRE = 2.75;
-const O15_WR = 0.76;
+// Since 2026-11-02 (owner: "Schwelle höher"): pre-match line >= 3.75 instead of 2.75. Men, unique matches: line >= 2.75
+// fell 80 -> 75 -> 73 -> 68 % by week (68.1 %, n=163, 31.10.-02.11.); line >= 3.75 85.3 % (68, 17.10.-02.11.; 17.-26.10.
+// 83 % (30), 26.-31.10. 88 % (26), new days 83 % (12); Sept 83 % (12), 1.-17.10. 89 % (9)), ~4 tips/day instead of ~36.
+// O15_WR 0.80 (below the 85 % seen, small n) -> Mindestquote 1.25.
+const O15_MIN_LINE_PRE = 3.75;
+const O15_WR = 0.80;
 // Since 2026-10-29: men's first teams only. Women / youth / reserve games hit 71 % (125 unique matches,
 // halves 70/72) vs men 78 % (476, halves 79/77) under the same rule (05.09.–28.10.).
 const nonMenMatch = (p) => /U-?\d\d\b|Youth|Junior|Primavera|Reserve|Women|Feminin|Frauen|Damen/i.test(p.league || "") ||
@@ -2068,7 +2072,7 @@ async function settleTracked(env, feed, srcIn = null) {
 // entry, sends one message per tier and day (warn:<tier>:<day>).
 const WARN_WINDOW = 30;
 const WARN_MIN = 20;
-const WARN_EXPECTED = { premium: 0.786, half: 0.65, o15: 0.76, under: 0.68, risk: 0.6 };
+const WARN_EXPECTED = { premium: 0.786, half: 0.65, o15: 0.80, under: 0.68, risk: 0.6 };
 const WARN_LABEL = { premium: "🔥 High Confidence", half: "🟠 Half-Risiko", o15: "🧪 Over 1.5 Test", under: "🛡️ Under 3.5", risk: "⚠️ Risiko" };
 async function maybeWarn(env, tiers) {
   if (!env.ADMIN_CHAT_ID || !env.TELEGRAM_BOT_TOKEN) return;
@@ -4436,7 +4440,7 @@ export default {
           stakeAdvice(1.5, minQuote(O15_WR), UNITS_HALF, testQuote || odds),
           afOn(env) ? testQuoteNote(testQuote) : null,
           "",
-          `Echt gepostet wird nur bei Over-1.5-Karten bis Minute ${O15_MAX_MINUTE} mit Vor-Spiel-Linie ab 2,75. ${pick ? `Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.` : "Gerade kein passendes Live-Spiel mit 1 Tor, daher Beispielspiel."}`,
+          `Echt gepostet wird nur bei Over-1.5-Karten bis Minute ${O15_MAX_MINUTE} mit Vor-Spiel-Linie ab ${String(O15_MIN_LINE_PRE).replace(".", ",")}. ${pick ? `Dieses Spiel: ${wouldPass ? "würde passen" : "würde nicht passen"}.` : "Gerade kein passendes Live-Spiel mit 1 Tor, daher Beispielspiel."}`,
         ].filter((x) => x != null).join("\n");
         const sent = await sendTelegramMessage(env, env.PREMIUM_CHANNEL_ID, text);
         return jsonResponse({ sent: !!sent, feedOk, matches: feedOk ? feed.length : 0, match: matchInfo, wouldPass: pick ? wouldPass : null });
