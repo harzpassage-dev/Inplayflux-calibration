@@ -753,7 +753,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-02)
+## Open items (as of 2026-11-03)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -914,6 +914,12 @@ then decide per tier on the new days and apply.
 - Over 1.5 Test: since 02.11. only pre-match line ≥ 3.75 (was 2.75, fell to 68 % on 31.10.–02.11.; ≥ 3.75 85 %, n=89 in
   total, see change log). ~4 tips/day, Mindestquote 1.25. Check at ~50 live tips on `/ergebnisse` (only tips from 02.11.
   evening count); switch off if below ~78 %, and watch the 📈 live quotes – at such high lines they may sit below 1.25.
+- Goal-expectation log (since 03.11. evening): once admin "Tor-Erwartung auswerten" shows ≥ 100 matches with a final
+  score, compare per λ band expected vs real (≥ 1 / ≥ 2 goals) for market and tempo; if one of them is clearly better
+  calibrated, say so in the tool/posts (or drop the weaker). Many rows will lack a final score (API-Football coverage).
+  The owner can download "Tor-Erwartung CSV" and upload it here.
+- Home-screen app (03.11.): send new customers / trial users the link https://moneybag-signals.com/analyse-tool#app with
+  their access link.
 - Marketing images in design 6 for the free channel: weekly image (admin, `drawBilanz`), `marketing/roi-tabelle.png`
   (ROI at quotes 1.30/1.40/1.50 from live hit rates, 31.10.; no euro gain example – reads like a promise). Telegram only,
   never Torminute.
