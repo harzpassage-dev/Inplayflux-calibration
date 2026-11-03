@@ -317,8 +317,11 @@ function parseForConfidenceScore(text) {
     if (m) out.targetLine = parseFloat(m[1]);
   }
 
-  m = text.match(/(\d+)'[\s·•]+~?\d+\s*min left/i);
-  if (m) out.minute = parseInt(m[1], 10);
+  m = text.match(/(\d+)'[\s·•]+~?(\d+)\s*min left/i);
+  if (m) {
+    out.minute = parseInt(m[1], 10);
+    out.minutesLeft = parseInt(m[2], 10);
+  }
   m = text.match(/Shots\s*(\d+)\s*[·•]\s*(\d+)\s*\/\s*\d+\s*[·•]\s*\d+\s*total/i);
   if (m) out.totalSot = parseInt(m[1], 10) + parseInt(m[2], 10);
   m = text.match(/Radar X:.*?\((\d+)\)/i);
@@ -1079,6 +1082,106 @@ function cardQuote(parsed) {
   const p = poissonTail(Math.floor(parsed.targetLine - parsed.goals) + 1, (lo + hi) / 2);
   if (!(p > 0 && p < 1)) return null;
   return { over: Math.max(1.01, Math.round((1 / (p * book)) * 100) / 100), line: parsed.targetLine, exact: false, p: r3(p), book: r3(book) };
+}
+
+// Goal-expectation log (since 03.11., owner: "zu erwartende Tore aufzeichnen und später auswerten"): for every
+// signal card the two "expected further goals" the tool shows – tempo (goals per minute so far × minutes left, tool
+// "λ (Restminuten)") and market (Poisson λ from the card's live line + odds, tool "Erwartete weitere Tore") – as one
+// KV key per match + minute with the record as metadata (parallel webhook runs never overwrite each other; listing
+// needs no gets). 60 days. `goalExpectationReport` compares them with the final score (own match archive afm:* or
+// the tip's finalGoals).
+const XG_TTL_S = 60 * 24 * 60 * 60;
+function goalExpectation(parsed) {
+  if (!parsed || parsed.halfTime || parsed.goals == null || parsed.minute == null || !parsed.homeTeam) return null;
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const tempo = parsed.minute > 0 && parsed.minutesLeft != null ? r2((parsed.goals / parsed.minute) * parsed.minutesLeft) : null;
+  let market = null;
+  const o = parsed.cardOdds;
+  if (o && o.over > 1 && o.under > 1 && o.line != null && o.line - parsed.goals > 0) {
+    const pFair = 1 / o.over / (1 / o.over + 1 / o.under);
+    let lo = 0;
+    let hi = 20;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (overLineProb(o.line - parsed.goals, mid) < pFair) lo = mid;
+      else hi = mid;
+    }
+    market = r2((lo + hi) / 2);
+  }
+  if (tempo == null && market == null) return null;
+  return { tempo, market };
+}
+async function logGoalExpectation(env, parsed, now = Date.now()) {
+  const xg = goalExpectation(parsed);
+  if (!xg) return;
+  const day = new Date(now).toISOString().slice(0, 10);
+  const key = `xg:${day}:${normTeam(parsed.homeTeam)}|${normTeam(parsed.awayTeam)}:${parsed.minute}`.slice(0, 480);
+  const meta = { t: now, h: String(parsed.homeTeam).slice(0, 40), a: String(parsed.awayTeam || "").slice(0, 40), m: parsed.minute,
+    g: parsed.goals, l: parsed.targetLine, lg: parsed.league ? String(parsed.league).slice(0, 40) : null, ...xg };
+  await env.ACCESS_KV.put(key, "1", { metadata: meta, expirationTtl: XG_TTL_S });
+}
+async function goalExpectationRows(env, days) {
+  const since = Date.now() - days * DAY_MS;
+  const recs = [];
+  let cursor;
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: "xg:", cursor });
+    for (const k of list.keys) if (k.metadata && k.metadata.t >= since) recs.push(k.metadata);
+    cursor = list.list_complete ? null : list.cursor;
+  } while (cursor);
+  // Final score: own match archive (API-Football), else a settled tip of the same match.
+  const archive = await listMatches(env, days + 1);
+  const results = (await listResults(env, since - DAY_MS)).filter((r) => r.finalGoals != null);
+  const ftGoals = (ft) => {
+    const m = String(ft || "").match(/^(\d+)-(\d+)$/);
+    return m ? +m[1] + +m[2] : null;
+  };
+  // One row per match: the first card (earliest minute) – later cards of the same match would count it twice.
+  recs.sort((x, y) => x.t - y.t);
+  const seen = new Set();
+  const rows = [];
+  for (const r of recs) {
+    const id = new Date(r.t).toISOString().slice(0, 10) + "|" + normTeam(r.h) + "|" + normTeam(r.a);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    let final = null;
+    let src = null;
+    const am = archive.find((x) => x.st && /^(FT|AET|PEN)$/.test(x.st) && Math.abs(Date.parse(x.k) - r.t) < 6 * 3600e3 &&
+      sameTeam(x.h, r.h) && sameTeam(x.a, r.a));
+    if (am && ftGoals(am.ft) != null) {
+      final = ftGoals(am.ft);
+      src = "api";
+    } else {
+      const res = results.find((x) => sameTeam(x.home, r.h) && sameTeam(x.away, r.a) && Math.abs((typeof x.postedAt === "number" ? x.postedAt : Date.parse(x.postedAt)) - r.t) < 6 * 3600e3);
+      if (res) {
+        final = res.finalGoals;
+        src = "tipp";
+      }
+    }
+    rows.push({ ...r, final, rest: final != null ? final - r.g : null, src });
+  }
+  return rows;
+}
+function goalExpectationSummary(rows) {
+  const done = rows.filter((r) => r.rest != null && r.rest >= 0);
+  const bands = [[0, 0.5], [0.5, 1], [1, 1.5], [1.5, 2], [2, 99]];
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const pct = (x) => Math.round(x * 1000) / 10;
+  const by = (field) => bands.map(([lo, hi]) => {
+    const g = done.filter((r) => r[field] != null && r[field] >= lo && r[field] < hi);
+    if (!g.length) return { band: hi > 50 ? `ab ${lo}` : `${lo}–${hi}`, n: 0 };
+    const avg = (f) => g.reduce((s, r) => s + f(r), 0) / g.length;
+    return { band: hi > 50 ? `ab ${lo}` : `${lo}–${hi}`, n: g.length, expected: r2(avg((r) => r[field])), actual: r2(avg((r) => r.rest)),
+      p1Expected: pct(avg((r) => 1 - Math.exp(-r[field]))), p1Actual: pct(avg((r) => (r.rest >= 1 ? 1 : 0))),
+      p2Expected: pct(avg((r) => 1 - Math.exp(-r[field]) * (1 + r[field]))), p2Actual: pct(avg((r) => (r.rest >= 2 ? 1 : 0))) };
+  });
+  return { logged: rows.length, settled: done.length, tempo: by("tempo"), market: by("market") };
+}
+function goalExpectationCsv(rows) {
+  const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const head = ["time", "home", "away", "league", "minute", "goals", "line", "tempoExpected", "marketExpected", "finalGoals", "restGoals", "source"];
+  return [head.join(",")].concat(rows.map((r) => [new Date(r.t).toISOString(), r.h, r.a, r.lg, r.m, r.g, r.l, r.tempo, r.market, r.final, r.rest, r.src]
+    .map(cell).join(","))).join("\n") + "\n";
 }
 
 // The owner's real entry: wait until the over quote reaches WAIT_QUOTE, then
@@ -3447,6 +3550,9 @@ async function handleAdminPage() {
   <button id="odds-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Quoten-Abdeckung prüfen</button>
   <button id="matches-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Spiele-Archiv CSV (7 Tage)</button>
   <div class="out" id="odds-out" style="margin-bottom:10px;"></div>
+  <button id="xg-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Tor-Erwartung auswerten (14 Tage)</button>
+  <button id="xg-csv-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Tor-Erwartung CSV</button>
+  <div class="out" id="xg-out" style="margin-bottom:10px;"></div>
   <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -4026,6 +4132,37 @@ document.getElementById('odds-btn').addEventListener('click', async () => {
       (d.sample ? '<br>Beispiel: ' + esc(d.sample.match || String(d.sample.fixture)) + ' – Linien ' + esc(Object.keys(d.sample.lines).join(', ')) : '') +
       '<br>Wetten-Namen: ' + esc((d.topNames || []).map((n) => n[0] + ' (' + n[1] + ')').join(', ')) +
       (open ? '<br><br>Offene Tipps (✅ live mit Quoten · 🔗 live ohne Quoten · 📅 nur im Spielplan · — bei API-Football nicht gefunden):<br>' + open : '');
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('xg-btn').addEventListener('click', async () => {
+  const out = document.getElementById('xg-out');
+  out.textContent = 'Werte aus …';
+  try {
+    const r = await fetch('/admin/api/goal-expectation?days=14', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    const table = (title, list) => '<b>' + title + '</b><table><tr><th>erwartet</th><th>Spiele</th><th>Ø erwartet</th><th>Ø gekommen</th><th>≥1 Tor erw./echt</th><th>≥2 Tore erw./echt</th></tr>' +
+      list.map((b) => b.n ? '<tr><td>' + b.band + '</td><td>' + b.n + '</td><td>' + b.expected + '</td><td>' + b.actual + '</td><td>' + b.p1Expected + ' / ' + b.p1Actual + ' %</td><td>' + b.p2Expected + ' / ' + b.p2Actual + ' %</td></tr>'
+        : '<tr><td>' + b.band + '</td><td>0</td><td colspan="4">–</td></tr>').join('') + '</table>';
+    out.innerHTML = 'Aufgezeichnet: ' + d.logged + ' Spiele · mit Endstand: ' + d.settled + (d.settled < 100 ? ' (unter 100 – noch kein Urteil)' : '') + '<br>' +
+      table('Tempo (Tore pro Minute × Restminuten)', d.tempo) + '<br>' + table('Markt (aus Live-Linie und Quote)', d.market);
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('xg-csv-btn').addEventListener('click', async () => {
+  const out = document.getElementById('xg-out');
+  out.textContent = 'Erstelle CSV …';
+  try {
+    const r = await fetch('/admin/api/goal-expectation?days=60&csv=1', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status);
+    const csv = await r.text();
+    const name = 'moneybag_tor_erwartung_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    out.textContent = (csv.trim().split('\\n').length - 1) + ' Spiele. Datei ' + name + ' gespeichert (iPad: Dateien-App → Downloads).';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -4613,6 +4750,14 @@ export default {
     }
 
     // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).
+    if (url.pathname === "/admin/api/goal-expectation" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 14, 60);
+      const rows = await goalExpectationRows(env, days);
+      if (url.searchParams.get("csv")) return new Response(goalExpectationCsv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+      return jsonResponse({ days, ...goalExpectationSummary(rows) });
+    }
+
     if (url.pathname === "/admin/api/matches-csv" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const days = Math.min(Number(url.searchParams.get("days")) || 7, 180);
@@ -4660,6 +4805,7 @@ export default {
           LATEST_SIGNAL_KEY,
           JSON.stringify({ text: channelMsg.text, receivedAt: Date.now() })
         );
+        await logGoalExpectation(env, parseForConfidenceScore(channelMsg.text)).catch(() => {});
 
         // Auto-forward to the premium channel: high-confidence signals as
         // before, plus a "Risiko" tier for late signals (minute >= 70,

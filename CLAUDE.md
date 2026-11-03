@@ -257,6 +257,18 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-03: **goal-expectation log** (owner: "zu erwartende Tore aufzeichnen und später auswerten", e.g. Bolivar U19:
+  tool expected 2 more goals, they came). The webhook logs **every** signal card (not only premium, half-time cards
+  skipped): `goalExpectation` = the tool's two numbers – tempo (goals / minute × minutes left, parser now reads
+  `minutesLeft` from "~30 min left") and market (Poisson λ from the card's live line + odds) – via `logGoalExpectation`
+  as one KV key per match + minute `xg:<day>:<home>|<away>:<minute>` with the record as metadata (60 days, one write per
+  card, parallel webhooks never clash). Admin buttons **"Tor-Erwartung auswerten (14 Tage)"** / **"Tor-Erwartung CSV"**
+  (`/admin/api/goal-expectation?days=N[&csv=1]`, `goalExpectationRows`/`goalExpectationSummary`): first card per match,
+  final score from the own API-Football archive `afm:*` (FT/AET/PEN, kickoff within 6 h, `sameTeam`) or a settled tip's
+  `finalGoals`; table per λ band (0–0.5 … ab 2): matches, Ø expected vs Ø came, ≥ 1 / ≥ 2 goals expected vs real. Coverage
+  depends on the archive (API-Football misses many low leagues), so many rows stay without a final score. Verdict only
+  from ≥ 100 settled matches. Test "goal expectation".
+
 - 2026-11-03: **tool as a home-screen app (PWA)** (owner: "mobile App für das Analyse-Tool"; advised against App Store /
   Play Store for now: gambling-content review, 99 $/year Apple, 15–30 % in-app fee). `/manifest.webmanifest` (`appManifest`,
   `private, no-store`): name "MoneyBag Analyst" / "MoneyBag", standalone, black theme, icons `/app/icon-{180,192,512}.png`

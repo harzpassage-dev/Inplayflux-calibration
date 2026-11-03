@@ -852,3 +852,34 @@ test("home-screen app: manifest carries the own token, icons public, install gui
   assert.ok(tool.includes('<link rel="manifest" href="/manifest.webmanifest">') && tool.includes('rel="apple-touch-icon"'));
   assert.equal(tool, fs.readFileSync(new URL("../../tools/moneybag-analyst.html", import.meta.url), "utf8"), "tool copies identical");
 });
+
+test("goal expectation: every card logs tempo + market expectation, report compares with the final score", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  // 2-0 at 56', ~30 min left → tempo 2/56*30 = 1.07; live line 3.5 at Over 1.95 / Under 1.85 → market λ for 1.5 more goals
+  await webhook(worker, env, card({ home: "Bolivar U19", away: "Always Ready U19" }));
+  await webhook(worker, env, card({ home: "Bolivar U19", away: "Always Ready U19", minute: 58 })); // same match again: counted once
+  await webhook(worker, env, card({ home: "Gamma", away: "Delta", score: "1-0", minute: 60, live: "2.5", over: "2.10", under: "1.70" }));
+  const keys = [...env.ACCESS_KV.store.keys()].filter((k) => k.startsWith("xg:"));
+  assert.equal(keys.length, 3);
+  const m = env.ACCESS_KV.meta.get(keys.find((k) => k.includes("bolivar") && k.endsWith(":56")));
+  assert.equal(m.tempo, 1.07);
+  assert.ok(m.market > 1 && m.market < 2.5, String(m.market));
+  // final score from the own match archive (API-Football): Bolivar ended 4-0 → 2 more goals
+  const day = new Date().toISOString().slice(0, 10);
+  env.ACCESS_KV.store.set("afm:" + day, JSON.stringify([{ id: 9, k: new Date(Date.now() - 3600e3).toISOString(), h: "Bolivar U19", a: "Always Ready U19", st: "FT", ft: "4-0" }]));
+  const r = await admin(worker, env, "/admin/api/goal-expectation?days=14");
+  const d = await r.json();
+  assert.equal(d.logged, 2, "one row per match");
+  assert.equal(d.settled, 1);
+  const band = d.tempo.find((b) => b.n);
+  assert.equal(band.band, "1–1.5");
+  assert.equal(band.actual, 2);
+  assert.equal(band.p2Actual, 100);
+  const csv = await (await admin(worker, env, "/admin/api/goal-expectation?days=14&csv=1")).text();
+  assert.match(csv, /Bolivar U19,Always Ready U19,Liga,56,2,2.5,1.07,[\d.]+,4,2,api/);
+  assert.match(csv, /Gamma,Delta,Liga,60,1,2.5,0.5,[\d.]+,,,/);
+  // half-time cards are not logged
+  await webhook(worker, env, card({ home: "Eps", away: "Zeta", header: "HT over 0.5", target: "HT Goal" }));
+  assert.ok(![...env.ACCESS_KV.store.keys()].some((k) => k.startsWith("xg:") && k.includes("eps")));
+});
