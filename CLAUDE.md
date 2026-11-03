@@ -267,7 +267,7 @@ then decide per tier on the new days and apply.
   already running as app). Install guide section `#app` on `/analyse-tool` (`APP_INSTALL_HTML`, iPhone/iPad: Teilen → „Zum
   Home-Bildschirm“, Android: ⋮ → „App installieren“), menu entry "📲 Tool als App installieren". No service worker (not
   needed for installing; tool needs the network anyway). Expired token → the app shows the 403 access page. Test
-  "home-screen app".
+  "home-screen app". Owner installed it on the iPad the same day: icon, full screen and access work.
 
 - 2026-11-02: weekly check with export 11-02 (`data/inplayflux_sinyaller_2026-11-02.csv`, shift 0, report
   `reports/2026-11-02-recalibration.md` + `-wochen-check.txt`), **no refit** (only ~2.3 new days since 31.10.), thresholds
