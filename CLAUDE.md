@@ -268,6 +268,11 @@ then decide per tier on the new days and apply.
   `finalGoals`; table per λ band (0–0.5 … ab 2): matches, Ø expected vs Ø came, ≥ 1 / ≥ 2 goals expected vs real. Coverage
   depends on the archive (API-Football misses many low leagues), so many rows stay without a final score. Verdict only
   from ≥ 100 settled matches. Test "goal expectation".
+  Same day (owner: "im Signal an den Premium-Kanal die zu erwartenden Tore"): every premium post (`buildPremiumMessage`:
+  High Confidence, Over 1.5 Test, Half-Risiko, Risiko) gets "🔮 Erwartete weitere Tore: 1,6 (Markt) · 1,1 (Tempo)"
+  (`expectedGoalsLine`, from the card); admin test posts too (`feedExpectation`: feed match, tempo up to minute 90, market
+  from the feed line; sample values without a live match). The Over 1.5 Test text now says "seit 02.11. nur ab
+  Vor-Spiel-Linie 3,75: Rückblick 85 % (89 Spiele)" (was the old 76 % / 522). Test "premium post shows the expected goals".
 
 - 2026-11-03: **tool as a home-screen app (PWA)** (owner: "mobile App für das Analyse-Tool"; advised against App Store /
   Play Store for now: gambling-content review, 99 $/year Apple, 15–30 % in-app fee). `/manifest.webmanifest` (`appManifest`,

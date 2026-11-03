@@ -401,7 +401,25 @@ function buildPremiumMessage(text, label) {
       kept.push(line);
     }
   }
-  return `${label}\n\n${kept.join("\n")}`;
+  const xg = expectedGoalsLine(goalExpectation(parseForConfidenceScore(text)));
+  return `${label}\n\n${kept.join("\n")}${xg ? "\n" + xg : ""}`;
+}
+
+// "🔮 Erwartete weitere Tore: 1,6 (Markt) · 1,1 (Tempo)" in premium posts (since 03.11., owner) – the same two numbers the
+// tool shows and the goal-expectation log records.
+function expectedGoalsLine(xg) {
+  if (!xg) return null;
+  const f = (x) => String(Math.round(x * 10) / 10).replace(".", ",");
+  const parts = [xg.market != null ? `${f(xg.market)} (Markt)` : null, xg.tempo != null ? `${f(xg.tempo)} (Tempo)` : null].filter(Boolean);
+  return parts.length ? `🔮 Erwartete weitere Tore: ${parts.join(" · ")}` : null;
+}
+// Same for an admin test post built from a live feed match (no card): tempo up to minute 90, market from the feed's line.
+function feedExpectation(match, snap) {
+  if (!snap || snap.minute == null) return null;
+  const tempo = snap.minute > 0 ? Math.round((snap.goals / snap.minute) * Math.max(0, 90 - snap.minute) * 100) / 100 : null;
+  const lam = match ? marketLambda(match) : null;
+  const market = lam != null ? Math.round(lam * 100) / 100 : null;
+  return tempo == null && market == null ? null : { tempo, market };
 }
 
 // Logs every premium-channel forward so it can later be cross-referenced
@@ -1593,7 +1611,7 @@ async function postO15Test(env, item, match) {
   const label = `🧪 Over 1.5 Test (Minute ${p.minute}' · Vor-Spiel-Linie ${String(p.goallinePre).replace(".", ",")}${match ? " · live: kein Tor, keine Rote Karte" : ""})`;
   const post = await postPremium(env, buildPremiumMessage(item.text, label) +
       (odds && !odds.live ? `\nQuote: ${oddsText(odds)}` : "") + "\n\n" +
-      "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.\n" +
+      "Testbetrieb seit 21.10., seit 02.11. nur ab Vor-Spiel-Linie 3,75: Rückblick 85 % (89 Spiele), halber Einsatz.\n" +
       stakeAdvice(p.targetLine, mq, UNITS_HALF, odds));
   await trackSignal(env, {
     ...post,
@@ -4613,8 +4631,9 @@ export default {
           "🎯 Target: Over 1.5 Goals",
           `📡 Radar X: ${s.radar != null ? s.radar : "–"}`,
           odds ? `Quote: ${oddsText(odds)}` : null,
+          expectedGoalsLine(pick ? feedExpectation(pick.m, s) : { market: 1.6, tempo: 0.5 }),
           "",
-          "Testbetrieb seit 21.10.: Rückblick 76 % (522 Spiele), halber Einsatz.",
+          "Testbetrieb seit 21.10., seit 02.11. nur ab Vor-Spiel-Linie 3,75: Rückblick 85 % (89 Spiele), halber Einsatz.",
           stakeAdvice(1.5, minQuote(O15_WR), UNITS_HALF, testQuote || odds),
           afOn(env) ? testQuoteNote(testQuote) : null,
           "",
@@ -4690,6 +4709,7 @@ export default {
             `⚽ ${pick.m.h} ${s.score} ${pick.m.a}`,
             `🎯 Beispiel-Ziel: Over ${line}`,
             confirmationBlock(res).replace("✅ Live bestätigt nach 2 min", "✅ Live-Daten abgerufen"),
+            expectedGoalsLine(feedExpectation(pick.m, s)),
             "",
             stakeAdvice(line, mq, units, testQuote || res.postOdds),
             afOn(env) ? testQuoteNote(testQuote) : null,
@@ -4749,7 +4769,6 @@ export default {
       return jsonResponse(await apiOddsProbe(env));
     }
 
-    // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).
     if (url.pathname === "/admin/api/goal-expectation" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const days = Math.min(Number(url.searchParams.get("days")) || 14, 60);
@@ -4758,6 +4777,7 @@ export default {
       return jsonResponse({ days, ...goalExpectationSummary(rows) });
     }
 
+    // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).
     if (url.pathname === "/admin/api/matches-csv" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const days = Math.min(Number(url.searchParams.get("days")) || 7, 180);
