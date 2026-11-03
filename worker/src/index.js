@@ -2763,7 +2763,7 @@ const LOGO_CSS = `.logo{display:inline-flex;align-items:center;font:italic 900 2
 // Fold-out menu next to the logo on every public page (since 30.10., owner: "schnelles Navigieren"). Pure HTML
 // <details>, no script needed; a tap on a link also closes it (same-page anchors). New public pages go into NAV_LINKS (legal pages stay in the footers).
 const NAV_LINKS = [
-  ["Start", [["/", "🏠 Startseite"], ["/#daten", "📈 Daten der Woche"], ["/#so", "⚙️ So funktioniert's"], ["/analyse-tool", "🧮 So funktioniert das Analyse-Tool"], ["/#faq", "❓ Häufige Fragen"]]],
+  ["Start", [["/", "🏠 Startseite"], ["/#daten", "📈 Daten der Woche"], ["/#so", "⚙️ So funktioniert's"], ["/analyse-tool", "🧮 So funktioniert das Analyse-Tool"], ["/analyse-tool#app", "📲 Tool als App installieren"], ["/#faq", "❓ Häufige Fragen"]]],
   ["Zahlen & Inhalte", [["/ergebnisse", "📊 Alle Ergebnisse"], ["/videos", "🎬 Daten-Videos"]]],
   ["Mitmachen", [["/#test", "🎁 24 h gratis testen"], ["/#preis", "🔒 Premium & Preis"], ["https://t.me/MoneyBagAnalyst", "📢 Gratis-Kanal (Telegram)"], ["/partner", "🤝 Partner-Netzwerk"], ["/partner#mitmachen", "✍️ Partner werden"]]],
 ];
@@ -2878,6 +2878,31 @@ const TOOL_STEPS = [
   ["4", "Quote prüfen (optional)", "schritt4.jpg", "Feld für die eigene Live-Quote und Knopf Edge berechnen",
     "Du trägst die Quote ein, die dein Buchmacher gerade bietet, und tippst auf <b>„Edge berechnen“</b>. Das Tool rechnet aus, ob sich der Tipp auf Dauer lohnen würde: Wahrscheinlichkeit × Quote − 1. Ein Beispiel: Bei 76 % rechnet sich ein Tipp erst ab einer Quote von 1,32 (die <b>Mindestquote</b>, die auch in jedem Premium-Signal steht). Liegt die Quote darunter: lieber nicht setzen."],
 ];
+function appManifest(token) {
+  return {
+    id: "/",
+    name: "MoneyBag Analyst",
+    short_name: "MoneyBag",
+    description: "Analyse-Tool für Live-Fußballsignale",
+    lang: "de",
+    start_url: token ? `/?t=${encodeURIComponent(token)}&app=1` : "/",
+    scope: "/",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#111111",
+    theme_color: "#111111",
+    icons: [
+      { src: "/app/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/app/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/app/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+  };
+}
+const APP_INSTALL_HTML = `<section class="app" id="app"><h2>📲 Als App auf dem Handy</h2>
+<p>Das Analyse-Tool lässt sich wie eine App auf den Home-Bildschirm legen – mit eigenem Symbol, im Vollbild, ohne App Store. Öffne dazu zuerst deinen persönlichen Zugangslink, dann:</p>
+<ul><li><b>iPhone / iPad (Safari oder Chrome):</b> Teilen-Symbol <b>□↑</b> antippen → <b>„Zum Home-Bildschirm“</b> → „Hinzufügen“.</li>
+<li><b>Android (Chrome):</b> Menü <b>⋮</b> antippen → <b>„App installieren“</b> (oder „Zum Startbildschirm hinzufügen“).</li></ul>
+<p>Die App öffnet dein Tool direkt mit deinem Zugang. Läuft der Zugang ab, zeigt sie die Zugangsseite.</p></section>`;
 function toolGuidePage() {
   const steps = TOOL_STEPS.map(([n, title, img, alt, text]) => `<section class="step"><div class="num">${n}</div><div class="txt"><h2>${title}</h2><p>${text}</p></div>
 <figure><img src="/tool/${img}" alt="${alt}" loading="lazy" width="402"><figcaption>Beispiel mit erfundenem Spiel (Heim FC – Gast FC)</figcaption></figure></section>`).join("");
@@ -2892,9 +2917,11 @@ ${ogMeta("MoneyBag – So funktioniert das Analyse-Tool", "Signal einfügen, Wer
 .step figcaption{font-size:12px;color:var(--muted);margin-top:12px}
 .intro{margin-top:22px;border-left:6px solid var(--red);background:#f4f4f6;padding:14px 16px}
 .cta{background:#111;color:#fff;padding:20px;margin-top:36px}.cta a{color:#ff6b72;font-weight:900}
+.app{margin-top:36px;padding:18px 20px;border:3px solid #111;box-shadow:8px 8px 0 var(--red)}.app h2{margin-top:0}.app li{margin:6px 0}
 @media(min-width:760px){.step{grid-template-columns:52px 1fr 410px}.step figure{grid-column:3;grid-row:1/3;margin:0}}</style></head><body>${magHead("So funktioniert das Analyse-Tool")}<main class="wrap">
 <p class="intro">Das Analyse-Tool gehört zum Premium-Zugang. Du fügst ein Signal ein und siehst in Sekunden, <b>wie wahrscheinlich das nötige Tor noch ist</b> – aus drei Blickwinkeln, jede Zahl nachvollziehbar, keine Blackbox. Es ersetzt nicht dein eigenes Urteil: Es hilft dir, nur Tipps zu spielen, die sich auch rechnen.</p>
 ${steps}
+${APP_INSTALL_HTML}
 <div class="cta">Selbst ausprobieren: <a href="/#test">24 h gratis testen</a> (Premium-Kanal + Analyse-Tool) · <a href="/#preis">Premium & Preis</a> · <a href="/ergebnisse">Alle Ergebnisse</a></div>
 <p class="note" style="margin-top:18px">18+ · Keine Gewinngarantie. Die Zahlen sind Wahrscheinlichkeiten aus vergangenen Spielen, keine Vorhersage. Hilfe bei Glücksspielproblemen: <a href="https://www.check-dein-spiel.de">check-dein-spiel.de</a></p>
 </main>${MAG_FOOT}</body></html>`;
@@ -4076,6 +4103,19 @@ export default {
     }
     if (url.pathname === "/partner" || url.pathname === "/partner/") return partnerPage();
     if (url.pathname === "/analyse-tool" || url.pathname === "/analyse-tool/") return toolGuidePage();
+    // Home-screen app (PWA, since 2026-11-03): public icons + a manifest whose start_url carries the
+    // visitor's own access token, so the installed app opens the tool even where the home-screen app
+    // keeps its own cookies (iOS). Without a valid cookie/token the manifest just starts at "/".
+    if (/^\/app\/icon-(180|192|512)\.png$/.test(url.pathname)) {
+      const img = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin)));
+      return new Response(img.body, { status: img.status, headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
+    }
+    if (url.pathname === "/manifest.webmanifest") {
+      const acc = await resolveAccess(request, env);
+      return new Response(JSON.stringify(appManifest(acc.ok ? acc.token : null)), {
+        headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "private, no-store" },
+      });
+    }
     if (/^\/tool\/schritt[1-4]\.jpg$/.test(url.pathname)) {
       const img = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin)));
       return new Response(img.body, { status: img.status, headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400" } });

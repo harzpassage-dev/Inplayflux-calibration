@@ -66,7 +66,7 @@ bot (`/test-starten` → `/start test` → invite + tool link, removed after 24 
 opens the tool, a bad link gets the 403 access page), `/ergebnisse`, `/impressum`, `/agb`, `/widerruf`, `/datenschutz`
 (`legalPage`; the last four need the Cloudflare vars IMPRESSUM_NAME / IMPRESSUM_ADDRESS, set 25.10., else 404; legal pages
 are noindex), `/videos` (MoneyBag versions of the statistics videos), `/partner` (partner network + join form),
-`/analyse-tool` (step-by-step guide to the tool with screenshots), `/robots.txt` + `/sitemap.xml` (`/`, `/ergebnisse`, `/videos`, `/partner`, `/analyse-tool`; site verified in Google Search Console). Every
+`/analyse-tool` (step-by-step guide to the tool with screenshots, `#app` = install the tool as a home-screen app, see change log 03.11.), `/robots.txt` + `/sitemap.xml` (`/`, `/ergebnisse`, `/videos`, `/partner`, `/analyse-tool`; site verified in Google Search Console). Every
 public page has the fold-out menu (`NAV_LINKS`, "MENÜ" button left of the logo); new pages/sections go into it. The
 privacy policy lists every data flow (Cloudflare, cookie, contact form → Telegram, GMX, PayPal, Telegram, optional
 The Odds API key): any new external resource, cookie or tracker needs an update there first.
@@ -256,6 +256,18 @@ then decide per tier on the new days and apply.
   CLAUDE.md only) and sends the mp4 to the owner (push notification). It stores no connectors (not needed: git only).
 
 ## Change log (latest first)
+
+- 2026-11-03: **tool as a home-screen app (PWA)** (owner: "mobile App für das Analyse-Tool"; advised against App Store /
+  Play Store for now: gambling-content review, 99 $/year Apple, 15–30 % in-app fee). `/manifest.webmanifest` (`appManifest`,
+  `private, no-store`): name "MoneyBag Analyst" / "MoneyBag", standalone, black theme, icons `/app/icon-{180,192,512}.png`
+  (public; source `marketing/app-icon.svg` = favicon with padding, maskable-safe); **start_url `/?t=<own token>&app=1`** when
+  the request has a valid cookie/token (iOS home-screen apps keep their own cookies, so the token must travel with the start
+  URL), else `/`. Tool head (`worker/public/index.html` = `tools/moneybag-analyst.html`) links the manifest, apple-touch-icon,
+  apple-mobile-web-app-* and theme-color, plus a hint "📲 Als App auf dem Handy installieren" under the badge (hidden when
+  already running as app). Install guide section `#app` on `/analyse-tool` (`APP_INSTALL_HTML`, iPhone/iPad: Teilen → „Zum
+  Home-Bildschirm“, Android: ⋮ → „App installieren“), menu entry "📲 Tool als App installieren". No service worker (not
+  needed for installing; tool needs the network anyway). Expired token → the app shows the 403 access page. Test
+  "home-screen app".
 
 - 2026-11-02: weekly check with export 11-02 (`data/inplayflux_sinyaller_2026-11-02.csv`, shift 0, report
   `reports/2026-11-02-recalibration.md` + `-wochen-check.txt`), **no refit** (only ~2.3 new days since 31.10.), thresholds

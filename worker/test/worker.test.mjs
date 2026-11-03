@@ -821,3 +821,34 @@ test("analyse-tool guide page: 4 steps with images, linked from menu, start page
   const sm = await (await worker.fetch(new Request("https://x/sitemap.xml"), env, {})).text();
   assert.ok(sm.includes("/analyse-tool"));
 });
+
+test("home-screen app: manifest carries the own token, icons public, install guide, tool links it", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv({ ASSETS: { fetch: () => new Response("PNG") } });
+  const token = "a".repeat(32);
+  env.ACCESS_KV.store.set(token, JSON.stringify({ status: "active", expiresAt: Date.now() + 3600e3 }));
+  const withCookie = await worker.fetch(new Request("https://x/manifest.webmanifest", { headers: { Cookie: `mb_access=${token}` } }), env, {});
+  assert.match(withCookie.headers.get("content-type"), /manifest\+json/);
+  assert.equal(withCookie.headers.get("cache-control"), "private, no-store");
+  const m = await withCookie.json();
+  assert.equal(m.start_url, `/?t=${token}&app=1`);
+  assert.equal(m.display, "standalone");
+  assert.ok(m.icons.some((i) => i.sizes === "512x512" && i.purpose === "maskable"));
+  const anon = await (await worker.fetch(new Request("https://x/manifest.webmanifest"), env, {})).json();
+  assert.equal(anon.start_url, "/", "no token without access");
+  const bad = await (await worker.fetch(new Request("https://x/manifest.webmanifest", { headers: { Cookie: "mb_access=premium:pending" } }), env, {})).json();
+  assert.equal(bad.start_url, "/");
+  // app start: token in the URL sets the cookie and redirects to the tool
+  const start = await worker.fetch(new Request(`https://x/?t=${token}&app=1`), env, {});
+  assert.equal(start.status, 302);
+  assert.match(start.headers.get("set-cookie"), /mb_access=a{32}/);
+  const icon = await worker.fetch(new Request("https://x/app/icon-180.png"), env, {});
+  assert.equal(icon.headers.get("content-type"), "image/png");
+  const guide = await (await worker.fetch(new Request("https://x/analyse-tool"), env, {})).text();
+  assert.ok(guide.includes('id="app"') && guide.includes("Zum Home-Bildschirm") && guide.includes("App installieren"));
+  assert.ok(guide.includes('href="/analyse-tool#app"'), "menu link");
+  const fs = await import("node:fs");
+  const tool = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  assert.ok(tool.includes('<link rel="manifest" href="/manifest.webmanifest">') && tool.includes('rel="apple-touch-icon"'));
+  assert.equal(tool, fs.readFileSync(new URL("../../tools/moneybag-analyst.html", import.meta.url), "utf8"), "tool copies identical");
+});
