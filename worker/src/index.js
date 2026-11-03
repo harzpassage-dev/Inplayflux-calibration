@@ -103,8 +103,19 @@ async function putAccess(env, token, record) {
   await env.ACCESS_KV.put(token, JSON.stringify(record), { expirationTtl: ttlSeconds });
 }
 
+// Bold lines in plain-text posts (since 03.11., owner: "dickere Schrift" for the expected goals), sent as Telegram
+// entities so the text needs no HTML escaping. Offsets are UTF-16 units – the same as JS string indices.
+const BOLD_LINES = [/^🔮 Erwartete weitere Tore:.*$/gmu];
+function boldEntities(text) {
+  const out = [];
+  for (const re of BOLD_LINES) for (const m of String(text).matchAll(re)) out.push({ type: "bold", offset: m.index, length: m[0].length });
+  return out;
+}
+
 async function sendTelegramMessage(env, chatId, text, replyToMessageId) {
   const payload = { chat_id: chatId, text };
+  const entities = boldEntities(text);
+  if (entities.length) payload.entities = entities;
   if (replyToMessageId) payload.reply_to_message_id = replyToMessageId;
   const resp = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
@@ -2245,7 +2256,7 @@ async function markPremiumPost(env, t, result) {
   await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/editMessageText`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: env.PREMIUM_CHANNEL_ID, message_id: t.msgId, text }),
+    body: JSON.stringify({ chat_id: env.PREMIUM_CHANNEL_ID, message_id: t.msgId, text, entities: boldEntities(text) }),
   }).catch(() => null);
 }
 

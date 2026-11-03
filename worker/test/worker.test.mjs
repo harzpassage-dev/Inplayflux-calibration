@@ -891,6 +891,10 @@ test("premium post shows the expected further goals (market + tempo), test posts
   await cron(worker, env);
   const post = premiumPosts(net)[0];
   assert.match(post.text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\) · 1,1 \(Tempo\)/, post.text);
+  // bold via Telegram entities: exactly that line
+  assert.equal(post.entities.length, 1);
+  assert.equal(post.text.substr(post.entities[0].offset, post.entities[0].length), "🔮 Erwartete weitere Tore: 1,6 (Markt) · 1,1 (Tempo)");
+  assert.equal(post.entities[0].type, "bold");
   // Over 1.5 Test post
   const net2 = mockNet({ feed: [] });
   const env2 = makeEnv();

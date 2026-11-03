@@ -273,6 +273,9 @@ then decide per tier on the new days and apply.
   (`expectedGoalsLine`, from the card); admin test posts too (`feedExpectation`: feed match, tempo up to minute 90, market
   from the feed line; sample values without a live match). The Over 1.5 Test text now says "seit 02.11. nur ab
   Vor-Spiel-Linie 3,75: Rückblick 85 % (89 Spiele)" (was the old 76 % / 522). Test "premium post shows the expected goals".
+  The 🔮 line is **bold** (owner: "dickere Schrift"): `boldEntities` adds Telegram `entities` (type bold, UTF-16 offsets)
+  in `sendTelegramMessage` and in the WIN/LOST edit (`markPremiumPost`); no parse_mode, so no escaping. More bold lines →
+  add a regex to `BOLD_LINES`.
 
 - 2026-11-03: **tool as a home-screen app (PWA)** (owner: "mobile App für das Analyse-Tool"; advised against App Store /
   Play Store for now: gambling-content review, 99 $/year Apple, 15–30 % in-app fee). `/manifest.webmanifest` (`appManifest`,
