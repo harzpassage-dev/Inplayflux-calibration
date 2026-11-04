@@ -257,6 +257,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-04: **admin page redesigned** (owner: "übersichtlicher, in unserem Design"): design 6 (black hero with red
+  stripe, speed logo + "ADMIN", light grey page, white cards with red left edge), password field in a sticky black bar,
+  five fold-out groups (`details.grp`): 📊 Ergebnisse (open; results 7/30 days, CSV, weekly image, free channel, fill
+  unclear), 👥 Kunden (create, extend, list), 📤 Test-Posts (button grid), 🔬 Auswertungen (own scenes, goal expectation,
+  premium confirmations, Under 3.5), ⚙️ Technik (API-Football, odds coverage, archive CSV, backup). All element ids
+  unchanged, empty `.out` boxes hidden, dark-theme colours in the admin script remapped (green #1a8a3f, red #e0262f).
+  New admin buttons go into the matching group.
+
 - 2026-11-04: **own scenes from API-Football – step 1 of an own filter** (owner: "mit der API ein Filter erstellen und
   unabhängig von InPlayFlux sein"; plan: 1 shadow log 2–3 weeks, 2 evaluate vs final score + real odds, 3 own tier at 0.5
   units only for rules stable in both halves that beat the quote, 4 then reduce InPlayFlux). `collectScenes` (minute cron,

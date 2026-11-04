@@ -3691,117 +3691,167 @@ async function handleAdminPage() {
   return htmlResponse(`<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zugangsverwaltung</title>${ICON_LINK}
+<title>MoneyBag – Admin</title>${ICON_LINK}<meta name="robots" content="noindex">
 <style>
-  body { font-family: -apple-system, system-ui, sans-serif; background:#12151c; color:#e6e9f0; max-width:640px; margin:0 auto; padding:20px 14px 60px; }
-  h1 { font-size:1.1rem; }
-  section { background:#1a1f2b; border:1px solid #2c3444; border-radius:6px; padding:14px; margin-bottom:14px; }
-  label { display:block; font-size:0.8rem; color:#8891a3; margin-bottom:4px; }
-  input { width:100%; box-sizing:border-box; background:#202634; color:#e6e9f0; border:1px solid #2c3444; border-radius:4px; padding:8px; margin-bottom:10px; font-family:inherit; }
-  button { background:#c9a227; color:#1a1200; border:none; border-radius:4px; padding:10px 14px; font-weight:600; cursor:pointer; }
-  table { width:100%; border-collapse:collapse; font-size:0.8rem; }
-  td, th { padding:6px; border-bottom:1px solid #2c3444; text-align:left; }
-  .out { margin-top:10px; font-size:0.85rem; word-break:break-all; }
-  .link { font-family:ui-monospace, monospace; background:#202634; padding:8px; border-radius:4px; display:block; margin-top:6px; }
+  :root { --red:#e0262f; --ink:#111; --muted:#5d5d66; --line:#e4e4e8; --soft:#f4f4f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#f4f4f6; color:var(--ink); font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Liberation Sans", sans-serif; }
+  ${LOGO_CSS}
+  .hero { background:linear-gradient(115deg,#111 0 70%,var(--red) 70% 80%,#111 80%); color:#fff; padding:16px 0 18px; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 14px; }
+  .hero .logo { pointer-events:none; }
+  .hero b.tag { display:block; margin-top:10px; font:italic 900 22px/1 Arial,"Liberation Sans",sans-serif; text-transform:uppercase; letter-spacing:-.5px; }
+  .pwbar { position:sticky; top:0; z-index:5; background:#111; border-bottom:4px solid var(--red); padding:10px 0; }
+  .pwbar .wrap { display:flex; gap:10px; align-items:center; }
+  .pwbar label { color:#fff; margin:0; white-space:nowrap; }
+  .pwbar input { margin:0; flex:1; }
+  details.grp { background:#fff; border:1px solid var(--line); border-left:5px solid var(--red); border-radius:4px; margin:14px 0; }
+  details.grp > summary { list-style:none; cursor:pointer; padding:14px 16px; font-weight:900; text-transform:uppercase; letter-spacing:1.5px; font-size:14px; display:flex; align-items:center; gap:10px; }
+  details.grp > summary::-webkit-details-marker { display:none; }
+  details.grp > summary small { font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted); font-size:13px; }
+  details.grp > summary:after { content:"+"; margin-left:auto; font-size:22px; line-height:1; color:var(--red); }
+  details.grp[open] > summary:after { content:"–"; }
+  .body { padding:0 16px 16px; }
+  .card { border-top:1px solid var(--line); padding:14px 0 4px; }
+  .card:first-child { border-top:none; padding-top:0; }
+  h3 { margin:0 0 6px; font-size:15px; font-weight:800; }
+  .hint { font-size:13px; color:var(--muted); margin:0 0 10px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  input { width:100%; background:#fff; color:var(--ink); border:1px solid #cfcfd6; border-radius:4px; padding:9px; margin-bottom:10px; font:inherit; }
+  input[type=file] { padding:6px; }
+  button { background:var(--red); color:#fff; border:2px solid var(--red); border-radius:4px; padding:9px 14px; font-weight:800; cursor:pointer; font:inherit; font-weight:800; margin:0 6px 8px 0; }
+  button.sec { background:#fff; color:var(--ink); border-color:#111; }
+  button:active { transform:translateY(1px); }
+  .row { display:flex; flex-wrap:wrap; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-bottom:8px; }
+  .grid button { margin:0; width:100%; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td, th { padding:6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:#111; color:#fff; font-size:12px; }
+  .out { margin-top:6px; font-size:14px; word-break:break-word; }
+  .out:empty { display:none; }
+  .out:not(:empty) { background:var(--soft); border-radius:4px; padding:10px; margin-bottom:10px; overflow-x:auto; }
+  .link { font-family:ui-monospace, monospace; background:var(--soft); padding:8px; border-radius:4px; display:block; margin-top:6px; }
+  summary { cursor:pointer; }
+  .foot { text-align:center; font-size:12px; color:var(--muted); margin:24px 0; }
 </style></head>
 <body>
-<h1>Zugangsverwaltung — MoneyBag Analyst</h1>
+<header class="hero"><div class="wrap"><span class="logo"><i></i>MONEY<span>BAG</span></span><b class="tag">Admin</b></div></header>
+<div class="pwbar"><div class="wrap"><label for="pw">Passwort</label><input type="password" id="pw" placeholder="Admin-Passwort"></div></div>
+<main class="wrap">
 
-<section>
-  <label>Admin-Passwort</label>
-  <input type="password" id="pw" placeholder="Passwort">
-</section>
+<details class="grp" open><summary>📊 Ergebnisse <small>Bilanz, Grafik, Gratis-Kanal</small></summary><div class="body">
+  <div class="card">
+    <p class="hint">Jedes gepostete Signal wird automatisch gewertet. Die Wochenbilanz geht montags um 10 Uhr (MESZ) in den Premium-Kanal.</p>
+    <div class="row"><button id="res7-btn">Letzte 7 Tage</button><button id="res30-btn">Letzte 30 Tage</button><button id="res-csv-btn" class="sec">CSV speichern (30 Tage)</button></div>
+    <div id="res-out" class="out"></div>
+  </div>
+  <div class="card">
+    <h3>Bilanz-Grafik</h3>
+    <button id="img-btn">Bilanz-Grafik erstellen (7 Tage)</button>
+    <div class="out" id="img-out"></div>
+  </div>
+  <div class="card">
+    <h3>Gratis-Kanal</h3>
+    <button id="free-fill-btn">3 letzte Ergebnisse in Gratis-Kanal posten</button>
+    <div class="out" id="free-fill-out"></div>
+  </div>
+  <div class="card">
+    <h3>Unklare Ergebnisse nachtragen</h3>
+    <p class="hint">InPlayFlux-CSV-Export auswählen (roh oder bearbeitet). Erst Vorschau, dann Übernehmen. Nur Tipps mit „unklar“ werden geändert.</p>
+    <input type="file" id="fill-file" accept=".csv,text/csv">
+    <div class="row"><button id="fill-prev-btn" class="sec">Vorschau</button><button id="fill-apply-btn">Übernehmen</button></div>
+    <div class="out" id="fill-out"></div>
+  </div>
+</div></details>
 
-<section>
-  <h3>Neuen Testzugang erstellen (Standard: 24h)</h3>
-  <label>Stunden</label>
-  <input type="number" id="hours" value="24">
-  <button id="create-btn">Link erstellen</button>
-  <div class="out" id="create-out"></div>
-</section>
+<details class="grp"><summary>👥 Kunden <small>Testzugang, Verlängern, alle Zugänge</small></summary><div class="body">
+  <div class="card">
+    <h3>Neuen Zugang erstellen</h3>
+    <label>Stunden</label>
+    <input type="number" id="hours" value="24">
+    <button id="create-btn">Link erstellen</button>
+    <div class="out" id="create-out"></div>
+  </div>
+  <div class="card">
+    <h3>Zugang nach Zahlung verlängern</h3>
+    <label>Token</label>
+    <input type="text" id="ext-token" placeholder="Token aus dem Link">
+    <label>Tage</label>
+    <input type="number" id="ext-days" value="30">
+    <button id="ext-btn">Verlängern</button>
+    <div class="out" id="ext-out"></div>
+  </div>
+  <div class="card">
+    <h3>Alle Zugänge</h3>
+    <button id="list-btn" class="sec">Aktualisieren</button>
+    <div id="list-out" class="out"></div>
+  </div>
+</div></details>
 
-<section>
-  <h3>Zugang nach Zahlung verlängern</h3>
-  <label>Token</label>
-  <input type="text" id="ext-token" placeholder="Token aus dem Link">
-  <label>Tage</label>
-  <input type="number" id="ext-days" value="30">
-  <button id="ext-btn">Verlängern</button>
-  <div class="out" id="ext-out"></div>
-</section>
+<details class="grp"><summary>📤 Test-Posts <small>werden nie gewertet</small></summary><div class="body">
+  <div class="card">
+    <p class="hint">Jeder Test-Post ist als TEST markiert und zählt nicht in die Bilanz.</p>
+    <div class="grid">
+      <button id="test-btn" class="sec">🔥 High Confidence</button>
+      <button id="test-o05-btn" class="sec">Over 0.5</button>
+      <button id="test-o15-btn" class="sec">🧪 Over 1.5</button>
+      <button id="test-half-btn" class="sec">🟠 Half-Risiko</button>
+      <button id="test-under-btn" class="sec">🛡️ Under 3.5</button>
+      <button id="test-free-btn" class="sec">📢 Gratis-Kanal</button>
+    </div>
+    <div class="out" id="test-out"></div><div class="out" id="test-o05-out"></div><div class="out" id="test-o15-out"></div>
+    <div class="out" id="test-half-out"></div><div class="out" id="test-under-out"></div><div class="out" id="test-free-out"></div>
+  </div>
+</div></details>
 
-<section>
-  <h3>Bilanz (automatisch ausgewertet)</h3>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jedes gepostete Signal wird im Live-Spielstand verfolgt und als Treffer oder Fehlschlag gewertet. Die Wochenbilanz geht jeden Montag um 10 Uhr (MESZ) automatisch in den Premium-Kanal.</p>
-  <button id="test-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test-Signal an Premium-Kanal senden</button>
-  <div class="out" id="test-out" style="margin-bottom:10px;"></div>
-  <button id="test-o05-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 0.5 senden</button>
-  <div class="out" id="test-o05-out" style="margin-bottom:10px;"></div>
-  <button id="free-fill-btn" style="margin-bottom:8px;">3 letzte Ergebnisse in Gratis-Kanal posten</button>
-  <div class="out" id="free-fill-out" style="margin-bottom:10px;"></div>
-  <button id="test-free-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Gratis-Kanal senden</button>
-  <div class="out" id="test-free-out" style="margin-bottom:10px;"></div>
-  <button id="test-under-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Under 3.5 senden</button>
-  <div class="out" id="test-under-out" style="margin-bottom:10px;"></div>
-  <button id="test-half-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Half-Risiko senden</button>
-  <div class="out" id="test-half-out" style="margin-bottom:10px;"></div>
-  <button id="test-o15-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Test Over 1.5 senden</button>
-  <div class="out" id="test-o15-out" style="margin-bottom:10px;"></div>
-  <button id="af-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">API-Football prüfen</button>
-  <div class="out" id="af-out" style="margin-bottom:10px;"></div>
-  <button id="odds-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Quoten-Abdeckung prüfen</button>
-  <button id="matches-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Spiele-Archiv CSV (7 Tage)</button>
-  <div class="out" id="odds-out" style="margin-bottom:10px;"></div>
-  <button id="xg-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Tor-Erwartung auswerten (14 Tage)</button>
-  <button id="xg-csv-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Tor-Erwartung CSV</button>
-  <div class="out" id="xg-out" style="margin-bottom:10px;"></div>
-  <button id="sc-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Eigene Szenen auswerten (Minute 60)</button>
-  <button id="sc-csv-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Eigene Szenen CSV</button>
-  <div class="out" id="sc-out" style="margin-bottom:10px;"></div>
-  <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
-  <div class="out" id="img-out" style="margin-bottom:10px;"></div>
-  <button id="res7-btn">Letzte 7 Tage</button>
-  <button id="res30-btn" style="margin-left:6px;">Letzte 30 Tage</button>
-  <button id="res-csv-btn" style="margin-left:6px;">CSV speichern (30 Tage)</button>
-  <div id="res-out" style="margin-top:10px;"></div>
-  <h4 style="margin:16px 0 6px;">Unklare Ergebnisse nachtragen</h4>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 8px;">InPlayFlux-CSV-Export auswählen (roh oder bearbeitet). Erst Vorschau, dann Übernehmen. Nur Tipps mit „unklar“ werden geändert.</p>
-  <input type="file" id="fill-file" accept=".csv,text/csv">
-  <div style="margin-top:8px;"><button id="fill-prev-btn">Vorschau</button><button id="fill-apply-btn" style="margin-left:6px;">Übernehmen</button></div>
-  <div class="out" id="fill-out" style="margin-top:8px;"></div>
-</section>
+<details class="grp"><summary>🔬 Auswertungen <small>Tor-Erwartung, eigene Szenen, Logs</small></summary><div class="body">
+  <div class="card">
+    <h3>Eigene Szenen (API-Football)</h3>
+    <p class="hint">Stilles Mitschreiben seit 04.11.: jedes Live-Spiel in Minute 55/60/65/70 mit echter Quote. Es wird nichts gepostet.</p>
+    <div class="row"><button id="sc-btn">Eigene Szenen auswerten (Minute 60)</button><button id="sc-csv-btn" class="sec">Eigene Szenen CSV</button></div>
+    <div class="out" id="sc-out"></div>
+  </div>
+  <div class="card">
+    <h3>Tor-Erwartung</h3>
+    <p class="hint">Erwartete weitere Tore jeder Signal-Karte gegen den Endstand.</p>
+    <div class="row"><button id="xg-btn">Tor-Erwartung auswerten (14 Tage)</button><button id="xg-csv-btn" class="sec">Tor-Erwartung CSV</button></div>
+    <div class="out" id="xg-out"></div>
+  </div>
+  <div class="card">
+    <h3>Premium-Bestätigungen</h3>
+    <p class="hint">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur gepostet, wenn sie noch passen. Half-Risiko-Karten sind mit 🟠 markiert.</p>
+    <div class="row"><button id="confirm-btn">Aktualisieren</button><button id="export-btn" class="sec">Log als CSV</button></div>
+    <div id="confirm-out" class="out"></div>
+  </div>
+  <div class="card">
+    <h3>Under 3.5 (still protokolliert)</h3>
+    <p class="hint">Jede Over-2.5-Karte wird ohne Post mitgeschrieben. Gewinn nur dort gerechnet, wo die Live-Linie genau 3,5 war.</p>
+    <div class="row"><button id="u35-btn">Auswerten (14 Tage)</button><button id="u35-csv-btn" class="sec">CSV</button></div>
+    <div id="u35-out" class="out"></div>
+  </div>
+</div></details>
 
-<section>
-  <h3>Under 3.5 (still protokolliert)</h3>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Jede Over-2.5-Karte wird ohne Post mitgeschrieben: Live-Linie, Quoten, Markt-Wahrscheinlichkeit. Under 3.5 gewinnt, wenn höchstens noch ein Tor fällt. Gewinn nur dort gerechnet, wo die Live-Linie genau 3,5 war (dann ist die Under-Quote die echte Under-3.5-Quote).</p>
-  <button id="u35-btn">Auswerten (14 Tage)</button>
-  <button id="u35-csv-btn" style="margin-left:6px;">CSV</button>
-  <div id="u35-out" style="margin-top:10px;"></div>
-</section>
+<details class="grp"><summary>⚙️ Technik <small>API-Football, Archiv, Backup</small></summary><div class="body">
+  <div class="card">
+    <h3>API-Football</h3>
+    <div class="row"><button id="af-btn">API-Football prüfen</button><button id="odds-btn" class="sec">Quoten-Abdeckung prüfen</button><button id="matches-btn" class="sec">Spiele-Archiv CSV (7 Tage)</button></div>
+    <div class="out" id="af-out"></div>
+    <div class="out" id="odds-out"></div>
+  </div>
+  <div class="card">
+    <h3>Backup</h3>
+    <p class="hint">Sichert alle Zugänge, Logs und Warteschlangen. Datei z. B. in iCloud ablegen. Einspielen überschreibt gleichnamige Einträge, löscht aber nichts.</p>
+    <button id="backup-btn">Backup herunterladen</button>
+    <label for="restore-file" style="margin-top:12px;">Backup einspielen (JSON-Datei)</label>
+    <input type="file" id="restore-file" accept="application/json,.json">
+    <button id="restore-btn" class="sec">Einspielen</button>
+    <div class="out" id="backup-out"></div>
+  </div>
+</div></details>
 
-<section>
-  <h3>Premium-Bestätigungen</h3>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">High-Confidence-Signale werden 2 min nach der Karte live geprüft und nur dann gepostet, wenn sie noch passen. Half-Risiko-Karten (68–69') werden sofort geprüft und stehen ebenfalls hier, mit 🟠 markiert.</p>
-  <button id="confirm-btn">Aktualisieren</button>
-  <button id="export-btn" style="margin-left:6px;">Log als CSV exportieren</button>
-  <div id="confirm-out" style="margin-top:10px;"></div>
-</section>
-
-<section>
-  <h3>Backup</h3>
-  <p style="font-size:0.8rem;color:#8891a3;margin:0 0 10px;">Sichert alle Zugänge, Premium-Logs und Warteschlangen. Datei z. B. in Dropbox oder iCloud ablegen. Einspielen überschreibt gleichnamige Einträge, löscht aber nichts.</p>
-  <button id="backup-btn">Backup herunterladen</button>
-  <label for="restore-file" style="margin-top:12px;">Backup einspielen (JSON-Datei)</label>
-  <input type="file" id="restore-file" accept="application/json,.json">
-  <button id="restore-btn">Einspielen</button>
-  <div class="out" id="backup-out"></div>
-</section>
-
-<section>
-  <h3>Alle Zugänge</h3>
-  <button id="list-btn">Aktualisieren</button>
-  <div id="list-out" style="margin-top:10px;"></div>
-</section>
+<p class="foot">18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de</p>
+</main>
 
 <script>
 function pw() { return document.getElementById('pw').value; }
@@ -3862,7 +3912,7 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
     const okCount = data.confirmed.length;
     let html = '<div style="font-size:0.85rem;margin-bottom:8px;">Wartend: <b>' + data.pending.length + '</b> · Gepostet: <b>' + okCount + '</b> · Verworfen: <b>' + (total - okCount) + '</b></div>';
     if (data.pending.length) {
-      html += '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:8px;">Wartet: ' + data.pending.map(p => esc((p.parsed.homeTeam || '?') + ' – ' + (p.parsed.awayTeam || '?'))).join(', ') + '</div>';
+      html += '<div style="font-size:0.8rem;color:#5d5d66;margin-bottom:8px;">Wartet: ' + data.pending.map(p => esc((p.parsed.homeTeam || '?') + ' – ' + (p.parsed.awayTeam || '?'))).join(', ') + '</div>';
     }
     if (!total) { out.innerHTML = html + 'Noch keine Entscheidungen.'; return; }
     html += '<table><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th><th>Live</th></tr>';
@@ -3871,8 +3921,8 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
       const live = (x.live && x.live.minute != null ? x.live.minute + "' " + esc(x.live.score) : '-') +
         '<br><small>Signal ' + q(x.signalOdds) + '<br>Post ' + q(x.postOdds) + '</small>';
       const detail = x.ok
-        ? '<span style="color:#4caf7a;">✅ gepostet</span><br><small>' + (x.tier === 'half' ? '' : 'Modell ' + pct(x.liveProba) + ' · ') + 'Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>'
-        : '<span style="color:#e0a040;">✖ verworfen</span><br><small>' + esc(x.reason) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>';
+        ? '<span style="color:#1a8a3f;">✅ gepostet</span><br><small>' + (x.tier === 'half' ? '' : 'Modell ' + pct(x.liveProba) + ' · ') + 'Tor-Score ' + (x.goalPoints > 0 ? '+' : '') + esc(x.goalPoints) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>'
+        : '<span style="color:#e0262f;">✖ verworfen</span><br><small>' + esc(x.reason) + (x.marketProba != null ? ' · Markt ' + pct(x.marketProba) : '') + '</small>';
       html += '<tr><td>' + hm(x.decidedAt) + '</td><td>' + esc(x.homeTeam) + ' – ' + esc(x.awayTeam) + '<br><small>' + (x.tier === 'half' ? '🟠 Half-Risiko · ' : '') + 'O' + esc(x.targetLine) + ' · Signal ' + esc(x.signalMinute) + "' · " + pct(x.signalProba) + '</small></td><td>' + detail + '</td><td>' + live + '</td></tr>';
     });
     html += '</table>';
@@ -3894,7 +3944,7 @@ document.getElementById('export-btn').addEventListener('click', async () => {
     // Fallback for browsers that ignore blob downloads (some iPad browsers): show it to copy.
     out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">' + (csv.trim().split('\\n').length - 1) +
       ' Einträge. Falls kein Download startet: Text kopieren und als ' + name + ' speichern.</div>' +
-      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
+      '<textarea readonly style="width:100%;height:160px;background:#f4f4f6;color:#111;border:1px solid #cfcfd6;font-size:0.7rem;">' + esc(csv) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -3912,7 +3962,7 @@ document.getElementById('backup-btn').addEventListener('click', async () => {
     a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     out.innerHTML = 'Backup mit <b>' + data.count + '</b> Einträgen erstellt (' + esc(name) + '). Falls kein Download startet: Text kopieren und als .json speichern.' +
-      '<textarea readonly style="width:100%;height:120px;margin-top:6px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(text) + '</textarea>';
+      '<textarea readonly style="width:100%;height:120px;margin-top:6px;background:#f4f4f6;color:#111;border:1px solid #cfcfd6;font-size:0.7rem;">' + esc(text) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -4031,7 +4081,7 @@ document.getElementById('img-btn').addEventListener('click', async () => {
     const url = canvas.toDataURL('image/png');
     const name = 'moneybag_bilanz_' + to.toISOString().slice(0, 10) + '.png';
     out.innerHTML = '<button id="img-send-btn" style="margin-bottom:8px;">An Gratis-Kanal senden</button><div class="out" id="img-send-out"></div>' +
-      '<div style="font-size:0.8rem;color:#8891a3;margin-bottom:6px;">Auf dem iPad: Bild lange gedrückt halten → „Zu Fotos hinzufügen“. Oder <a href="' + url + '" download="' + name + '" style="color:#d4a72c;">herunterladen</a>.</div>' +
+      '<div style="font-size:0.8rem;color:#5d5d66;margin-bottom:6px;">Auf dem iPad: Bild lange gedrückt halten → „Zu Fotos hinzufügen“. Oder <a href="' + url + '" download="' + name + '" style="color:#e0262f;">herunterladen</a>.</div>' +
       '<img src="' + url + '" style="width:100%;border-radius:6px;">';
     let armed = false;
     document.getElementById('img-send-btn').addEventListener('click', () => {
@@ -4076,21 +4126,21 @@ async function loadResults(days) {
       mk.forEach(([k, v]) => {
         const hit = Math.round(v.won / v.n * 1000) / 10;
         const diff = Math.round((hit - v.expected) * 10) / 10;
-        html += '<br>' + nm[k] + ': Markt ' + v.expected + ' % · wir ' + hit + ' % (' + v.won + '/' + v.n + ') · <b style="color:' + (diff > 0 ? '#4caf7a' : '#e06c5a') + ';">' + (diff > 0 ? '+' : '') + diff + ' Punkte</b>' + (v.n < 50 ? ' <small>(noch wenig Daten)</small>' : '');
+        html += '<br>' + nm[k] + ': Markt ' + v.expected + ' % · wir ' + hit + ' % (' + v.won + '/' + v.n + ') · <b style="color:' + (diff > 0 ? '#1a8a3f' : '#e0262f') + ';">' + (diff > 0 ? '+' : '') + diff + ' Punkte</b>' + (v.n < 50 ? ' <small>(noch wenig Daten)</small>' : '');
       });
     }
     if (s.waitBets) html += '<br>Warten bis Quote 1,40 (geschätzt): ' + s.waitWon + ' von ' + s.waitBets + ' gesetzten getroffen, ' + s.waitSkipped + ' Tore kamen vorher · <b>' + (s.waitProfit >= 0 ? '+' : '') + s.waitProfit + ' Einheiten</b>';
     if (s.quotedAll) html += '<br>Jeder Tipp zur Quote beim Signal (' + s.quotedAll + ' Tipps, Ø Quote ' + s.avgQuote + '): <b>' + (s.profitAll >= 0 ? '+' : '') + s.profitAll + ' Einheiten</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';
-    html += '<br><span style="color:#8891a3;">Noch offen: ' + d.open.length + '</span></div>';
-    html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#202634;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
+    html += '<br><span style="color:#5d5d66;">Noch offen: ' + d.open.length + '</span></div>';
+    html += '<details style="margin-top:8px;"><summary>Vorschau Wochenbilanz-Post</summary><pre style="white-space:pre-wrap;font-size:0.8rem;background:#f4f4f6;padding:8px;border-radius:4px;">' + esc(d.reportPreview) + '</pre></details>';
     if (d.rows.length) {
       html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Ergebnis</th><th>Quote</th></tr>';
       d.rows.slice(0, 100).forEach(x => {
         const res = x.tier === 'under'
-          ? (x.result === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.result === 'lost' ? '<span style="color:#e0a040;">✖ 2. Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>' : '<span style="color:#8891a3;">– unklar</span>')
-          : x.result === 'won' ? '<span style="color:#4caf7a;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
-          : x.result === 'lost' ? '<span style="color:#e0a040;">✖ kein Tor</span>' : '<span style="color:#8891a3;">– unklar</span>';
+          ? (x.result === 'won' ? '<span style="color:#1a8a3f;">✅ ≤1 Tor</span>' : x.result === 'lost' ? '<span style="color:#e0262f;">✖ 2. Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>' : '<span style="color:#5d5d66;">– unklar</span>')
+          : x.result === 'won' ? '<span style="color:#1a8a3f;">✅ Tor ' + (x.resultMinute != null ? x.resultMinute + "'" : '') + '</span>'
+          : x.result === 'lost' ? '<span style="color:#e0262f;">✖ kein Tor</span>' : '<span style="color:#5d5d66;">– unklar</span>';
         const q = x.quote != null ? Number(x.quote).toFixed(2) + (x.betPlaced ? '' : ' (unter ' + Number(x.minQuote).toFixed(2) + ')') : '–';
         html += '<tr><td>' + hm(x.settledAt) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + (x.tier === 'risk' ? 'Risiko' : x.tier === 'half' ? 'Half-Risiko' : x.tier === 'under' ? 'Under' : x.tier === 'o15' ? 'O1.5 Test' : 'Premium') + (x.tier === 'under' ? ' · U' : ' · O') + esc(x.line) + ' · ' + esc(x.minute) + "' · " + esc(x.units) + ' E.</small></td><td>' + res + (x.profit != null ? '<br><small>' + (x.profit >= 0 ? '+' : '') + x.profit + ' E.</small>' : '') + '</td><td>' + q + '</td></tr>';
       });
@@ -4252,11 +4302,11 @@ document.getElementById('u35-btn').addEventListener('click', async () => {
     let html = '<table><tr><th></th><th>Under 3.5</th><th>Markt</th><th>Linie 3,5</th></tr>' +
       u35Part('Alle', s.all) + u35Part('ohne Premium', s.nonPremium) + u35Part('Premium', s.premium) +
       (s.byGoalScore || []).map(b => u35Part('Tor-Score ' + b.label + '<br><small>Rückrechnung ' + Math.round(b.backtest * 100) + ' % · lohnt ab ' + (1 / b.backtest).toFixed(2) + '</small>', b)).join('') + '</table>' +
-      '<div style="font-size:0.8rem;color:#8891a3;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · unklar (nicht bis Minute 85 gesehen): ' + (s.unclear || 0) + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
+      '<div style="font-size:0.8rem;color:#5d5d66;margin-top:6px;">Noch offen: ' + s.open + ' · nicht im Feed: ' + s.void + ' · unklar (nicht bis Minute 85 gesehen): ' + (s.unclear || 0) + ' · lohnt ab Quote ≈ 1,56 (Rückrechnung)</div>';
     if (d.rows.length) {
       html += '<table style="margin-top:8px;"><tr><th>Zeit</th><th>Spiel</th><th>Linie</th><th>Ergebnis</th></tr>';
       d.rows.slice(0, 60).forEach(x => {
-        const st = x.status === 'won' ? '<span style="color:#4caf7a;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0a040;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : x.status === 'unclear' ? '<span style="color:#8891a3;">? nicht bis Ende gesehen</span>' : '–';
+        const st = x.status === 'won' ? '<span style="color:#1a8a3f;">✅ ≤1 Tor</span>' : x.status === 'lost' ? '<span style="color:#e0262f;">✖ 2+ Tore' + (x.lostMinute != null ? ' (' + x.lostMinute + "')" : '') + '</span>' : x.status === 'open' ? 'läuft' : x.status === 'unclear' ? '<span style="color:#5d5d66;">? nicht bis Ende gesehen</span>' : '–';
         html += '<tr><td>' + hm(new Date(x.at).toISOString()) + '</td><td>' + esc(x.home) + ' – ' + esc(x.away) + '<br><small>' + esc(x.minute) + "'" + (x.premium ? ' · Premium' : '') + (x.gs != null ? ' · TS ' + (x.gs > 0 ? '+' : '') + esc(x.gs) : '') + '</small></td><td>' +
           (x.line != null ? esc(x.line) + '<br><small>U ' + esc(x.under) + (x.marketU35 != null ? ' · ' + pct(x.marketU35) : '') + '</small>' : '–') + '</td><td>' + st + '</td></tr>';
       });
@@ -4277,7 +4327,7 @@ document.getElementById('u35-csv-btn').addEventListener('click', async () => {
     a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">Falls kein Download startet: Text kopieren und als ' + name + ' speichern.</div>' +
-      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
+      '<textarea readonly style="width:100%;height:160px;background:#f4f4f6;color:#111;border:1px solid #cfcfd6;font-size:0.7rem;">' + esc(csv) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -4331,7 +4381,7 @@ document.getElementById('odds-btn').addEventListener('click', async () => {
     if (!d.ok) { out.textContent = '❌ Keine Live-Quoten bekommen (API-Fehler oder Limit).'; return; }
     const open = (d.open || []).map((t) => (t.odds ? '✅ ' : t.live ? '🔗 ' : t.afId || t.inDay ? '📅 ' : '— ') +
       esc(t.match) + ' (Over ' + t.line + ', vor ' + t.ageMin + ' Min.)' +
-      (t.near && t.near.length ? ' <span style="color:#8891a3;">· ähnlich im Spielplan: ' + esc(t.near.join(' / ')) + '</span>' : '')).join('<br>');
+      (t.near && t.near.length ? ' <span style="color:#5d5d66;">· ähnlich im Spielplan: ' + esc(t.near.join(' / ')) + '</span>' : '')).join('<br>');
     out.innerHTML = 'Live-Spiele: ' + d.live + ' · mit Live-Quoten: ' + d.withOdds + ' · davon mit Über/Unter-Toren: ' + d.withOu +
       '<br>Spiele-Archiv heute: ' + d.storedToday + ' Spiele gespeichert' +
       (d.sample ? '<br>Beispiel: ' + esc(d.sample.match || String(d.sample.fixture)) + ' – Linien ' + esc(Object.keys(d.sample.lines).join(', ')) : '') +
@@ -4437,7 +4487,7 @@ document.getElementById('res-csv-btn').addEventListener('click', async () => {
     // Fallback for browsers that ignore blob downloads (some iPad browsers): show it to copy.
     out.innerHTML = '<div style="font-size:0.8rem;margin-bottom:6px;">' + (csv.trim().split('\\n').length - 1) +
       ' Tipps. Datei ' + esc(name) + ' wurde gespeichert (iPad: Dateien-App → Downloads). Falls kein Download startet: Text kopieren.</div>' +
-      '<textarea readonly style="width:100%;height:160px;background:#202634;color:#e6e9f0;border:1px solid #2c3444;font-size:0.7rem;">' + esc(csv) + '</textarea>';
+      '<textarea readonly style="width:100%;height:160px;background:#f4f4f6;color:#111;border:1px solid #cfcfd6;font-size:0.7rem;">' + esc(csv) + '</textarea>';
   } catch (e) { out.textContent = e.message; }
 });
 
