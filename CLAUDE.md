@@ -257,6 +257,12 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-04: "Daten der Woche" refreshed (owner): another goal after ~60' by the **pre-match goal expectation, all scores**
+  (`scripts/preline_stats.py`, 10,915 unique matches, earliest scene at 55–65', 05.09.–02.11., halves split 05.10.): ≤ 2.5
+  69 % (2,418), 2.75–3.0 73 % (3,739), 3.25–3.5 77 % (3,204), ≥ 3.75 82 % (1,554); halves 70/74/79/84 and 65/70/76/81 %.
+  A "minutes since the last goal" version was dropped: flat (75/75/77/75 %) and it would contradict TikTok video 2
+  ("< 5 min after a goal 69 %", scene-level).
+
 - 2026-11-03: **goal-expectation log** (owner: "zu erwartende Tore aufzeichnen und später auswerten", e.g. Bolivar U19:
   tool expected 2 more goals, they came). The webhook logs **every** signal card (not only premium, half-time cards
   skipped): `goalExpectation` = the tool's two numbers – tempo (goals / minute × minutes left, parser now reads

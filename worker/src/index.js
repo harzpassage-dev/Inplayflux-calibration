@@ -3147,11 +3147,11 @@ document.getElementById("partner").addEventListener("submit", async function (e)
 // "Daten der Woche" on the start page (since 2026-10-30): one own analysis per week from the InPlayFlux exports, refreshed
 // with the weekly routine. Only numbers that hold in both halves of the period; script named in `source`.
 const DATEN_DER_WOCHE = {
-  date: "31.10.2026",
-  title: "Spielstand nach einer Stunde – wann fällt noch ein Tor?",
-  text: "Ein 0:0 nach 60 Minuten bleibt am häufigsten torlos. Wo schon Tore gefallen sind, fällt öfter noch eins – am häufigsten bei einer klaren Führung mit zwei oder mehr Toren Abstand.",
-  bars: [["0:0", 70, 1443], ["Unentschieden mit Toren", 76, 2356], ["Führung mit 1 Tor", 74, 2551], ["Führung mit 2+ Toren", 77, 3821]],
-  basis: "10.171 Spiele mit einer Szene um Minute 60 (55.–65.), 05.09.–31.10.2026, eigene Auswertung (scripts/margin_stats.py); jede Gruppe in beiden Hälften des Zeitraums ähnlich (z. B. 0:0: 72 % und 69 %, 2+ Tore: 77 % und 78 %).",
+  date: "04.11.2026",
+  title: "Tor-Erwartung vor dem Spiel – zählt sie nach einer Stunde noch?",
+  text: "Ja, deutlich: Je mehr Tore der Markt vor dem Anpfiff erwartet hat, desto öfter fällt nach Minute 60 noch ein Tor – egal wie es gerade steht. Zwischen der niedrigsten und der höchsten Gruppe liegen 13 Prozentpunkte.",
+  bars: [["Erwartung bis 2,5 Tore", 69, 2418], ["2,75–3,0 Tore", 73, 3739], ["3,25–3,5 Tore", 77, 3204], ["ab 3,75 Tore", 82, 1554]],
+  basis: "10.915 Spiele mit einer Szene um Minute 60 (55.–65.), alle Spielstände, 05.09.–02.11.2026, eigene Auswertung (scripts/preline_stats.py); Reihenfolge in beiden Hälften des Zeitraums gleich (vor 5.10.: 70/74/79/84 %, ab 5.10.: 65/70/76/81 %).",
 };
 
 function landingPageHtml(rows, env, nowMs) {
