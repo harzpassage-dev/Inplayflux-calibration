@@ -975,7 +975,7 @@ then decide per tier on the new days and apply.
   90-minute score (also after AET/PEN), the InPlayFlux-feed path takes the last score seen after 85' (can miss a very late
   goal). Real check pending: owner uploads the results CSV (30 days) + "Tor-Erwartung CSV" → verify won tips have
   finalGoals > line, lost ≤ line, share with a final score and its source.
-- Beta channel (since 04.11. evening, needs `BETA_CHANNEL_ID`): check the "🧪 Beta-Kanal" line in admin / morning report;
+- Beta channel (**live since 04.11. ~19:30 Berlin**: owner created the private channel, bot is admin, `BETA_CHANNEL_ID` set, admin test "✅ Senden und Bearbeiten klappen"): check the "🧪 Beta-Kanal" line in admin / morning report;
   at ≥ 50 beta bets decide whether premium customers get it (or whether premium posts should only go out at ≥ 1.40).
 - Own scenes (since 04.11. evening, step 1 of the own filter): owner taps "Eigene Szenen auswerten" now and then
   (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
