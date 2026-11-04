@@ -1015,3 +1015,12 @@ test("beta channel: a premium tip is posted again when the real live quote reach
   await at(200e3, () => cron(worker, env2));
   assert.equal(net2.sent.filter((m) => m.chat_id !== "-100").length, 0);
 });
+
+test("admin beta test post: says when the variable is missing, sends and edits when set", async () => {
+  const net = mockNet({ feed: [] });
+  const d0 = await (await admin(worker, makeEnv(), "/admin/api/test-post?target=beta", { method: "POST" })).json();
+  assert.equal(d0.missing, true);
+  const d = await (await admin(worker, makeEnv({ BETA_CHANNEL_ID: "-200" }), "/admin/api/test-post?target=beta", { method: "POST" })).json();
+  assert.deepEqual(d, { sent: true, edited: true });
+  assert.ok(net.sent.some((m) => m.chat_id === "-200" && m.method === "editMessageText"));
+});

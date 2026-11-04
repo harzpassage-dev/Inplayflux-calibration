@@ -267,7 +267,8 @@ then decide per tier on the new days and apply.
   msgText}`. `markBetaPost` edits it to "✅ WIN – Tor in Minute X' · +0,45 Einheiten" / "❌ LOST … · −1 Einheiten". Results get
   `betaQuote`/`betaMinute` (CSV columns too); `summarize` → `betaBets/betaWon/betaProfit`, shown in admin "Ergebnisse" and the
   morning report ("🧪 Beta-Kanal (echte Quote ≥ 1,40)"). Only matches with API-Football live odds (~half of the tips).
-  Test "beta channel". Owner to do: create a private channel, add @harzpassage_bot as admin (post + edit messages), set
+  Admin test button "🧪 Beta-Kanal" (Test-Posts; `/admin/api/test-post?target=beta` sends + edits, says if the var or a right is
+  missing). Test "beta channel". Owner to do: create a private channel, add @harzpassage_bot as admin (post + edit messages), set
   `BETA_CHANNEL_ID` in Cloudflare (Variables, text). Verdict after 2–3 weeks / ≥ 50 beta bets.
 
 - 2026-11-04: **results CSV check** (owner's upload, 1,668 tips 07.10.–04.11.). Final scores since 01.11. evening: 72 of 77

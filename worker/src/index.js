@@ -3877,9 +3877,10 @@ async function handleAdminPage() {
       <button id="test-half-btn" class="sec">🟠 Half-Risiko</button>
       <button id="test-under-btn" class="sec">🛡️ Under 3.5</button>
       <button id="test-free-btn" class="sec">📢 Gratis-Kanal</button>
+      <button id="test-beta-btn" class="sec">🧪 Beta-Kanal</button>
     </div>
     <div class="out" id="test-out"></div><div class="out" id="test-o05-out"></div><div class="out" id="test-o15-out"></div>
-    <div class="out" id="test-half-out"></div><div class="out" id="test-under-out"></div><div class="out" id="test-free-out"></div>
+    <div class="out" id="test-half-out"></div><div class="out" id="test-under-out"></div><div class="out" id="test-free-out"></div><div class="out" id="test-beta-out"></div>
   </div>
 </div></details>
 
@@ -4293,6 +4294,20 @@ document.getElementById('test-free-btn').addEventListener('click', async () => {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status + ' (falsches Passwort?)'));
     out.textContent = d.sent ? '✅ Im Gratis-Kanal ' + d.channel + ' angekommen.' : '❌ Telegram hat abgelehnt – ist der Bot Admin in ' + d.channel + ' mit dem Recht „Nachrichten senden“?';
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('test-beta-btn').addEventListener('click', async () => {
+  const out = document.getElementById('test-beta-out');
+  out.textContent = 'Sende …';
+  try {
+    const r = await fetch('/admin/api/test-post?target=beta', { method: 'POST', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    out.textContent = d.missing ? '❌ BETA_CHANNEL_ID fehlt in Cloudflare (Variables, Typ Text, dann Deploy).'
+      : !d.sent ? '❌ Telegram hat abgelehnt – stimmt die ID (beginnt mit -100) und ist der Bot Admin im Beta-Kanal?'
+      : d.edited ? '✅ Beta-Kanal verbunden: Senden und Bearbeiten klappen.'
+      : '⚠️ Senden klappt, Bearbeiten nicht – dem Bot im Beta-Kanal das Recht „Nachrichten bearbeiten“ geben (für WIN/LOST).';
   } catch (e) { out.textContent = e.message; }
 });
 
@@ -4896,6 +4911,16 @@ export default {
         }
       }
       return jsonResponse({ posted, available: picked.length, channel: freeChannel(env) });
+    }
+
+    if (url.pathname === "/admin/api/test-post" && request.method === "POST" && url.searchParams.get("target") === "beta") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      if (!env.BETA_CHANNEL_ID) return jsonResponse({ sent: false, missing: true });
+      // Checks that the bot can post and edit in the beta channel (needs both rights for the WIN/LOST mark).
+      const sent = await sendTelegramMessage(env, env.BETA_CHANNEL_ID, "🧪 TEST – Beta-Kanal (Quote 1,40) ist verbunden. Echte Posts kommen, sobald ein Premium-Tipp die Live-Quote 1,40 erreicht.");
+      const edited = sent && sent.message_id ? await tgApi(env, "editMessageText", { chat_id: env.BETA_CHANNEL_ID, message_id: sent.message_id,
+        text: "🧪 TEST – Beta-Kanal (Quote 1,40) ist verbunden ✅ (Senden und Bearbeiten klappen). Echte Posts kommen, sobald ein Premium-Tipp die Live-Quote 1,40 erreicht." }) : null;
+      return jsonResponse({ sent: !!sent, edited: !!edited });
     }
 
     if (url.pathname === "/admin/api/test-post" && request.method === "POST" && url.searchParams.get("target") === "free") {
