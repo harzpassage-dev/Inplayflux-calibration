@@ -1092,13 +1092,17 @@ function marketLambda(match) {
 // and odds (no input needed). Same line: the card's quote. Other line: Poisson
 // lambda from the card's line, fair probability for the target line, then the
 // card's bookmaker margin applied - an estimate, flagged with exact: false.
+const QUOTE_SANE_MAX = 5;
+const QUOTE_EST_MIN_P = 0.25;
+// Old records may still carry such a quote: left out of the profit and market numbers.
+const saneQuote = (r) => (r.quote == null || r.quote <= QUOTE_SANE_MAX) && (r.marketP == null || r.marketP >= QUOTE_EST_MIN_P);
 function cardQuote(parsed) {
   const o = parsed && parsed.cardOdds;
   if (!o || !o.over || !o.under || o.line == null || parsed.goals == null || parsed.targetLine == null) return null;
   const book = 1 / o.over + 1 / o.under;
   const pFair = 1 / o.over / book;
   const r3 = (x) => Math.round(x * 1000) / 1000;
-  if (o.line === parsed.targetLine) return { over: o.over, line: o.line, exact: true, p: r3(pFair), book: r3(book) };
+  if (o.line === parsed.targetLine) return o.over > QUOTE_SANE_MAX ? null : { over: o.over, line: o.line, exact: true, p: r3(pFair), book: r3(book) };
   const rest = o.line - parsed.goals;
   if (rest <= 0) return null;
   let lo = 0;
@@ -1109,7 +1113,8 @@ function cardQuote(parsed) {
     else hi = mid;
   }
   const p = poissonTail(Math.floor(parsed.targetLine - parsed.goals) + 1, (lo + hi) / 2);
-  if (!(p > 0 && p < 1)) return null;
+  // An estimate far from the card's line can be absurd (04.11.: Kidderminster (W) O3.5 at "18.00", market 5 %) – drop it.
+  if (!(p >= QUOTE_EST_MIN_P && p < 1) || 1 / (p * book) > QUOTE_SANE_MAX) return null;
   return { over: Math.max(1.01, Math.round((1 / (p * book)) * 100) / 100), line: parsed.targetLine, exact: false, p: r3(p), book: r3(book) };
 }
 
@@ -2461,6 +2466,15 @@ function watchFinal(t, m, now) {
   return now - t.postedAt >= TRACK_GIVE_UP_MS ? "drop" : "keep";
 }
 
+// Final score that contradicts the result (04.11.: Feyenoord – Inter O3.5 "won" at 64', final 3 goals – a goal counted
+// live and then taken back, or a wrong final score). Not re-settled automatically; the morning report lists them.
+function finalContradicts(r) {
+  if (!r || r.finalGoals == null || r.line == null || (r.result !== "won" && r.result !== "lost")) return false;
+  const over = r.finalGoals > r.line;
+  const under = r.tier === "under" || r.under;
+  return under ? (r.result === "won") === over : (r.result === "won") !== over;
+}
+
 async function addFinalGoals(env, key, goals) {
   if (!key || goals == null) return;
   const raw = await env.ACCESS_KV.get(key);
@@ -2737,9 +2751,9 @@ async function fillUnclear(env, text, apply) {
 function summarize(rows) {
   const decided = rows.filter((r) => r.result === "won" || r.result === "lost");
   const tally = (list) => ({ n: list.length, won: list.filter((r) => r.result === "won").length });
-  const priced = decided.filter((r) => r.profit != null);
+  const priced = decided.filter((r) => r.profit != null && saneQuote(r));
   // Every tip bet at its quote at signal time, whatever the minimum quote says.
-  const quoted = decided.filter((r) => r.quote != null && r.units);
+  const quoted = decided.filter((r) => r.quote != null && r.units && saneQuote(r));
   const profitAll = quoted.reduce((a, r) => a + (r.result === "won" ? r.units * (r.quote - 1) : -r.units), 0);
   return {
     all: tally(decided),
@@ -2756,7 +2770,7 @@ function summarize(rows) {
     // Hit rate vs the market's expectation at signal time, per tier: we only
     // make money over time where we hit more often than the market expects.
     market: Object.fromEntries(["premium", "half", "o15", "under"].map((tier) => {
-      const m = decided.filter((r) => r.tier === tier && r.marketP != null);
+      const m = decided.filter((r) => r.tier === tier && r.marketP != null && saneQuote(r));
       return [tier, m.length ? {
         n: m.length, won: m.filter((r) => r.result === "won").length,
         expected: Math.round((m.reduce((a, r) => a + r.marketP, 0) / m.length) * 1000) / 10,
@@ -2868,6 +2882,13 @@ function dailyAdminText(rows, now, openCount) {
   const openVoids = week.filter((r) => r.result === "void").length;
   if (openVoids >= VOID_REMIND) {
     lines.push("", `📥 ${openVoids} Tipps der letzten 7 Tage sind noch ungewertet. Bitte nachtragen: bei InPlayFlux die CSV exportieren, dann im Admin oben das Passwort eintragen → „Unklare Ergebnisse nachtragen“ → Datei wählen → Vorschau → Übernehmen.`);
+  }
+  const odd = rows.filter((r) => Date.parse(r.settledAt) >= now - 2 * DAY_MS && finalContradicts(r));
+  if (odd.length) {
+    lines.push("", `🔎 Endstand passt nicht zur Wertung (${odd.length}) – bitte prüfen (Tor zurückgenommen oder falscher Endstand?):`);
+    for (const r of odd.slice(0, 5)) {
+      lines.push(`• ${r.home} – ${r.away}: Over ${de(r.line)} als ${r.result === "won" ? "gewonnen" : "verloren"} gewertet, Endstand ${r.finalGoals} Tore`);
+    }
   }
   lines.push("", `📋 ${RESULTS_PAGE_URL}`);
   return lines.join("\n");

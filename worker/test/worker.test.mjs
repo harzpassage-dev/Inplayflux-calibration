@@ -954,3 +954,26 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Eigene Szenen auswerten") && html.includes("Eigene Szenen CSV"));
 });
+
+test("daily report: final score that contradicts the result is listed; absurd estimated quotes are left out of profit", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const now = Date.now();
+  const put = (i, r) => {
+    const rec = { tier: "premium", minute: 60, units: 1, postedAt: new Date(now - 5 * 3600e3).toISOString(),
+      settledAt: new Date(now - 4 * 3600e3).toISOString(), ...r };
+    env.ACCESS_KV.store.set(`result:${now - i}:${i}`, JSON.stringify(rec));
+    env.ACCESS_KV.meta.set(`result:${now - i}:${i}`, rec);
+  };
+  put(1, { home: "Feyenoord", away: "Inter Milan", line: 3.5, result: "won", finalGoals: 3, quote: 1.36, marketP: 0.72 });
+  put(2, { home: "Alpha", away: "Beta", line: 2.5, result: "won", finalGoals: 4, quote: 1.2, marketP: 0.8 });
+  put(3, { home: "Kidderminster (W)", away: "X", line: 3.5, result: "won", finalGoals: 5, quote: 18, quoteEstimated: true, marketP: 0.053 });
+  const realDay = Date.prototype.getUTCDay;
+  Date.prototype.getUTCDay = () => 3;
+  try { await cron(worker, env, "0 7 * * *"); } finally { Date.prototype.getUTCDay = realDay; }
+  const text = net.sent.find((m) => m.chat_id === "777").text;
+  assert.match(text, /Endstand passt nicht zur Wertung \(1\)/);
+  assert.match(text, /Feyenoord – Inter Milan: Over 3,5 als gewonnen gewertet, Endstand 3 Tore/);
+  assert.doesNotMatch(text, /Alpha – Beta: Over/);
+  assert.match(text, /Jeder Tipp zur Quote beim Signal: \+0,56 Einheiten \(2 Tipps\)/, "quote 18 left out");
+});

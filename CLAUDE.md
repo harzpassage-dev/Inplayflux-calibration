@@ -257,6 +257,18 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-04: **results CSV check** (owner's upload, 1,668 tips 07.10.–04.11.). Final scores since 01.11. evening: 72 of 77
+  decided tips have one; **2 contradict** the result (Feyenoord – Inter O3.5 "won" at 64', final 3; Ayeyawady (W) – INAC Kobe
+  (W) O2.5 "won" at 90', final 2 – a goal counted live then taken back, or a wrong final). Voids almost gone (2 of 79, Brazilian
+  U19). Profit since 31.10. evening (quotes mostly estimated, ~4 days): High Confidence 158 tips 79.7 % vs market 79.6 % → no
+  edge yet; at signal quote ≈ −6 % (O2.5 Ø 1.18 −7 %, O0.5 −6 %, O3.5 ≈ 0 %) once one absurd estimate (Kidderminster (W)
+  "18.00", market 5 %) is removed; Over 1.5 Test (old rule) 69 % vs 73.5 % market, −11 %; only 25 tips with real live odds
+  (≈ ±0 %). Fix (owner's yes): `cardQuote` drops estimates with p < `QUOTE_EST_MIN_P` 0.25 or quote > `QUOTE_SANE_MAX` 5,
+  `summarize` ignores such old records (`saneQuote`) for profit and market numbers; `finalContradicts` → the morning report
+  lists tips of the last 48 h whose final score contradicts the result ("🔎 Endstand passt nicht zur Wertung") – nothing is
+  re-settled automatically. Test "daily report: final score that contradicts …". Next: quote rule (post only at ≥ Mindestquote
+  or say "erst ab Quote X") with ~1 week of data, ~Mon 09.11.
+
 - 2026-11-04: **admin page redesigned** (owner: "übersichtlicher, in unserem Design"): design 6 (black hero with red
   stripe, speed logo + "ADMIN", light grey page, white cards with red left edge), password field in a sticky black bar,
   five fold-out groups (`details.grp`): 📊 Ergebnisse (open; results 7/30 days, CSV, weekly image, free channel, fill
