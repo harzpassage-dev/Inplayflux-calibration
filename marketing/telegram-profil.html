@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
-/* Telegram profile pictures in logo 1 "Speed" (26.10.). ?v=free | premium, 1024x1024, content inside the round crop */
+/* Telegram profile pictures in logo 1 "Speed" (26.10.). ?v=free | premium | beta (04.11., beta channel "Quote 1,40"), 1024x1024, content inside the round crop */
 body{margin:0}
 .c{width:1024px;height:1024px;position:relative;overflow:hidden;background:#111;font-family:Arial,"Liberation Sans",Helvetica,sans-serif}
 .c:before{content:"";position:absolute;top:-200px;bottom:-200px;left:850px;width:110px;background:#e0262f;transform:skewX(-22deg)}
@@ -12,7 +12,10 @@ body{margin:0}
 .tag{position:absolute;left:50%;top:770px;transform:translateX(-50%) skewX(-12deg);padding:12px 34px;font:900 46px/1 Arial,sans-serif;letter-spacing:8px;color:#fff;background:#e0262f}
 .premium .tag{background:#fff;color:#111}
 .premium .c:before{background:#e0262f}
+.beta .tag{background:transparent;border:6px solid #fff;padding:8px 28px;letter-spacing:6px}
+.beta .tag b{color:#ff4b52}
 </style></head><body>
 <div class="c"><div class="mb"><i></i>M<span>B</span></div><div class="word">MONEY<span>BAG</span></div><div class="tag" id="tag">GRATIS</div></div>
-<script>const v=new URLSearchParams(location.search).get("v")||"free";if(v==="premium"){document.body.className="premium";document.getElementById("tag").textContent="★ PREMIUM"}</script>
+<script>const v=new URLSearchParams(location.search).get("v")||"free";if(v==="premium"){document.body.className="premium";document.getElementById("tag").textContent="★ PREMIUM"}
+if(v==="beta"){document.body.className="beta";document.getElementById("tag").innerHTML="BETA <b>1,40</b>"}</script>
 </body></html>
