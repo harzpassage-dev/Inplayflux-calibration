@@ -2231,6 +2231,7 @@ async function settleTracked(env, feed, srcIn = null) {
         const odds = await src.odds();
         const lines = odds && odds.get(t.afId);
         if (lines && recordOdds(t, lines, num(live.minute), now)) changed = true;
+        if (lines && (await maybePostBeta(env, t, lines, live, af, now))) changed = true;
       }
     }
     const seenGoals = m ? (num(m.hg) || 0) + (num(m.ag) || 0) : af ? af.goals : null;
@@ -2263,6 +2264,9 @@ async function settleTracked(env, feed, srcIn = null) {
       await saveResult(env, t, result, af.finished ? af.goals : null);
       try {
         await markPremiumPost(env, t, result);
+      } catch (e) {}
+      try {
+        await markBetaPost(env, t, result);
       } catch (e) {}
       try {
         await maybePostFree(env, t, result);
@@ -2354,6 +2358,9 @@ async function settleTracked(env, feed, srcIn = null) {
         await markPremiumPost(env, t, result);
       } catch (e) {}
       try {
+        await markBetaPost(env, t, result);
+      } catch (e) {}
+      try {
         await maybePostFree(env, t, result);
       } catch (e) {}
     } else {
@@ -2426,6 +2433,45 @@ function resultBanner(t, result) {
   const at = t.resultMinute != null ? ` in Minute ${t.resultMinute}'` : "";
   if (t.under) return result === "won" ? "✅ WIN – höchstens noch 1 Tor" : `❌ LOST – 2. Tor${at}`;
   return result === "won" ? `✅ WIN – Tor${at}` : "❌ LOST – kein weiteres Tor";
+}
+
+// Beta channel (since 04.11., owner's idea): a premium tip is posted again to BETA_CHANNEL_ID once its real live quote
+// (API-Football odds/live, own line) reaches WAIT_QUOTE 1.40 while the needed goal has not fallen – the owner's own
+// entry. Only tips with live odds there (~half). Marked WIN/LOST like premium posts; results keep betaQuote/betaMinute.
+const BETA_MAX_MINUTE = 85;
+async function maybePostBeta(env, t, lines, live, af, now) {
+  if (!env.BETA_CHANNEL_ID || t.beta || t.settledKey || t.under) return false;
+  const own = lines[String(t.line)];
+  const q = own && own.o;
+  const minute = num(live.minute);
+  const goals = af ? af.goals : (num(live.hg) || 0) + (num(live.ag) || 0);
+  if (q == null || q < WAIT_QUOTE || minute == null || minute > BETA_MAX_MINUTE || goals > t.line) return false;
+  const score = af ? af.score : `${num(live.hg) || 0}-${num(live.ag) || 0}`;
+  const de = (x) => String(x).replace(".", ",");
+  const text = [
+    "🧪 BETA · Quote 1,40 erreicht",
+    "",
+    `⚽ ${t.home} – ${t.away}`,
+    `⏱ Minute ${minute} · Stand ${score.replace("-", ":")}`,
+    `🎯 Over ${t.line} (noch 1 Tor)`,
+    `📈 Live-Quote jetzt: ${fmtQuote(q)}`,
+    `💶 Einsatz: ${de(t.units)} ${t.units === 1 ? "Einheit" : "Einheiten"}`,
+    `Premium-Signal kam in Minute ${t.minute}.`,
+    "",
+    "18+ · Keine Gewinngarantie · Hilfe: check-dein-spiel.de",
+  ].join("\n");
+  const sent = await sendTelegramMessage(env, env.BETA_CHANNEL_ID, text);
+  t.beta = { q, m: minute, at: now, ...(sent && sent.message_id ? { msgId: sent.message_id, msgText: text } : {}) };
+  return true;
+}
+async function markBetaPost(env, t, result) {
+  const b = t.beta;
+  if (!env.BETA_CHANNEL_ID || !b || !b.msgId || (result !== "won" && result !== "lost")) return;
+  const de = (x) => (x >= 0 ? "+" : "") + String(Math.round(x * 100) / 100).replace(".", ",");
+  const head = result === "won" ? `✅ WIN${t.resultMinute != null ? ` – Tor in Minute ${t.resultMinute}'` : ""} · ${de(t.units * (b.q - 1))} Einheiten`
+    : `❌ LOST – kein weiteres Tor · ${de(-t.units)} Einheiten`;
+  const text = `${head}\n\n${b.msgText}`.slice(0, 4096);
+  await tgApi(env, "editMessageText", { chat_id: env.BETA_CHANNEL_ID, message_id: b.msgId, text });
 }
 
 async function markPremiumPost(env, t, result) {
@@ -2556,6 +2602,8 @@ async function saveResult(env, t, result, finalGoals = null) {
     marketP: !t.under && t.signalQuote && t.signalQuote.p ? t.signalQuote.p : null,
     profit: profit != null ? Math.round(profit * 100) / 100 : null,
     finalGoals,
+    betaQuote: t.beta ? t.beta.q : null,
+    betaMinute: t.beta ? t.beta.m : null,
     ...oddsFields(t),
     liveOdds: t.ol || null,
   };
@@ -2571,7 +2619,8 @@ async function saveResult(env, t, result, finalGoals = null) {
 
 const RESULT_CSV_COLS = ["postedAt", "settledAt", "tier", "home", "away", "line", "minute", "result", "resultMinute", "units",
   "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom", "finalGoals",
-  "oddsMinute", "oddsOver", "oddsUnder", "oddsMax", "oddsMaxMinute", "odds140Minute", "oddsQuarterOver", "oddsNextOver", "oddsNextUnder"];
+  "oddsMinute", "oddsOver", "oddsUnder", "oddsMax", "oddsMaxMinute", "odds140Minute", "oddsQuarterOver", "oddsNextOver", "oddsNextUnder",
+  "betaQuote", "betaMinute"];
 function resultsCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
   const lines = rows.map((r) => {
@@ -2786,6 +2835,13 @@ function summarize(rows) {
         waitStaked: bets.reduce((a, r) => a + r.units, 0),
       };
     })(),
+    ...(() => {
+      const b = decided.filter((r) => r.betaQuote != null);
+      return {
+        betaBets: b.length, betaWon: b.filter((r) => r.result === "won").length,
+        betaProfit: Math.round(b.reduce((a, r) => a + (r.result === "won" ? (r.units || 1) * (r.betaQuote - 1) : -(r.units || 1)), 0) * 100) / 100,
+      };
+    })(),
     avgQuote: quoted.length ? Math.round((quoted.reduce((a, r) => a + r.quote, 0) / quoted.length) * 100) / 100 : null,
     profit: Math.round(priced.reduce((a, r) => a + r.profit, 0) * 100) / 100,
     staked: priced.reduce((a, r) => a + r.units, 0),
@@ -2869,6 +2925,7 @@ function dailyAdminText(rows, now, openCount) {
   if (voids) lines.push(`Ohne Wertung (Spiel nicht mehr im Feed): ${voids}`);
   if (sum.quotedAll) lines.push("", `Jeder Tipp zur Quote beim Signal: ${sg(sum.profitAll)} Einheiten (${sum.quotedAll} Tipps)`);
   if (sum.waitBets) lines.push(`Warten bis Quote 1,40 (geschätzt): ${sg(sum.waitProfit)} Einheiten (${sum.waitBets} Einsätze, ${sum.waitSkipped} Tore kamen vorher)`);
+  if (sum.betaBets) lines.push(`🧪 Beta-Kanal (echte Quote ≥ 1,40): ${sum.betaWon} von ${sum.betaBets} getroffen · ${sg(sum.betaProfit)} Einheiten`);
   lines.push(`Noch offen: ${openCount}`);
   const quiet = Object.keys(LINE_NAMES).map(Number).filter((line) => {
     const perDay = week.filter((r) => r.line === line && !r.under).length / 7;
@@ -4150,6 +4207,7 @@ async function loadResults(days) {
         html += '<br>' + nm[k] + ': Markt ' + v.expected + ' % · wir ' + hit + ' % (' + v.won + '/' + v.n + ') · <b style="color:' + (diff > 0 ? '#1a8a3f' : '#e0262f') + ';">' + (diff > 0 ? '+' : '') + diff + ' Punkte</b>' + (v.n < 50 ? ' <small>(noch wenig Daten)</small>' : '');
       });
     }
+    if (s.betaBets) html += '<br>🧪 Beta-Kanal (echte Quote ≥ 1,40): ' + s.betaWon + ' von ' + s.betaBets + ' getroffen · <b>' + (s.betaProfit >= 0 ? '+' : '') + s.betaProfit + ' Einheiten</b>';
     if (s.waitBets) html += '<br>Warten bis Quote 1,40 (geschätzt): ' + s.waitWon + ' von ' + s.waitBets + ' gesetzten getroffen, ' + s.waitSkipped + ' Tore kamen vorher · <b>' + (s.waitProfit >= 0 ? '+' : '') + s.waitProfit + ' Einheiten</b>';
     if (s.quotedAll) html += '<br>Jeder Tipp zur Quote beim Signal (' + s.quotedAll + ' Tipps, Ø Quote ' + s.avgQuote + '): <b>' + (s.profitAll >= 0 ? '+' : '') + s.profitAll + ' Einheiten</b>';
     if (s.priced) html += '<br>Mit Quote ab Mindestquote (' + s.priced + (s.priced === 1 ? ' Tipp' : ' Tipps') + '): <b>' + (s.profit >= 0 ? '+' : '') + s.profit + ' Einheiten</b>';

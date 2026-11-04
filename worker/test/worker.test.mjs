@@ -977,3 +977,41 @@ test("daily report: final score that contradicts the result is listed; absurd es
   assert.doesNotMatch(text, /Alpha – Beta: Over/);
   assert.match(text, /Jeder Tipp zur Quote beim Signal: \+0,56 Einheiten \(2 Tipps\)/, "quote 18 left out");
 });
+
+test("beta channel: a premium tip is posted again when the real live quote reaches 1.40, then marked WIN with the profit", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k", BETA_CHANNEL_ID: "-200" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net.apiOdds = [afOdds(41, { "2.5": [1.3, 3.2] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1);
+  const beta = () => net.sent.filter((m) => m.chat_id === "-200");
+  await at(200e3, () => cron(worker, env));
+  assert.equal(beta().length, 0, "quote still below 1.40");
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 68, goals: [10, 30] })];
+  net.apiOdds = [afOdds(41, { "2.5": [1.45, 2.6] })];
+  await at(260e3, () => cron(worker, env));
+  assert.equal(beta().length, 1);
+  assert.match(beta()[0].text, /BETA · Quote 1,40 erreicht/);
+  assert.match(beta()[0].text, /Live-Quote jetzt: 1,45/);
+  assert.match(beta()[0].text, /Minute 68 · Stand 2:0/);
+  await at(320e3, () => cron(worker, env));
+  assert.equal(beta().length, 1, "posted once only");
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 77, gh: 3, goals: [10, 30, 76] })];
+  await at(380e3, () => cron(worker, env));
+  const edit = beta().find((m) => m.method === "editMessageText");
+  assert.ok(edit && /^✅ WIN – Tor in Minute 76' · \+0,45 Einheiten/.test(edit.text), edit && edit.text);
+  const r = results(env)[0];
+  assert.equal(r.betaQuote, 1.45);
+  assert.equal(r.betaMinute, 68);
+  // without BETA_CHANNEL_ID nothing goes to a beta channel
+  const net2 = mockNet({ feed: [] });
+  const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env2, card());
+  net2.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net2.apiOdds = [afOdds(41, { "2.5": [1.5, 2.5] })];
+  await at(130e3, () => cron(worker, env2));
+  await at(200e3, () => cron(worker, env2));
+  assert.equal(net2.sent.filter((m) => m.chat_id !== "-100").length, 0);
+});

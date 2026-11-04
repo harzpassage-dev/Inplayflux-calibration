@@ -257,6 +257,19 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-04: **beta channel "Quote 1,40"** (owner's idea; recommended setup chosen: owner only for 2–3 weeks, all premium
+  tips). Real data before building (tips with API-Football live odds since 01.11. evening, 33 of 68): 1.40 reached then goal
+  18, reached then no goal 5, goal before 1.40 6, won with unknown goal minute 4 → 23 bets +2.2 units at 1.40 (tiny n; the
+  old `waitOutcome` estimate said −10.5 on 92). `maybePostBeta` (in `settleTracked`, minute cron, after `recordOdds`): an open
+  premium/O1.5 tip (not Under) whose own-line live over price is ≥ `WAIT_QUOTE` 1.40, minute ≤ `BETA_MAX_MINUTE` 85 and the
+  needed goal not fallen → one post to **`BETA_CHANNEL_ID`** (plain Cloudflare var; unset = off): "🧪 BETA · Quote 1,40
+  erreicht", match, minute + score, Over line, live quote, units, signal minute, 18+ line; `t.beta = {q, m, at, msgId,
+  msgText}`. `markBetaPost` edits it to "✅ WIN – Tor in Minute X' · +0,45 Einheiten" / "❌ LOST … · −1 Einheiten". Results get
+  `betaQuote`/`betaMinute` (CSV columns too); `summarize` → `betaBets/betaWon/betaProfit`, shown in admin "Ergebnisse" and the
+  morning report ("🧪 Beta-Kanal (echte Quote ≥ 1,40)"). Only matches with API-Football live odds (~half of the tips).
+  Test "beta channel". Owner to do: create a private channel, add @harzpassage_bot as admin (post + edit messages), set
+  `BETA_CHANNEL_ID` in Cloudflare (Variables, text). Verdict after 2–3 weeks / ≥ 50 beta bets.
+
 - 2026-11-04: **results CSV check** (owner's upload, 1,668 tips 07.10.–04.11.). Final scores since 01.11. evening: 72 of 77
   decided tips have one; **2 contradict** the result (Feyenoord – Inter O3.5 "won" at 64', final 3; Ayeyawady (W) – INAC Kobe
   (W) O2.5 "won" at 90', final 2 – a goal counted live then taken back, or a wrong final). Voids almost gone (2 of 79, Brazilian
@@ -961,6 +974,8 @@ then decide per tier on the new days and apply.
   90-minute score (also after AET/PEN), the InPlayFlux-feed path takes the last score seen after 85' (can miss a very late
   goal). Real check pending: owner uploads the results CSV (30 days) + "Tor-Erwartung CSV" → verify won tips have
   finalGoals > line, lost ≤ line, share with a final score and its source.
+- Beta channel (since 04.11. evening, needs `BETA_CHANNEL_ID`): check the "🧪 Beta-Kanal" line in admin / morning report;
+  at ≥ 50 beta bets decide whether premium customers get it (or whether premium posts should only go out at ≥ 1.40).
 - Own scenes (since 04.11. evening, step 1 of the own filter): owner taps "Eigene Szenen auswerten" now and then
   (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
   (rules by state × pre-match λ × minute, both halves, ROI at the real price) – this also feeds the API-Football cost
