@@ -772,7 +772,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-03)
+## Open items (as of 2026-11-04)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -933,6 +933,14 @@ then decide per tier on the new days and apply.
 - Over 1.5 Test: since 02.11. only pre-match line ≥ 3.75 (was 2.75, fell to 68 % on 31.10.–02.11.; ≥ 3.75 85 %, n=89 in
   total, see change log). ~4 tips/day, Mindestquote 1.25. Check at ~50 live tips on `/ergebnisse` (only tips from 02.11.
   evening count); switch off if below ~78 %, and watch the 📈 live quotes – at such high lines they may sit below 1.25.
+- Owner's own bets (04.11., pasted in chat, **private – data stays out of the repo**): one month 04.10.–04.11., 349 bets,
+  ROI ≈ +3.6 %, the profit came from one strong week; accumulators and Over 3.5 / Over 4.5+ singles lost, singles Over 1.5
+  and same-match doubles did best (small n). Advice given: no accumulators, no Over 4.5+, Over 3.5 only from quote 1.70;
+  re-check with the next month's list (~early December).
+- Final scores (owner asked 04.11. "Zeichnet es die Endstände richtig auf?"): code checked – API-Football path uses the
+  90-minute score (also after AET/PEN), the InPlayFlux-feed path takes the last score seen after 85' (can miss a very late
+  goal). Real check pending: owner uploads the results CSV (30 days) + "Tor-Erwartung CSV" → verify won tips have
+  finalGoals > line, lost ≤ line, share with a final score and its source.
 - Own scenes (since 04.11. evening, step 1 of the own filter): owner taps "Eigene Szenen auswerten" now and then
   (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
   (rules by state × pre-match λ × minute, both halves, ROI at the real price) – this also feeds the API-Football cost
