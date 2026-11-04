@@ -1572,6 +1572,9 @@ async function runMinuteJobs(env) {
       try {
         await collectMatches(env, src);
       } catch (e) {}
+      try {
+        await collectScenes(env, src);
+      } catch (e) {}
     }
   } finally {
     await env.ACCESS_KV.delete(RUN_LOCK_KEY);
@@ -1934,6 +1937,176 @@ async function listMatches(env, days) {
     cursor = list.list_complete ? null : list.cursor;
   } while (cursor);
   return rows;
+}
+
+// Own scenes from API-Football (step 1 of "own filter, independent of InPlayFlux", owner 04.11.): a shadow log, nothing
+// is posted. Every live match in the 2nd half is noted once per checkpoint (55/60/65/70') with score, red cards, the
+// live over/under odds (main line + the "one more goal" line) and the pre-match goal expectation (bookmaker odds before
+// kickoff, `odds?fixture=`, once per match, cached in sc:state). One KV key per scene sc:<day>:<id>:<cp>, record as
+// metadata (120 days). `sceneRows` joins them with the own match archive afm:* (final score) for the evaluation.
+const SC_CHECKPOINTS = [55, 60, 65, 70];
+const SC_WINDOW = 5; // a checkpoint counts for minutes cp .. cp+4 (a missed run is caught up)
+const SC_STATE_KEY = "sc:state";
+const SC_PRE_PER_RUN = 12;
+const SC_PRE_PER_DAY = 2000;
+const SC_TTL_S = 120 * 24 * 60 * 60;
+const r2 = (x) => Math.round(x * 100) / 100;
+
+// Main line = the line whose over and under prices are closest; λ = Poisson goals implied by it (margin removed).
+function scMainLine(lines, goals = 0) {
+  let best = null;
+  for (const [k, v] of Object.entries(lines || {})) {
+    if (!v || v.o == null || v.u == null) continue;
+    const d = Math.abs(v.o - v.u);
+    if (!best || d < best.d) best = { line: Number(k), o: v.o, u: v.u, d };
+  }
+  if (!best || best.line - goals <= 0) return best ? { line: best.line, o: best.o, u: best.u, lam: null } : null;
+  const pFair = 1 / best.o / (1 / best.o + 1 / best.u);
+  let lo = 0;
+  let hi = 20;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (overLineProb(best.line - goals, mid) < pFair) lo = mid;
+    else hi = mid;
+  }
+  return { line: best.line, o: best.o, u: best.u, lam: r2((lo + hi) / 2) };
+}
+
+// Pre-match over/under from odds?fixture=<id>&bet=5 (Goals Over/Under): Bet365 if present, else the first bookmaker.
+function scPreFromOdds(resp) {
+  const books = (resp && resp[0] && resp[0].bookmakers) || [];
+  const order = books.filter((b) => b.id === 8).concat(books.filter((b) => b.id !== 8));
+  for (const b of order) {
+    const m = scMainLine(afOddsLines({ odds: b.bets || [] }), 0);
+    if (m && m.lam != null) return [m.line, m.lam];
+  }
+  return null;
+}
+
+async function collectScenes(env, src, now = Date.now()) {
+  const live = await src.live();
+  if (!Array.isArray(live)) return;
+  let st = { m: {}, d: "", n: 0 };
+  try {
+    st = JSON.parse((await env.ACCESS_KV.get(SC_STATE_KEY)) || "") || st;
+  } catch (e) {}
+  st.m = st.m || {};
+  const day = new Date(now).toISOString().slice(0, 10);
+  if (st.d !== day) {
+    st.d = day;
+    st.n = 0;
+  }
+  let changed = false;
+  let preLeft = Math.min(SC_PRE_PER_RUN, SC_PRE_PER_DAY - st.n);
+  let odds;
+  for (const f of live) {
+    const m = num(f.minute);
+    if (f.afId == null || f.status !== "2H" || m == null) continue;
+    const s = st.m[f.afId] || (st.m[f.afId] = { c: [], t: now });
+    s.t = now;
+    const cp = SC_CHECKPOINTS.filter((c) => m >= c && m < c + SC_WINDOW && !s.c.includes(c)).pop();
+    if (cp == null) continue;
+    if (s.p === undefined) {
+      if (preLeft <= 0) continue; // over this run's budget: try again next minute (still in the window)
+      preLeft--;
+      st.n++;
+      const resp = await fetchApiFootball(env, "odds?fixture=" + encodeURIComponent(f.afId) + "&bet=5", null);
+      if (resp) s.p = scPreFromOdds(resp) || 0; // 0 = no pre-match odds there; API error → scene without, retried later
+    }
+    if (odds === undefined) odds = await src.odds();
+    const lines = (odds && odds.get(f.afId)) || {};
+    const g = f.goals;
+    const main = scMainLine(lines, g);
+    const next = lines[String(g + 0.5)];
+    const meta = {
+      t: now, id: f.afId, cp, m, g, s: f.score, r: f.redCards, h: String(f.h || "").slice(0, 40), a: String(f.a || "").slice(0, 40),
+      c: f.c ? String(f.c).slice(0, 30) : null, lg: f.lg ? String(f.lg).slice(0, 40) : null, lid: f.lid ?? null,
+      pl: s.p ? s.p[0] : null, pλ: s.p ? s.p[1] : null,
+      ml: main ? main.line : null, mo: main ? main.o : null, mu: main ? main.u : null, mλ: main ? main.lam : null,
+      qo: next && next.o != null ? next.o : null, qu: next && next.u != null ? next.u : null,
+    };
+    await env.ACCESS_KV.put(`sc:${day}:${f.afId}:${cp}`, "1", { metadata: meta, expirationTtl: SC_TTL_S });
+    s.c.push(cp);
+    changed = true;
+  }
+  for (const [id, s] of Object.entries(st.m)) {
+    if (now - s.t > 3 * 60 * 60 * 1000) {
+      delete st.m[id];
+      changed = true;
+    }
+  }
+  if (changed) await env.ACCESS_KV.put(SC_STATE_KEY, JSON.stringify(st), { expirationTtl: 2 * 24 * 60 * 60 });
+}
+
+// Scenes with the final score from the own archive (by fixture id) and the market's chance of one more goal.
+async function sceneRows(env, days) {
+  const since = Date.now() - days * DAY_MS;
+  const recs = [];
+  let cursor;
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: "sc:2", cursor });
+    for (const k of list.keys) if (k.metadata && k.metadata.t >= since) recs.push(k.metadata);
+    cursor = list.list_complete ? null : list.cursor;
+  } while (cursor);
+  const fin = new Map();
+  for (const x of await listMatches(env, days + 1)) {
+    const mm = String(x.ft || "").match(/^(\d+)-(\d+)$/);
+    if (/^(FT|AET|PEN)$/.test(x.st || "") && mm) fin.set(x.id, +mm[1] + +mm[2]);
+  }
+  recs.sort((x, y) => x.t - y.t);
+  return recs.map((r) => {
+    const final = fin.has(r.id) ? fin.get(r.id) : null;
+    let pm = null;
+    if (r.qo && r.qu) pm = 1 / r.qo / (1 / r.qo + 1 / r.qu);
+    else if (r.mλ != null) pm = 1 - Math.exp(-r.mλ);
+    return { ...r, final, more: final != null && final >= r.g ? (final > r.g ? 1 : 0) : null, pm: pm != null ? Math.round(pm * 1000) / 1000 : null };
+  });
+}
+
+const SC_STATES = [["0:0", (g) => g === 0], ["1 Tor", (g) => g === 1], ["2 Tore", (g) => g === 2], ["3+ Tore", (g) => g >= 3]];
+const SC_PRE = [["unter 2,5", (l) => l != null && l < 2.5], ["2,5–3,0", (l) => l != null && l >= 2.5 && l < 3], ["3,0–3,5", (l) => l != null && l >= 3 && l < 3.5],
+  ["ab 3,5", (l) => l != null && l >= 3.5], ["unbekannt", (l) => l == null]];
+function sceneGroup(rows) {
+  const done = rows.filter((r) => r.more != null);
+  const pct = (x) => Math.round(x * 1000) / 10;
+  const out = { n: rows.length, settled: done.length };
+  if (!done.length) return out;
+  out.hit = pct(done.reduce((s, r) => s + r.more, 0) / done.length);
+  const half = Math.floor(done.length / 2);
+  if (done.length >= 20) out.halves = [done.slice(0, half), done.slice(half)].map((h) => pct(h.reduce((s, r) => s + r.more, 0) / h.length));
+  const wm = done.filter((r) => r.pm != null);
+  if (wm.length) out.market = pct(wm.reduce((s, r) => s + r.pm, 0) / wm.length);
+  const wq = done.filter((r) => r.qo);
+  if (wq.length) {
+    out.priced = wq.length;
+    out.avgQuote = r2(wq.reduce((s, r) => s + r.qo, 0) / wq.length);
+    out.roi = pct(wq.reduce((s, r) => s + (r.more ? r.qo - 1 : -1), 0) / wq.length);
+  }
+  return out;
+}
+function sceneSummary(rows, cp = 60) {
+  const at = rows.filter((r) => r.cp === cp);
+  const groups = [];
+  for (const [sn, sf] of SC_STATES) {
+    for (const [pn, pf] of SC_PRE) {
+      const g = at.filter((r) => sf(r.g) && pf(r.pλ));
+      if (g.length) groups.push({ state: sn, pre: pn, ...sceneGroup(g) });
+    }
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    cp, scenes: rows.length, matches: new Set(rows.map((r) => r.id)).size,
+    today: new Set(rows.filter((r) => new Date(r.t).toISOString().slice(0, 10) === today).map((r) => r.id)).size,
+    withPre: rows.filter((r) => r.pλ != null).length, withQuote: rows.filter((r) => r.qo).length,
+    all: sceneGroup(at), groups,
+  };
+}
+const SC_CSV = ["t", "id", "c", "lg", "lid", "h", "a", "cp", "m", "s", "g", "r", "pl", "pλ", "ml", "mo", "mu", "mλ", "qo", "qu", "pm", "final", "more"];
+function scenesCsv(rows) {
+  const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const head = ["time", "fixtureId", "country", "league", "leagueId", "home", "away", "checkpoint", "minute", "score", "goals", "redCards",
+    "preLine", "preLambda", "liveLine", "liveOver", "liveUnder", "liveLambdaRest", "nextGoalOver", "nextGoalUnder", "marketP", "finalGoals", "moreGoal"];
+  return [head.join(",")].concat(rows.map((r) => SC_CSV.map((k) => cell(k === "t" ? new Date(r.t).toISOString() : r[k])).join(","))).join("\n") + "\n";
 }
 
 const MATCH_CSV_COLS = ["id", "k", "c", "lg", "lid", "h", "a", "st", "ht", "ft", "ev"];
@@ -3582,6 +3755,9 @@ async function handleAdminPage() {
   <button id="xg-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Tor-Erwartung auswerten (14 Tage)</button>
   <button id="xg-csv-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Tor-Erwartung CSV</button>
   <div class="out" id="xg-out" style="margin-bottom:10px;"></div>
+  <button id="sc-btn" style="background:#2c3444;color:#e6e9f0;margin-bottom:8px;">Eigene Szenen auswerten (Minute 60)</button>
+  <button id="sc-csv-btn" style="background:#2c3444;color:#e6e9f0;margin:0 0 8px 6px;">Eigene Szenen CSV</button>
+  <div class="out" id="sc-out" style="margin-bottom:10px;"></div>
   <button id="img-btn" style="margin-bottom:8px;">Bilanz-Grafik erstellen (7 Tage)</button>
   <div class="out" id="img-out" style="margin-bottom:10px;"></div>
   <button id="res7-btn">Letzte 7 Tage</button>
@@ -4195,6 +4371,41 @@ document.getElementById('xg-csv-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+document.getElementById('sc-btn').addEventListener('click', async () => {
+  const out = document.getElementById('sc-out');
+  out.textContent = 'Werte aus …';
+  try {
+    const r = await fetch('/admin/api/scenes?days=30&cp=60', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    const cell = (g) => '<td>' + g.n + '</td><td>' + g.settled + '</td><td>' + (g.hit != null ? g.hit + ' %' : '–') +
+      (g.halves ? ' (' + g.halves[0] + ' / ' + g.halves[1] + ')' : '') + '</td><td>' + (g.market != null ? g.market + ' %' : '–') +
+      '</td><td>' + (g.avgQuote != null ? g.avgQuote + ' (' + g.priced + ')' : '–') + '</td><td>' + (g.roi != null ? (g.roi > 0 ? '+' : '') + g.roi + ' %' : '–') + '</td>';
+    const head = '<tr><th>Stand</th><th>Tor-Erwartung vor dem Spiel</th><th>Szenen</th><th>mit Endstand</th><th>noch ein Tor (1./2. Hälfte)</th><th>Markt</th><th>Ø Quote</th><th>ROI</th></tr>';
+    out.innerHTML = 'Gesammelt: ' + d.scenes + ' Szenen aus ' + d.matches + ' Spielen (heute ' + d.today + ' Spiele) · mit Vor-Spiel-Erwartung ' + d.withPre +
+      ' · mit echter Quote ' + d.withQuote + '<br>Minute ' + d.cp + ', alle: ' + (d.all.settled < 300 ? '<b>unter 300 mit Endstand – noch kein Urteil</b>' : '') +
+      '<table>' + head + '<tr><td colspan="2">alle</td>' + cell(d.all) + '</tr>' +
+      d.groups.map((g) => '<tr><td>' + g.state + '</td><td>' + g.pre + '</td>' + cell(g) + '</tr>').join('') + '</table>' +
+      'ROI = jede Szene mit 1 Einheit auf „noch ein Tor“ zur echten Quote. Nur Testdaten, es wird nichts gepostet.';
+  } catch (e) { out.textContent = e.message; }
+});
+
+document.getElementById('sc-csv-btn').addEventListener('click', async () => {
+  const out = document.getElementById('sc-out');
+  out.textContent = 'Erstelle CSV …';
+  try {
+    const r = await fetch('/admin/api/scenes?days=120&csv=1', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    if (!r.ok) throw new Error('Fehler ' + r.status);
+    const csv = await r.text();
+    const name = 'moneybag_szenen_' + new Date().toISOString().slice(0, 10) + '.csv';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    out.textContent = (csv.trim().split('\\n').length - 1) + ' Szenen. Datei ' + name + ' gespeichert (iPad: Dateien-App → Downloads).';
+  } catch (e) { out.textContent = e.message; }
+});
+
 document.getElementById('matches-btn').addEventListener('click', async () => {
   const out = document.getElementById('odds-out');
   out.textContent = 'Erstelle CSV …';
@@ -4786,6 +4997,16 @@ export default {
       const rows = await goalExpectationRows(env, days);
       if (url.searchParams.get("csv")) return new Response(goalExpectationCsv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
       return jsonResponse({ days, ...goalExpectationSummary(rows) });
+    }
+
+    // Own scenes (shadow log from API-Football, since 04.11.): evaluation at one checkpoint, or all scenes as CSV.
+    if (url.pathname === "/admin/api/scenes" && request.method === "GET") {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 14, 120);
+      const rows = await sceneRows(env, days);
+      if (url.searchParams.get("csv")) return new Response(scenesCsv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
+      const cp = SC_CHECKPOINTS.includes(Number(url.searchParams.get("cp"))) ? Number(url.searchParams.get("cp")) : 60;
+      return jsonResponse({ days, ...sceneSummary(rows, cp) });
     }
 
     // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).

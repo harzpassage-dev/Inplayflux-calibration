@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix, afOdds } from "./helpers.mjs";
+import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix, afOdds, afPre } from "./helpers.mjs";
 
 const worker = await loadWorker();
 const premiumPosts = (net) => net.sent.filter((m) => m.method === "sendMessage" && m.chat_id === "-100");
@@ -909,4 +909,48 @@ test("premium post shows the expected further goals (market + tempo), test posts
   assert.match(premiumPosts(net3)[0].text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\) · 0,5 \(Tempo\)/);
   // card without odds and time line → no line
   assert.equal(net.sent.filter((m) => /undefined|NaN/.test(m.text || "")).length, 0);
+});
+
+test("own scenes: API-Football live matches are logged once per checkpoint (shadow log, nothing posted) and evaluated", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  net.apiPre = { 7: afPre({ "2.5": [1.7, 2.1], "3.5": [2.6, 1.5] }) };
+  net.apiOdds = [afOdds(7, { "2.5": [1.4, 2.8], "3.5": [2.2, 1.65] })];
+  net.apiLive = [afFix({ id: 7, minute: 61, goals: [20, 50] }), afFix({ id: 8, status: "1H", minute: 30, gh: 0 })];
+  await cron(worker, env);
+  const keys = () => [...env.ACCESS_KV.meta.keys()].filter((k) => k.startsWith("sc:2"));
+  assert.equal(keys().length, 1, "one scene: match 7 at checkpoint 60, the first-half match not");
+  const sc = env.ACCESS_KV.meta.get(keys()[0]);
+  assert.equal(sc.cp, 60);
+  assert.equal(sc.g, 2);
+  assert.equal(sc.pl, 2.5);
+  assert.ok(sc.pλ > 2.5 && sc.pλ < 3.2, "pre-match goal expectation " + sc.pλ);
+  assert.equal(sc.ml, 3.5);
+  assert.equal(sc.qo, 1.4, "real price of one more goal (Over 2.5 at 2 goals)");
+  assert.equal(sc.lg, "Eliteserien");
+  net.apiLive = [afFix({ id: 7, minute: 63, goals: [20, 50] })];
+  await cron(worker, env);
+  assert.equal(keys().length, 1, "same checkpoint not logged twice");
+  net.apiLive = [afFix({ id: 7, minute: 66, goals: [20, 50] })];
+  await cron(worker, env);
+  assert.equal(keys().length, 2, "checkpoint 65");
+  assert.equal(net.preCalls, 1, "pre-match odds fetched once per match");
+  assert.equal(net.sent.length, 0, "nothing posted");
+  // match ends 3-0 → archive gives the final score
+  net.apiLive = [];
+  net.apiById = { 7: afFix({ id: 7, status: "FT", minute: 90, gh: 3, ga: 0, goals: [20, 50, 80] }) };
+  await cron(worker, env);
+  const d = await (await admin(worker, env, "/admin/api/scenes?days=120&cp=60")).json();
+  assert.equal(d.scenes, 2);
+  assert.equal(d.matches, 1);
+  assert.equal(d.all.settled, 1);
+  assert.equal(d.all.hit, 100);
+  assert.equal(d.all.roi, 40);
+  assert.equal(d.groups[0].state, "2 Tore");
+  const csv = await (await admin(worker, env, "/admin/api/scenes?days=120&csv=1")).text();
+  assert.ok(csv.startsWith("time,fixtureId,country,league"));
+  assert.equal(csv.trim().split("\n").length, 3);
+  assert.equal((await admin(worker, env, "/admin/api/scenes", { headers: { Authorization: "Bearer wrong" } })).status, 401);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(html.includes("Eigene Szenen auswerten") && html.includes("Eigene Szenen CSV"));
 });

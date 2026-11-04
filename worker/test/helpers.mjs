@@ -41,6 +41,7 @@ export function mockNet(state) {
     if (url.includes("api-sports.io") || url.includes("api-football-v1.p.rapidapi.com") || url.startsWith("https://af.example.com/")) {
       state.apiCalls = (state.apiCalls || 0) + 1;
       state.apiUrls = (state.apiUrls || []).concat([[url, opts.headers || {}]]);
+      if (url.includes("odds?fixture=")) { state.preCalls = (state.preCalls || 0) + 1; return new Response(JSON.stringify({ errors: [], response: (state.apiPre && state.apiPre[decodeURIComponent(url.split("odds?fixture=")[1].split("&")[0])]) || [] })); }
       if (url.includes("odds/live")) return new Response(JSON.stringify({ errors: [], response: state.apiOdds || [] }));
       if (url.includes("fixtures?ids=")) {
         const ids = decodeURIComponent(url.split("fixtures?ids=")[1]).split("-");
@@ -117,4 +118,10 @@ export function afOdds(id, lines) {
       { value: "Under", odd: String(u), handicap: h, main: h === "2.5", suspended: false }]) },
     { id: 50, name: "1st Half Over/Under", values: [{ value: "Over", odd: "9.0", handicap: "2.5", suspended: false }] },
   ] };
+}
+
+// Pre-match odds (odds?fixture=<id>&bet=5) in the API's format: { "2.5": [over, under], ... } for one bookmaker.
+export function afPre(lines, id = 8) {
+  return [{ bookmakers: [{ id, name: "Bet365", bets: [{ id: 5, name: "Goals Over/Under",
+    values: Object.entries(lines).flatMap(([h, [o, u]]) => [{ value: "Over " + h, odd: String(o) }, { value: "Under " + h, odd: String(u) }]) }] }] }];
 }

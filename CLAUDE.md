@@ -257,6 +257,19 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-04: **own scenes from API-Football – step 1 of an own filter** (owner: "mit der API ein Filter erstellen und
+  unabhängig von InPlayFlux sein"; plan: 1 shadow log 2–3 weeks, 2 evaluate vs final score + real odds, 3 own tier at 0.5
+  units only for rules stable in both halves that beat the quote, 4 then reduce InPlayFlux). `collectScenes` (minute cron,
+  after `collectMatches`): every live match in `2H` is logged once per checkpoint 55/60/65/70' (window cp..cp+4,
+  `SC_CHECKPOINTS`) as KV key `sc:<day>:<id>:<cp>` with metadata (120 days): minute, goals, score, red cards, league,
+  pre-match main line + Poisson λ (`odds?fixture=<id>&bet=5`, Bet365 else first bookmaker, once per match, ≤ 12/run,
+  ≤ 2,000/day, cached in `sc:state`), live main line + odds + λ rest, real price of "one more goal" (`qo/qu` = line
+  goals + 0.5 from `odds/live`). **Nothing is posted.** Admin **"Eigene Szenen auswerten (Minute 60)"** /
+  **"Eigene Szenen CSV"** (`/admin/api/scenes?days=N&cp=60[&csv=1]`, `sceneRows`/`sceneSummary`): final score from the
+  archive `afm:*` by fixture id; per state (0:0 / 1 / 2 / 3+ goals) × pre-match λ band: scenes, settled, another goal %
+  (halves), market %, Ø price, flat ROI at the real price. Verdict only from ≥ 300 settled scenes per group. Missing vs
+  InPlayFlux: radar, money movement, many low leagues. Extra calls ~1,500–3,000/day (fits 7,500). Test "own scenes".
+
 - 2026-11-04: "Daten der Woche" refreshed (owner): another goal after ~60' by the **pre-match goal expectation, all scores**
   (`scripts/preline_stats.py`, 10,915 unique matches, earliest scene at 55–65', 05.09.–02.11., halves split 05.10.): ≤ 2.5
   69 % (2,418), 2.75–3.0 73 % (3,739), 3.25–3.5 77 % (3,204), ≥ 3.75 82 % (1,554); halves 70/74/79/84 and 65/70/76/81 %.
@@ -920,6 +933,10 @@ then decide per tier on the new days and apply.
 - Over 1.5 Test: since 02.11. only pre-match line ≥ 3.75 (was 2.75, fell to 68 % on 31.10.–02.11.; ≥ 3.75 85 %, n=89 in
   total, see change log). ~4 tips/day, Mindestquote 1.25. Check at ~50 live tips on `/ergebnisse` (only tips from 02.11.
   evening count); switch off if below ~78 %, and watch the 📈 live quotes – at such high lines they may sit below 1.25.
+- Own scenes (since 04.11. evening, step 1 of the own filter): owner taps "Eigene Szenen auswerten" now and then
+  (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
+  (rules by state × pre-match λ × minute, both halves, ROI at the real price) – this also feeds the API-Football cost
+  decision (keep the subscription if an own rule beats the quote). Watch the calls/day in "API-Football prüfen".
 - Goal-expectation log (since 03.11. evening): once admin "Tor-Erwartung auswerten" shows ≥ 100 matches with a final
   score, compare per λ band expected vs real (≥ 1 / ≥ 2 goals) for market and tempo; if one of them is clearly better
   calibrated, say so in the tool/posts (or drop the weaker). Many rows will lack a final score (API-Football coverage).
