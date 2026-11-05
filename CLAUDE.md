@@ -36,8 +36,9 @@ protokolliert)"), result tracking (`track:open` → `result:*`), weekly report M
 `sendDailyReport`/`dailyAdminText`: last 24 h per tier, voids, profit estimates, open tips, a warning when a
 line with ≥ 2 tips/day over the week got none – a switched-off InPlayFlux strategy – and, from `VOID_REMIND` 10 open
 voids in 7 days, a reminder to fill them from a CSV export), dedup per match + line (`claim:*`, 3 h) plus a minute-cron run lock (`lock:minute`) so
-overlapping runs never post or settle a tip twice, when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
-"❌ LOST …" (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
+overlapping runs never post or settle a tip twice, a goal settles a tip only after it has stood 3 minutes (`GOAL_CONFIRM_MS`, VAR, since
+05.11.), when a tip is settled its premium post is edited to start with "✅ WIN – Tor in Minute X'" or
+"❌ LOST …" (with the real quote just before the goal / the highest quote when API-Football has live odds, `bannerQuote`, since 05.11.) (`postPremium` stores `msgId` + `msgText` in the tracked entry, `markPremiumPost`
 calls `editMessageText`; posts from before 2026-10-14 evening have no id and stay unmarked),
 every tracked tip stores `signalQuote` = `cardQuote(parsed)` (since 2026-10-22: the card's ⚖️ live-line odds; exact
 when the live line is the target line, else Poisson λ from the card's line + the card's margin, `exact: false`);
@@ -836,7 +837,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-04)
+## Open items (as of 2026-11-05)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -1005,9 +1006,17 @@ then decide per tier on the new days and apply.
   90-minute score (also after AET/PEN), the InPlayFlux-feed path takes the last score seen after 85' (can miss a very late
   goal). Real check pending: owner uploads the results CSV (30 days) + "Tor-Erwartung CSV" → verify won tips have
   finalGoals > line, lost ≤ line, share with a final score and its source.
+- **Next week (Mon 09.11.) with ~1 week of real odds**: (a) quote rule (post normally only at ≥ Mindestquote, else "⏳ erst ab
+  Quote X setzen"); (b) Over 1.5 Test: 7-day 70.2 % (153/218) at quotes ~1.25 → recommend switching off (owner asked whether
+  now or Monday – no answer yet); (c) league rule: tips with API-Football odds (bigger leagues) hit 86 % (36) vs ~76 % overall –
+  check on the larger sample; (d) "wait for 1.40" real (+2.6 u on 24 bets) and Asian +0.25 line (+16 % on 21) – keep watching.
+  Results page shows −19.46 u (−7.8 %) at signal quote since 22.10. – kept public on purpose.
+- Annulled-goal correction: owner should tap admin "Tor zurückgenommen? Wertung prüfen" → "Anzeigen" after the beta tip's
+  match (05.11., 2:0 annulled) has its final score, then "Nach Endstand korrigieren" (re-settles by final score; Telegram posts
+  by hand). Owner had asked to remove it from the stats; advised to settle by final score instead – confirm with the owner.
 - Beta channel (**live since 04.11. ~19:30 Berlin**: owner created the private channel, bot is admin, `BETA_CHANNEL_ID` set, admin test "✅ Senden und Bearbeiten klappen"): check the "🧪 Beta-Kanal" line in admin / morning report;
   at ≥ 50 beta bets decide whether premium customers get it (or whether premium posts should only go out at ≥ 1.40).
-- Own scenes (since 04.11. evening, step 1 of the own filter): owner taps "Eigene Szenen auswerten" now and then
+- Own scenes (since 04.11. evening, step 1 of the own filter): first upload of "Eigene Szenen CSV" ~12.11.; owner taps "Eigene Szenen auswerten" now and then
   (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
   (rules by state × pre-match λ × minute, both halves, ROI at the real price) – this also feeds the API-Football cost
   decision (keep the subscription if an own rule beats the quote). Watch the calls/day in "API-Football prüfen".
