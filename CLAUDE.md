@@ -257,6 +257,18 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-05: **quote in the WIN/LOST banner** (owner: "die Quote bei Tor eintragen"). `recordOdds` keeps the last own-line
+  over price + minute (`t.ol.lq/lqm`); prices are only recorded while the needed goal has not fallen (live goals ≤ line), so
+  the post-goal 1.01 never overwrites it. `resultBanner` → `bannerQuote`: won "✅ WIN – Tor in Minute 72' · Quote kurz vor dem
+  Tor: 1,62 (beim Signal: 1,30)", lost "❌ LOST – kein weiteres Tor · höchste Quote: 3,10 (beim Signal: 1,30)"; signal quote =
+  the posted live quote (`t.odds`) or the first sighting. Only tips with API-Football live odds (~half). Results get
+  `oddsLast`/`oddsLastMinute` (CSV). Test "WIN/LOST banner shows the real quote …".
+  Same day, first API findings for the owner (results CSV 05.11., 80 tips since 01.11. evening): voids 5/80, final score 69/75,
+  exact goal minute 50/64, live odds 36/75; real first-sighting odds: 36 tips 86 % hit, Ø 1.26, ROI +9 % (O2.5 Ø 1.19 ±0 %);
+  wait for 1.40 real: 24 bets +2.6 u; one line higher (2 goals) 32 tips 47 % → −24 %; Asian +0.25 line 21 tips Ø 1.44 +16 %
+  (tiny n, watch). Hint: API-covered (bigger) leagues hit 86 % vs ~76 % overall – check a league rule at the weekly check.
+  Results page shows −19.46 u (−7.8 %) at signal quote since 22.10. (Ø 1.26, break-even 79.4 %) – kept public.
+
 - 2026-11-05: **annulled goals** (owner: the last beta tip was marked WIN on a 2:0 that VAR took back). (1) A goal now only
   settles a tip once it has stood **3 minutes** (`GOAL_CONFIRM_MS`, `goalHeld`, `t.goalSeenAt`; API-Football and InPlayFlux
   feed paths; goal gone again → `goalSeenAt` cleared, tip stays open; match gone right after the goal → settled once the

@@ -1099,3 +1099,38 @@ test("admin contradictions: lists a won tip whose final score is too low and re-
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Tor zurückgenommen? Wertung prüfen"));
 });
+
+test("WIN/LOST banner shows the real quote just before the goal (or the highest one) and the quote at signal time", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 91, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net.apiOdds = [afOdds(91, { "2.5": [1.3, 3.4] })];
+  await at(130e3, () => cron(worker, env));
+  await at(200e3, () => cron(worker, env));
+  net.apiLive = [afFix({ id: 91, home: "Alpha FC", away: "Beta FC", minute: 70, goals: [10, 30] })];
+  net.apiOdds = [afOdds(91, { "2.5": [1.62, 2.2] })];
+  await at(14 * 60e3, () => cron(worker, env));
+  net.apiLive = [afFix({ id: 91, home: "Alpha FC", away: "Beta FC", minute: 72, gh: 3, goals: [10, 30, 72] })];
+  net.apiOdds = [afOdds(91, { "2.5": [1.01, 15] })]; // after the goal: must not overwrite the last price
+  await at(16 * 60e3, () => cron(worker, env));
+  await at(20 * 60e3, () => cron(worker, env));
+  const edit = net.sent.find((m) => m.method === "editMessageText" && m.chat_id === "-100");
+  assert.ok(edit && edit.text.startsWith("✅ WIN – Tor in Minute 72' · Quote kurz vor dem Tor: 1,62 (beim Signal: 1,30)"), edit && edit.text);
+  assert.equal(results(env)[0].oddsLast, 1.62);
+  // lost: highest quote
+  const net2 = mockNet({ feed: [] });
+  const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env2, card());
+  net2.apiLive = [afFix({ id: 92, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net2.apiOdds = [afOdds(92, { "2.5": [1.3, 3.4] })];
+  await at(130e3, () => cron(worker, env2));
+  net2.apiLive = [afFix({ id: 92, home: "Alpha FC", away: "Beta FC", minute: 88, goals: [10, 30] })];
+  net2.apiOdds = [afOdds(92, { "2.5": [3.1, 1.3] })];
+  await at(30 * 60e3, () => cron(worker, env2));
+  net2.apiLive = [];
+  net2.apiById = { 92: afFix({ id: 92, home: "Alpha FC", away: "Beta FC", status: "FT", minute: 90, goals: [10, 30] }) };
+  await at(40 * 60e3, () => cron(worker, env2));
+  const e2 = net2.sent.find((m) => m.method === "editMessageText" && m.chat_id === "-100");
+  assert.ok(e2 && e2.text.startsWith("❌ LOST – kein weiteres Tor · höchste Quote: 3,10 (beim Signal: 1,30)"), e2 && e2.text);
+});

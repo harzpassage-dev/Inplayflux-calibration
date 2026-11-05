@@ -2246,7 +2246,9 @@ async function settleTracked(env, feed, srcIn = null) {
         }
       }
       const live = af || m;
-      if (t.afId && live && !(af && (af.finished || af.voided))) {
+      const liveGoals = af ? af.goals : m ? (num(m.hg) || 0) + (num(m.ag) || 0) : null;
+      // Prices only while the needed goal has not fallen (after it the over line is settled or suspended).
+      if (t.afId && live && !(af && (af.finished || af.voided)) && !(liveGoals > t.line)) {
         const odds = await src.odds();
         const lines = odds && odds.get(t.afId);
         if (lines && recordOdds(t, lines, num(live.minute), now)) changed = true;
@@ -2467,7 +2469,18 @@ async function postPremium(env, text) {
 function resultBanner(t, result) {
   const at = t.resultMinute != null ? ` in Minute ${t.resultMinute}'` : "";
   if (t.under) return result === "won" ? "✅ WIN – höchstens noch 1 Tor" : `❌ LOST – 2. Tor${at}`;
-  return result === "won" ? `✅ WIN – Tor${at}` : "❌ LOST – kein weiteres Tor";
+  return result === "won" ? `✅ WIN – Tor${at}${bannerQuote(t, result)}` : `❌ LOST – kein weiteres Tor${bannerQuote(t, result)}`;
+}
+// Owner 05.11.: the real API-Football price of the own line in the banner – the last one before the goal (won) or the
+// highest one seen (lost), plus the price at signal time when known. Nothing without live odds.
+function bannerQuote(t, result) {
+  const ol = t.ol;
+  if (!ol) return "";
+  const sig = (t.odds && t.odds.line === t.line && t.odds.over) || (ol.f && ol.f[String(t.line)] && ol.f[String(t.line)].o) || null;
+  const sigText = sig ? ` (beim Signal: ${fmtQuote(sig)})` : "";
+  if (result === "won" && ol.lq != null) return ` · Quote kurz vor dem Tor: ${fmtQuote(ol.lq)}${sigText}`;
+  if (result === "lost" && ol.mx != null) return ` · höchste Quote: ${fmtQuote(ol.mx)}${sigText}`;
+  return "";
 }
 
 // Beta channel (since 04.11., owner's idea): a premium tip is posted again to BETA_CHANNEL_ID once its real live quote
@@ -2635,6 +2648,11 @@ function recordOdds(t, lines, minute, now) {
       t.ol.mxm = minute;
       changed = true;
     }
+    if (t.ol.lq !== over || t.ol.lqm !== minute) {
+      t.ol.lq = over; // last price before the goal (shown in the WIN banner, since 05.11.)
+      t.ol.lqm = minute;
+      changed = true;
+    }
     if (over >= WAIT_QUOTE && t.ol.r140 == null) {
       t.ol.r140 = minute;
       changed = true;
@@ -2651,6 +2669,7 @@ function oddsFields(t) {
   return {
     oddsMinute: ol.m, oddsOver: at(t.line).o ?? null, oddsUnder: at(t.line).u ?? null,
     oddsMax: ol.mx ?? null, oddsMaxMinute: ol.mxm ?? null, odds140Minute: ol.r140 ?? null,
+    oddsLast: ol.lq ?? null, oddsLastMinute: ol.lqm ?? null,
     oddsQuarterOver: at(t.line + 0.25).o ?? null, oddsNextOver: at(t.line + 0.5).o ?? null, oddsNextUnder: at(t.line + 0.5).u ?? null,
   };
 }
@@ -2696,7 +2715,7 @@ async function saveResult(env, t, result, finalGoals = null) {
 const RESULT_CSV_COLS = ["postedAt", "settledAt", "tier", "home", "away", "line", "minute", "result", "resultMinute", "units",
   "minQuote", "quote", "quoteEstimated", "betPlaced", "profit", "marketP", "waitEntry", "waitBet", "waitProfit", "filledFrom", "finalGoals",
   "oddsMinute", "oddsOver", "oddsUnder", "oddsMax", "oddsMaxMinute", "odds140Minute", "oddsQuarterOver", "oddsNextOver", "oddsNextUnder",
-  "betaQuote", "betaMinute"];
+  "betaQuote", "betaMinute", "oddsLast", "oddsLastMinute"];
 function resultsCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
   const lines = rows.map((r) => {
