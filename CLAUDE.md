@@ -257,6 +257,16 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-05: **annulled goals** (owner: the last beta tip was marked WIN on a 2:0 that VAR took back). (1) A goal now only
+  settles a tip once it has stood **3 minutes** (`GOAL_CONFIRM_MS`, `goalHeld`, `t.goalSeenAt`; API-Football and InPlayFlux
+  feed paths; goal gone again → `goalSeenAt` cleared, tip stays open; match gone right after the goal → settled once the
+  3 min are over). WIN banners, beta marks and free-channel posts come ~3 min later. (2) Admin "📊 Ergebnisse" → **"Tor
+  zurückgenommen? Wertung prüfen"** (`/admin/api/contradictions?days=14`, GET lists, POST fixes; `contradictedResults`/
+  `fixContradictions`): results whose `finalGoals` contradict the result are **re-settled by the final score** (not dropped –
+  owner asked "aus der Wertung raus", advised that the bookmaker settles by the final score), profit recomputed, wait and goal
+  minute cleared, `corrected: "final"`; Telegram posts are not re-edited (owner edits by hand). Tests "annulled goal (VAR)",
+  "admin contradictions"; 7 settle tests now advance the clock 4 min after a goal.
+
 - 2026-11-05: **beta check with the results CSV** (owner wondered why Rakhine United – VUE Nay Pyi Taw, O0.5, signal 63', goal 71',
   got no beta post although their bookmaker showed 1.40 at 70'). Data: that tip had **no API-Football odds at all** (Myanmar,
   settled via the InPlayFlux feed) → no beta possible. Since beta went live (04.11. evening) 3 of 10 tips had live odds; the two

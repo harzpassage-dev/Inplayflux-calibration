@@ -2202,6 +2202,17 @@ function afGoalMinute(t, af) {
   return gm != null && (t.minute == null || gm >= t.minute - 1) ? gm : null;
 }
 
+// A goal is only counted once it has stood for 3 minutes (05.11.: a 2:0 in a beta tip was annulled by VAR after the
+// tip had already been marked WIN). If the goal disappears again, the tip stays open.
+const GOAL_CONFIRM_MS = 3 * 60 * 1000;
+function goalHeld(t, now) {
+  if (t.goalSeenAt == null) {
+    t.goalSeenAt = now;
+    return false;
+  }
+  return now - t.goalSeenAt >= GOAL_CONFIRM_MS;
+}
+
 async function settleTracked(env, feed, srcIn = null) {
   const open = await readTracked(env);
   const feedDown = !Array.isArray(feed);
@@ -2305,13 +2316,22 @@ async function settleTracked(env, feed, srcIn = null) {
       continue;
     }
     let result = null;
-    if (af) {
-      // Live at API-Football (not finished): decided as soon as the needed goal falls.
-      if (af.goals > t.line) {
-        result = t.under ? "lost" : "won";
-        t.resultMinute = afGoalMinute(t, af);
-        t.goalExact = t.resultMinute != null;
+    const dropGoal = () => {
+      if (t.goalSeenAt != null) {
+        delete t.goalSeenAt; // goal taken back (VAR) – keep watching
+        changed = true;
       }
+    };
+    if (af) {
+      // Live at API-Football (not finished): decided once the needed goal has stood for GOAL_CONFIRM_MS.
+      if (af.goals > t.line) {
+        changed = true;
+        if (goalHeld(t, now)) {
+          result = t.under ? "lost" : "won";
+          t.resultMinute = afGoalMinute(t, af);
+          t.goalExact = t.resultMinute != null;
+        }
+      } else dropGoal();
       if (t.missingSince) {
         delete t.missingSince;
         changed = true;
@@ -2322,13 +2342,17 @@ async function settleTracked(env, feed, srcIn = null) {
       const goals = seenGoals;
       const minute = num(m.minute);
       if (goals > t.line) {
-        result = t.under ? "lost" : "won";
-        // The guest feed often shows a match only near the end: take the
-        // feed's last-goal minute when exactly the one needed goal fell.
-        const lastGoal = num(m.sonGolDakikasi);
-        t.goalExact = !t.under && goals === t.line + 0.5 && lastGoal != null && lastGoal > 0 && (t.minute == null || lastGoal >= t.minute);
-        t.resultMinute = t.goalExact ? lastGoal : null; // unknown which goal came first
+        changed = true;
+        if (goalHeld(t, now)) {
+          result = t.under ? "lost" : "won";
+          // The guest feed often shows a match only near the end: take the
+          // feed's last-goal minute when exactly the one needed goal fell.
+          const lastGoal = num(m.sonGolDakikasi);
+          t.goalExact = !t.under && goals === t.line + 0.5 && lastGoal != null && lastGoal > 0 && (t.minute == null || lastGoal >= t.minute);
+          t.resultMinute = t.goalExact ? lastGoal : null; // unknown which goal came first
+        }
       } else {
+        dropGoal();
         if (minute != null && minute >= TRACK_LOST_AFTER_MIN && !t.late) {
           t.late = true;
           changed = true;
@@ -2338,6 +2362,9 @@ async function settleTracked(env, feed, srcIn = null) {
           changed = true;
         }
       }
+    } else if (t.goalSeenAt != null) {
+      // Match gone (or finished) right after the needed goal: it counts once it has stood long enough.
+      if (now - t.goalSeenAt >= GOAL_CONFIRM_MS) result = t.under ? "lost" : "won";
     } else if (t.late) {
       if (!t.missingSince) {
         t.missingSince = now;
@@ -2527,6 +2554,47 @@ function finalContradicts(r) {
   const over = r.finalGoals > r.line;
   const under = r.tier === "under" || r.under;
   return under ? (r.result === "won") === over : (r.result === "won") !== over;
+}
+
+// Admin "Widersprüche korrigieren" (05.11.): results whose final score contradicts the result (goal counted live, then
+// annulled) are re-settled by the final score – honest instead of dropped. Recomputes profit; the wait estimate and the
+// goal minute are cleared (unknown). Telegram posts are not re-edited.
+async function contradictedResults(env, days) {
+  const since = Date.now() - days * DAY_MS;
+  const out = [];
+  let cursor;
+  do {
+    const list = await env.ACCESS_KV.list({ prefix: "result:", cursor });
+    for (const k of list.keys) {
+      if (Number(k.name.split(":")[1]) < since) continue;
+      if (k.metadata && finalContradicts(k.metadata)) out.push({ key: k.name, r: k.metadata });
+    }
+    cursor = list.list_complete ? null : list.cursor;
+  } while (cursor);
+  return out;
+}
+async function fixContradictions(env, days, apply) {
+  const found = await contradictedResults(env, days);
+  const rows = [];
+  for (const { key, r } of found) {
+    const over = r.finalGoals > r.line;
+    const under = r.tier === "under" || r.under;
+    const result = under ? (over ? "lost" : "won") : over ? "won" : "lost";
+    rows.push({ match: `${r.home} – ${r.away}`, line: r.line, tier: r.tier, was: r.result, now: result, finalGoals: r.finalGoals,
+      posted: r.postedAt });
+    if (!apply) continue;
+    let rec = r;
+    try {
+      rec = JSON.parse((await env.ACCESS_KV.get(key)) || "null") || r;
+    } catch (e) {}
+    rec.result = result;
+    rec.resultMinute = null;
+    rec.wait = null;
+    rec.corrected = "final";
+    if (rec.betPlaced && rec.quote) rec.profit = Math.round((result === "won" ? rec.units * (rec.quote - 1) : -rec.units) * 100) / 100;
+    await env.ACCESS_KV.put(key, JSON.stringify(rec), { expirationTtl: 365 * 24 * 60 * 60, metadata: resultMeta(rec) });
+  }
+  return { rows, applied: !!apply };
 }
 
 async function addFinalGoals(env, key, goals) {
@@ -3843,6 +3911,12 @@ async function handleAdminPage() {
     <div class="out" id="free-fill-out"></div>
   </div>
   <div class="card">
+    <h3>Tor zurückgenommen? Wertung prüfen</h3>
+    <p class="hint">Zeigt Tipps der letzten 14 Tage, deren Endstand nicht zur Wertung passt (z. B. Tor per VAR aberkannt). „Korrigieren“ wertet sie nach dem Endstand neu. Telegram-Posts bitte selbst anpassen.</p>
+    <div class="row"><button id="contra-btn" class="sec">Anzeigen</button><button id="contra-fix-btn">Nach Endstand korrigieren</button></div>
+    <div class="out" id="contra-out"></div>
+  </div>
+  <div class="card">
     <h3>Unklare Ergebnisse nachtragen</h3>
     <p class="hint">InPlayFlux-CSV-Export auswählen (roh oder bearbeitet). Erst Vorschau, dann Übernehmen. Nur Tipps mit „unklar“ werden geändert.</p>
     <input type="file" id="fill-file" accept=".csv,text/csv">
@@ -4523,6 +4597,22 @@ document.getElementById('xg-csv-btn').addEventListener('click', async () => {
   } catch (e) { out.textContent = e.message; }
 });
 
+async function contra(fix) {
+  const out = document.getElementById('contra-out');
+  out.textContent = fix ? 'Korrigiere …' : 'Suche …';
+  try {
+    const r = await fetch('/admin/api/contradictions?days=14', { method: fix ? 'POST' : 'GET', headers: { 'Authorization': 'Bearer ' + pw() } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
+    const nm = (x) => x === 'won' ? 'gewonnen' : 'verloren';
+    out.innerHTML = !d.rows.length ? '✅ Keine Widersprüche in den letzten 14 Tagen.'
+      : (d.applied ? '✅ Korrigiert:<br>' : 'Gefunden (noch nicht geändert):<br>') + d.rows.map((x) => esc(x.match) + ' · Over ' + x.line + ' · war ' + nm(x.was) +
+        ', Endstand ' + x.finalGoals + ' Tore → <b>' + nm(x.now) + '</b>').join('<br>');
+  } catch (e) { out.textContent = e.message; }
+}
+document.getElementById('contra-btn').addEventListener('click', () => contra(false));
+document.getElementById('contra-fix-btn').addEventListener('click', () => contra(true));
+
 document.getElementById('sc-btn').addEventListener('click', async () => {
   const out = document.getElementById('sc-out');
   out.textContent = 'Werte aus …';
@@ -5184,6 +5274,12 @@ export default {
     }
 
     // All settled tips of the last N days as CSV (owner, 31.10.: for the profit / market check per tier).
+    if (url.pathname === "/admin/api/contradictions" && (request.method === "GET" || request.method === "POST")) {
+      if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
+      const days = Math.min(Number(url.searchParams.get("days")) || 14, 60);
+      return jsonResponse(await fixContradictions(env, days, request.method === "POST"));
+    }
+
     if (url.pathname === "/admin/api/results-csv" && request.method === "GET") {
       if (!isAdminAuthed(request, env)) return jsonResponse({ error: "unauthorized" }, 401);
       const days = Math.min(Number(url.searchParams.get("days")) || 30, 365);

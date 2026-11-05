@@ -108,6 +108,8 @@ test("settling: exact goal minute from the feed, WIN banner, free channel, resul
   await cron(worker, env);
   net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "3", ag: "0", sonGolDakikasi: "71", ou_odds: ["1.9", "1.9", "3.5"] }];
   await cron(worker, env);
+  assert.equal(results(env).length, 0, "goal not counted before it has stood 3 minutes");
+  await at(240e3, () => cron(worker, env));
   const edit = net.sent.find((m) => m.method === "editMessageText");
   assert.ok(edit && edit.text.startsWith("✅ WIN – Tor in Minute 71'"), edit && edit.text);
   assert.ok(net.sent.some((m) => m.chat_id === "@MoneyBagAnalyst"), "free channel post");
@@ -134,6 +136,7 @@ test("final score: logged when the match is gone after 85', for won and lost tip
     { id: "n", h: "Gamma", a: "Delta", minute: "86", hg: "2", ag: "0" },
   ];
   await cron(worker, env);
+  await at(240e3, () => cron(worker, env));
   net.feed[0] = { id: "m", h: "Alpha FC", a: "Beta FC", minute: "90", hg: "4", ag: "1", sonGolDakikasi: "89" };
   await cron(worker, env);
   assert.equal(net.sent.filter((m) => m.method === "editMessageText").length, 1, "won tip marked once, not again on later goals");
@@ -161,6 +164,7 @@ test("settling with two goals: minute unknown, banner without minute", async () 
   await cron(worker, env);
   net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "4", ag: "0", sonGolDakikasi: "85", ou_odds: ["1.9", "1.9", "4.5"] }];
   await cron(worker, env);
+  await at(240e3, () => cron(worker, env));
   const edit = net.sent.find((m) => m.method === "editMessageText");
   assert.ok(edit.text.startsWith("✅ WIN – Tor\n"), edit.text);
 });
@@ -186,6 +190,7 @@ test("early warning: bad run of a tier -> one private message per day, none on a
     await cron(worker, env);
     net.feed = [{ id: "m", h: "Alpha FC", a: "Beta FC", minute: "88", hg: "3", ag: "0", sonGolDakikasi: "70", ou_odds: ["1.9", "1.9", "3.5"] }];
     await cron(worker, env);
+    await at(240e3, () => cron(worker, env));
     const warns = net.sent.filter((m) => m.chat_id === "777" && m.text.includes("Frühwarnung"));
     assert.equal(warns.length, expectWarn ? 1 : 0, `wins ${wins}`);
   }
@@ -616,6 +621,7 @@ test("API-Football: tip missing from the guest feed is checked, settled with the
   assert.equal(premiumPosts(net).length, 1, "posted after the API check");
   net.apiLive = [afFix({ id: 77, home: "Drobak-Frogn", away: "Orn Horten", minute: 74, gh: 3, goals: [20, 41, 73] })];
   await at(20 * 60e3, () => cron(worker, env));
+  await at(24 * 60e3, () => cron(worker, env));
   let r = results(env)[0];
   assert.equal(r.result, "won");
   assert.equal(r.resultMinute, 73);
@@ -710,6 +716,7 @@ test("API-Football live odds: first prices, highest over, minute it reached 1.40
   assert.equal(ol.r140, 66);
   net.apiLive = [afFix({ id: 31, home: "Alpha FC", away: "Beta FC", minute: 71, gh: 3, goals: [10, 30, 70] })];
   await at(15 * 60e3, () => cron(worker, env));
+  await at(19 * 60e3, () => cron(worker, env));
   const r = results(env)[0];
   assert.equal(r.result, "won");
   assert.equal(r.oddsOver, 1.3);
@@ -1000,6 +1007,7 @@ test("beta channel: a premium tip is posted again when the real live quote reach
   assert.equal(beta().length, 1, "posted once only");
   net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 77, gh: 3, goals: [10, 30, 76] })];
   await at(380e3, () => cron(worker, env));
+  await at(620e3, () => cron(worker, env));
   const edit = beta().find((m) => m.method === "editMessageText");
   assert.ok(edit && /^✅ WIN – Tor in Minute 76' · \+0,45 Einheiten/.test(edit.text), edit && edit.text);
   const r = results(env)[0];
@@ -1040,4 +1048,54 @@ test("team names: a short form like Man City matches Manchester City when the ot
   net2.apiLive = [afFix({ id: 73, home: "Manchester United", away: "Braga", minute: 57, goals: [10, 30] })];
   await at(130e3, () => cron(worker, env2));
   assert.ok(!tracked(env2)[0] || !tracked(env2)[0].afId);
+});
+
+test("annulled goal (VAR): a goal that disappears within 3 minutes does not settle the tip", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 81, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1);
+  net.apiLive = [afFix({ id: 81, home: "Alpha FC", away: "Beta FC", minute: 64, gh: 3, goals: [10, 30, 63] })];
+  await at(10 * 60e3, () => cron(worker, env)); // goal shown
+  net.apiLive = [afFix({ id: 81, home: "Alpha FC", away: "Beta FC", minute: 66, goals: [10, 30] })];
+  await at(12 * 60e3, () => cron(worker, env)); // taken back by VAR
+  await at(16 * 60e3, () => cron(worker, env));
+  assert.equal(results(env).length, 0, "not settled");
+  assert.ok(!net.sent.some((m) => m.method === "editMessageText"), "no WIN banner");
+  assert.equal(tracked(env)[0].goalSeenAt, undefined);
+  // a real goal later counts after 3 minutes
+  net.apiLive = [afFix({ id: 81, home: "Alpha FC", away: "Beta FC", minute: 80, gh: 3, goals: [10, 30, 79] })];
+  await at(30 * 60e3, () => cron(worker, env));
+  await at(34 * 60e3, () => cron(worker, env));
+  assert.equal(results(env)[0].result, "won");
+  assert.equal(results(env)[0].resultMinute, 79);
+});
+
+test("admin contradictions: lists a won tip whose final score is too low and re-settles it by the final score", async () => {
+  mockNet({ feed: [] });
+  const env = makeEnv();
+  const now = Date.now();
+  const put = (i, r) => {
+    const rec = { tier: "premium", minute: 60, units: 1, quote: 1.4, betPlaced: true, profit: 0.4,
+      postedAt: new Date(now - 5 * 3600e3).toISOString(), settledAt: new Date(now - 4 * 3600e3).toISOString(), ...r };
+    env.ACCESS_KV.store.set(`result:${now - i}:${i}`, JSON.stringify(rec));
+    env.ACCESS_KV.meta.set(`result:${now - i}:${i}`, rec);
+  };
+  put(1, { home: "Feyenoord", away: "Inter", line: 3.5, result: "won", resultMinute: 64, finalGoals: 3 });
+  put(2, { home: "Alpha", away: "Beta", line: 2.5, result: "won", finalGoals: 3 });
+  const view = await (await admin(worker, env, "/admin/api/contradictions")).json();
+  assert.equal(view.rows.length, 1);
+  assert.equal(view.rows[0].now, "lost");
+  assert.equal(results(env).filter((r) => r.result === "lost").length, 0, "view changes nothing");
+  const fix = await (await admin(worker, env, "/admin/api/contradictions", { method: "POST" })).json();
+  assert.equal(fix.applied, true);
+  const fey = results(env).find((r) => r.home === "Feyenoord");
+  assert.equal(fey.result, "lost");
+  assert.equal(fey.profit, -1);
+  assert.equal(fey.corrected, "final");
+  assert.equal((await (await admin(worker, env, "/admin/api/contradictions")).json()).rows.length, 0);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(html.includes("Tor zurückgenommen? Wertung prüfen"));
 });
