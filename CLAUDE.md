@@ -1007,8 +1007,8 @@ then decide per tier on the new days and apply.
   goal). Real check pending: owner uploads the results CSV (30 days) + "Tor-Erwartung CSV" → verify won tips have
   finalGoals > line, lost ≤ line, share with a final score and its source.
 - **Next week (Mon 09.11.) with ~1 week of real odds**: (a) quote rule (post normally only at ≥ Mindestquote, else "⏳ erst ab
-  Quote X setzen"); (b) Over 1.5 Test: 7-day 70.2 % (153/218) at quotes ~1.25 → recommend switching off (owner asked whether
-  now or Monday – no answer yet); (c) league rule: tips with API-Football odds (bigger leagues) hit 86 % (36) vs ~76 % overall –
+  Quote X setzen"); (b) Over 1.5 Test: 7-day 70.2 % (153/218) at quotes ~1.25 → recommend switching off (owner 05.11.: "Warten bis
+  Montag" – decide at the weekly check); (c) league rule: tips with API-Football odds (bigger leagues) hit 86 % (36) vs ~76 % overall –
   check on the larger sample; (d) "wait for 1.40" real (+2.6 u on 24 bets) and Asian +0.25 line (+16 % on 21) – keep watching.
   Results page shows −19.46 u (−7.8 %) at signal quote since 22.10. – kept public on purpose.
 - Annulled-goal correction: owner should tap admin "Tor zurückgenommen? Wertung prüfen" → "Anzeigen" after the beta tip's
