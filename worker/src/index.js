@@ -627,9 +627,17 @@ function sameTeam(x, y) {
   const wy = teamWords(y);
   return teamWords(x).some((w) => wy.some((v) => v === w || (Math.min(w.length, v.length) >= 4 && (v.startsWith(w) || w.startsWith(v)))));
 }
+// Short forms with a 3-letter word ("Man City" / "Manchester City", 04.11.: RB Leipzig – Man City got no live odds):
+// accepted only when the other team matches properly.
+function looseTeam(x, y) {
+  if (sameTeam(x, y)) return true;
+  const wy = teamWords(y);
+  return teamWords(x).some((w) => wy.some((v) => Math.min(w.length, v.length) >= 3 && (v.startsWith(w) || w.startsWith(v))));
+}
 function findApiMatch(list, home, away) {
   if (!Array.isArray(list)) return null;
-  return findMatch(list, home, away) || list.find((m) => sameTeam(m.h, home) && sameTeam(m.a, away)) || null;
+  return findMatch(list, home, away) || list.find((m) => sameTeam(m.h, home) && sameTeam(m.a, away)) ||
+    list.find((m) => (sameTeam(m.h, home) && looseTeam(m.a, away)) || (sameTeam(m.a, away) && looseTeam(m.h, home))) || null;
 }
 
 // Admin "API-Football prüfen" (since 01.11., paid plan): key set, plan, calls used today,

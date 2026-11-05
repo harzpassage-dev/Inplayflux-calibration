@@ -257,6 +257,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-05: **beta check with the results CSV** (owner wondered why Rakhine United – VUE Nay Pyi Taw, O0.5, signal 63', goal 71',
+  got no beta post although their bookmaker showed 1.40 at 70'). Data: that tip had **no API-Football odds at all** (Myanmar,
+  settled via the InPlayFlux feed) → no beta possible. Since beta went live (04.11. evening) 3 of 10 tips had live odds; the two
+  that reached 1.40 were posted (Flamengo – Gremio O3.5, 1.40 at 65', won; The Strongest – Always Ready O3.5, 1.40 at 68', won).
+  Bug found: **RB Leipzig – Man City** had no odds because "Man City" did not match "Manchester City" (3-letter word). Fix:
+  `looseTeam` (3+ letter prefix) is accepted in `findApiMatch` only when the other team matches with `sameTeam`. Test "team
+  names: a short form like Man City …". Beta coverage stays limited to leagues with API-Football live odds.
+
 - 2026-11-04: **beta channel "Quote 1,40"** (owner's idea; recommended setup chosen: owner only for 2–3 weeks, all premium
   tips). Real data before building (tips with API-Football live odds since 01.11. evening, 33 of 68): 1.40 reached then goal
   18, reached then no goal 5, goal before 1.40 6, won with unknown goal minute 4 → 23 bets +2.2 units at 1.40 (tiny n; the

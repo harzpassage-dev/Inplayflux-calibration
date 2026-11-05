@@ -1024,3 +1024,20 @@ test("admin beta test post: says when the variable is missing, sends and edits w
   assert.deepEqual(d, { sent: true, edited: true });
   assert.ok(net.sent.some((m) => m.chat_id === "-200" && m.method === "editMessageText"));
 });
+
+test("team names: a short form like Man City matches Manchester City when the other team matches", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env, card({ home: "RB Leipzig", away: "Man City" }));
+  net.apiLive = [afFix({ id: 71, home: "Manchester United", away: "Chelsea", minute: 57, goals: [10, 30] }),
+    afFix({ id: 72, home: "RB Leipzig", away: "Manchester City", minute: 57, goals: [10, 30] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(tracked(env)[0].afId, 72);
+  // both names only loosely similar → no match
+  const net2 = mockNet({ feed: [] });
+  const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
+  await webhook(worker, env2, card({ home: "Man City", away: "Bra FC" }));
+  net2.apiLive = [afFix({ id: 73, home: "Manchester United", away: "Braga", minute: 57, goals: [10, 30] })];
+  await at(130e3, () => cron(worker, env2));
+  assert.ok(!tracked(env2)[0] || !tracked(env2)[0].afId);
+});
