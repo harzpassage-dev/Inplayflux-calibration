@@ -154,6 +154,8 @@ then decide per tier on the new days and apply.
   calls and live matches. If the server is down or the proxy vars are removed, the worker falls back to the InPlayFlux feed
   (checks fail → unchecked posts, 4 h voids). Server care: unattended upgrades run on their own; a reboot (Hetzner
   "Herunterfahren" → "Einschalten") fixes a missing certificate. Owner should enable 2FA at Hetzner.
+  Call budget (06.11.): ~1,700 by 18:00 before the scene statistics; now live list + odds ~1/min each, pre-match odds
+  ≤ 2,000/day, scene statistics ≤ 2,500/day → ~4,000–6,000 of 7,500. New API uses need their own daily cap.
 - Security: access tokens are 32 hex chars and share the KV namespace with everything else;
   `getAccess` only accepts that format and records with a numeric `expiresAt` (a guessable key
   like `premium:pending` used to open the tool). `/admin/api/*` locks an IP after 10 wrong
@@ -855,7 +857,7 @@ then decide per tier on the new days and apply.
   analyst tool step 3b uses the live line.
 - 2026-10-07: feed token fix, Half-Risiko tier, admin test-post buttons.
 
-## Open items (as of 2026-11-05)
+## Open items (as of 2026-11-06)
 
 - Improvement plan given to the owner 22.10. (profit first), worked through the same evening:
   - Done: (1) automatic quote per tip from the card (`cardQuote`, `waitOutcome`; owner does not bet every tip and
@@ -1038,6 +1040,9 @@ then decide per tier on the new days and apply.
   (check: scenes per day, share with pre-match λ and real price); ~20.11. download "Eigene Szenen CSV" and evaluate here
   (rules by state × pre-match λ × minute, both halves, ROI at the real price) – this also feeds the API-Football cost
   decision (keep the subscription if an own rule beats the quote). Watch the calls/day in "API-Football prüfen".
+  Since 06.11. also first-half scenes (15/20/25/30', "Tor 1. Halbzeit auswerten") and live statistics per scene (SoT, shots,
+  shots in box, corners, possession, xG; ≤ 2,500 calls/day): check "mit Live-Statistik N" rises and calls/day stay < ~6,500
+  (busy Saturdays!); at ~20.11. test whether SoT/xG add anything beyond score + pre-match λ (both halves, real price).
 - Goal-expectation log (since 03.11. evening): once admin "Tor-Erwartung auswerten" shows ≥ 100 matches with a final
   score, compare per λ band expected vs real (≥ 1 / ≥ 2 goals) for market and tempo; if one of them is clearly better
   calibrated, say so in the tool/posts (or drop the weaker). Many rows will lack a final score (API-Football coverage).
