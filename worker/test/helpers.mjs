@@ -42,6 +42,7 @@ export function mockNet(state) {
       state.apiCalls = (state.apiCalls || 0) + 1;
       state.apiUrls = (state.apiUrls || []).concat([[url, opts.headers || {}]]);
       if (url.includes("odds?fixture=")) { state.preCalls = (state.preCalls || 0) + 1; return new Response(JSON.stringify({ errors: [], response: (state.apiPre && state.apiPre[decodeURIComponent(url.split("odds?fixture=")[1].split("&")[0])]) || [] })); }
+      if (url.includes("fixtures/statistics?fixture=")) { state.statCalls = (state.statCalls || 0) + 1; return new Response(JSON.stringify({ errors: [], response: (state.apiStats && state.apiStats[decodeURIComponent(url.split("fixture=")[1])]) || [] })); }
       if (url.includes("odds/live")) return new Response(JSON.stringify({ errors: [], response: state.apiOdds || [] }));
       if (url.includes("fixtures?ids=")) {
         const ids = decodeURIComponent(url.split("fixtures?ids=")[1]).split("-");
@@ -124,4 +125,10 @@ export function afOdds(id, lines) {
 export function afPre(lines, id = 8) {
   return [{ bookmakers: [{ id, name: "Bet365", bets: [{ id: 5, name: "Goals Over/Under",
     values: Object.entries(lines).flatMap(([h, [o, u]]) => [{ value: "Over " + h, odd: String(o) }, { value: "Under " + h, odd: String(u) }]) }] }] }];
+}
+
+// Live statistics (fixtures/statistics?fixture=<id>): { "Shots on Goal": [home, away], ... } in the API's format.
+export function afStats(byType) {
+  const team = (i) => ({ team: { id: i }, statistics: Object.entries(byType).map(([type, v]) => ({ type, value: v[i] })) });
+  return [team(0), team(1)];
 }

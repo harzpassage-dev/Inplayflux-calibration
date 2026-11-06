@@ -258,6 +258,14 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-06: **live statistics per own scene** (owner: "wir erreichen die 7500 nie, müssen das ausnutzen" – 1,671 of 7,500
+  calls by 18:00). `collectScenes` makes one `fixtures/statistics?fixture=<id>` call per scene (`scStats`) and stores
+  "home-away" strings in the metadata: `sot` shots on target, `sh` shots, `sib` shots in the box, `co` corners, `xg` live xG
+  (when the API has it), `po` home possession %. Caps `SC_ST_PER_RUN` 20 / `SC_ST_PER_DAY` 2,500 (`st.ns` in `sc:state`);
+  over the cap the scene is logged without statistics. CSV columns shotsOnTarget, shots, shotsInBox, corners, xgLive,
+  possessionHome; admin evaluation shows "mit Live-Statistik N". Expected total ~4,000–6,000 calls/day. Goal: test at
+  ~20.11. whether pressure (SoT, xG) adds anything over score + pre-match λ on our own data. Test "own scenes" extended.
+
 - 2026-11-06: **own scenes, first half** (owner: "Aufzeichnung in Szenen – Tor 1. Halbzeit"). `collectScenes` now also logs
   matches in `1H` at `SC_CHECKPOINTS_1H` 15/20/25/30' (key `sc:<day>:<id>:h<cp>`, state tag "h20", metadata `hz: 1`); live
   odds from the **first-half** over/under bets (`afOddsHalfLines`: name with "1st/first half" + over/under/goal/total, no

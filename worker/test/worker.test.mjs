@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix, afOdds, afPre } from "./helpers.mjs";
+import { loadWorker, makeEnv, mockNet, webhook, cron, admin, card, tracked, results, afFix, afOdds, afPre, afStats } from "./helpers.mjs";
 
 const worker = await loadWorker();
 const premiumPosts = (net) => net.sent.filter((m) => m.method === "sendMessage" && m.chat_id === "-100");
@@ -923,6 +923,7 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   const env = makeEnv({ APIFOOTBALL_KEY: "k" });
   net.apiPre = { 7: afPre({ "2.5": [1.7, 2.1], "3.5": [2.6, 1.5] }) };
   net.apiOdds = [afOdds(7, { "2.5": [1.4, 2.8], "3.5": [2.2, 1.65] })];
+  net.apiStats = { 7: afStats({ "Shots on Goal": [5, 2], "Total Shots": [11, 6], "Shots insidebox": [7, null], "Corner Kicks": [4, 3], "Ball Possession": ["58%", "42%"], expected_goals: ["1.42", "0.61"], "Yellow Cards": [1, 2] }) };
   net.apiLive = [afFix({ id: 7, minute: 61, goals: [20, 50] }), afFix({ id: 8, status: "1H", minute: 30, gh: 0 })];
   await cron(worker, env);
   const keys = () => [...env.ACCESS_KV.meta.keys()].filter((k) => k.startsWith("sc:2"));
@@ -938,6 +939,13 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   assert.equal(sc.ml, 3.5);
   assert.equal(sc.qo, 1.4, "real price of one more goal (Over 2.5 at 2 goals)");
   assert.equal(sc.lg, "Eliteserien");
+  assert.equal(sc.sot, "5-2", "live statistics: shots on target");
+  assert.equal(sc.sh, "11-6");
+  assert.equal(sc.sib, "7-0");
+  assert.equal(sc.co, "4-3");
+  assert.equal(sc.xg, "1.42-0.61");
+  assert.equal(sc.po, 58);
+  assert.equal(ht.sot, undefined, "no statistics for match 8 in the mock → scene logged without");
   net.apiLive = [afFix({ id: 7, minute: 63, goals: [20, 50] })];
   await cron(worker, env);
   assert.equal(keys().length, 2, "same checkpoint not logged twice");
@@ -945,6 +953,7 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   await cron(worker, env);
   assert.equal(keys().length, 3, "checkpoint 65");
   assert.equal(net.preCalls, 2, "pre-match odds fetched once per match");
+  assert.equal(net.statCalls, 3, "one statistics call per scene");
   assert.equal(net.sent.length, 0, "nothing posted");
   // match ends 3-0 → archive gives the final score
   net.apiLive = [];
@@ -959,6 +968,8 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   assert.equal(d.groups[0].state, "2 Tore");
   const csv = await (await admin(worker, env, "/admin/api/scenes?days=120&csv=1")).text();
   assert.ok(csv.startsWith("time,fixtureId,country,league"));
+  assert.ok(csv.includes("shotsOnTarget,shots,shotsInBox,corners,xgLive,possessionHome") && csv.includes(",5-2,11-6,7-0,4-3,1.42-0.61,58,"));
+  assert.equal(d.withStats, 2);
   assert.equal(csv.trim().split("\n").length, 4);
   assert.equal((await admin(worker, env, "/admin/api/scenes", { headers: { Authorization: "Bearer wrong" } })).status, 401);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();

@@ -1978,8 +1978,39 @@ const SC_WINDOW = 5; // a checkpoint counts for minutes cp .. cp+4 (a missed run
 const SC_STATE_KEY = "sc:state";
 const SC_PRE_PER_RUN = 12;
 const SC_PRE_PER_DAY = 2000;
+// Live statistics per scene (since 06.11., owner: "wir erreichen die 7500 nie, ausnutzen"): shots on target, shots,
+// shots in the box, corners, possession, xG from fixtures/statistics, one call per scene, capped per run and day.
+const SC_ST_PER_RUN = 20;
+const SC_ST_PER_DAY = 2500;
 const SC_TTL_S = 120 * 24 * 60 * 60;
 const r2 = (x) => Math.round(x * 100) / 100;
+
+// fixtures/statistics?fixture=<id> → compact "home-away" strings (metadata stays small), possession of the home team.
+const SC_STAT_TYPES = [["sot", "Shots on Goal"], ["sh", "Total Shots"], ["sib", "Shots insidebox"], ["co", "Corner Kicks"], ["xg", "expected_goals"]];
+function scStats(resp) {
+  if (!Array.isArray(resp) || resp.length < 2) return null;
+  const val = (team, type) => {
+    const e = ((team && team.statistics) || []).find((x) => x && x.type === type);
+    if (!e || e.value == null) return null;
+    const v = parseFloat(String(e.value).replace("%", ""));
+    return Number.isFinite(v) ? v : null;
+  };
+  const out = {};
+  let any = false;
+  for (const [k, type] of SC_STAT_TYPES) {
+    const h = val(resp[0], type);
+    const a = val(resp[1], type);
+    if (h == null && a == null) continue;
+    out[k] = (h ?? 0) + "-" + (a ?? 0);
+    any = true;
+  }
+  const pos = val(resp[0], "Ball Possession");
+  if (pos != null) {
+    out.po = pos;
+    any = true;
+  }
+  return any ? out : null;
+}
 
 // Main line = the line whose over and under prices are closest; λ = Poisson goals implied by it (margin removed).
 function scMainLine(lines, goals = 0) {
@@ -2024,9 +2055,12 @@ async function collectScenes(env, src, now = Date.now()) {
   if (st.d !== day) {
     st.d = day;
     st.n = 0;
+    st.ns = 0;
   }
+  st.ns = st.ns || 0;
   let changed = false;
   let preLeft = Math.min(SC_PRE_PER_RUN, SC_PRE_PER_DAY - st.n);
+  let statLeft = Math.min(SC_ST_PER_RUN, SC_ST_PER_DAY - st.ns);
   let odds;
   for (const f of live) {
     const m = num(f.minute);
@@ -2049,6 +2083,12 @@ async function collectScenes(env, src, now = Date.now()) {
     const g = f.goals;
     const main = scMainLine(lines, g);
     const next = lines[String(g + 0.5)];
+    let stats = null;
+    if (statLeft > 0) { // over the budget: scene is still logged, just without statistics
+      statLeft--;
+      st.ns++;
+      stats = scStats(await fetchApiFootball(env, "fixtures/statistics?fixture=" + encodeURIComponent(f.afId), null));
+    }
     const meta = {
       t: now, id: f.afId, cp, m, g, s: f.score, r: f.redCards, h: String(f.h || "").slice(0, 40), a: String(f.a || "").slice(0, 40),
       c: f.c ? String(f.c).slice(0, 30) : null, lg: f.lg ? String(f.lg).slice(0, 40) : null, lid: f.lid ?? null,
@@ -2056,6 +2096,7 @@ async function collectScenes(env, src, now = Date.now()) {
       ml: main ? main.line : null, mo: main ? main.o : null, mu: main ? main.u : null, mλ: main ? main.lam : null,
       qo: next && next.o != null ? next.o : null, qu: next && next.u != null ? next.u : null,
       ...(firstHalf ? { hz: 1 } : {}),
+      ...(stats || {}),
     };
     await env.ACCESS_KV.put(`sc:${day}:${f.afId}:${tag(cp)}`, "1", { metadata: meta, expirationTtl: SC_TTL_S });
     s.c.push(tag(cp));
@@ -2134,14 +2175,16 @@ function sceneSummary(rows, cp = 60, firstHalf = false) {
     cp, firstHalf, scenes: rows.length, scenesHalf1: rows.filter((r) => r.hz).length, matches: new Set(rows.map((r) => r.id)).size,
     today: new Set(rows.filter((r) => new Date(r.t).toISOString().slice(0, 10) === today).map((r) => r.id)).size,
     withPre: rows.filter((r) => r.pλ != null).length, withQuote: rows.filter((r) => r.qo).length,
+    withStats: rows.filter((r) => r.sot || r.sh || r.co).length,
     all: sceneGroup(at), groups,
   };
 }
-const SC_CSV = ["t", "id", "c", "lg", "lid", "h", "a", "hz", "cp", "m", "s", "g", "r", "pl", "pλ", "ml", "mo", "mu", "mλ", "qo", "qu", "pm", "final", "more"];
+const SC_CSV = ["t", "id", "c", "lg", "lid", "h", "a", "hz", "cp", "m", "s", "g", "r", "pl", "pλ", "ml", "mo", "mu", "mλ", "qo", "qu", "sot", "sh", "sib", "co", "xg", "po", "pm", "final", "more"];
 function scenesCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
   const head = ["time", "fixtureId", "country", "league", "leagueId", "home", "away", "firstHalf", "checkpoint", "minute", "score", "goals", "redCards",
-    "preLine", "preLambda", "liveLine", "liveOver", "liveUnder", "liveLambdaRest", "nextGoalOver", "nextGoalUnder", "marketP", "finalGoals", "moreGoal"];
+    "preLine", "preLambda", "liveLine", "liveOver", "liveUnder", "liveLambdaRest", "nextGoalOver", "nextGoalUnder",
+    "shotsOnTarget", "shots", "shotsInBox", "corners", "xgLive", "possessionHome", "marketP", "finalGoals", "moreGoal"];
   return [head.join(",")].concat(rows.map((r) => SC_CSV.map((k) => cell(k === "t" ? new Date(r.t).toISOString() : r[k])).join(","))).join("\n") + "\n";
 }
 
@@ -4668,7 +4711,7 @@ async function scenesReport(cpParam) {
     const head = '<tr><th>Stand</th><th>Tor-Erwartung vor dem Spiel</th><th>Szenen</th><th>' + (d.firstHalf ? 'mit Halbzeitstand' : 'mit Endstand') + '</th><th>' +
       (d.firstHalf ? 'noch ein Tor bis zur Pause' : 'noch ein Tor') + ' (1./2. Hälfte)</th><th>Markt</th><th>Ø Quote</th><th>ROI</th></tr>';
     out.innerHTML = 'Gesammelt: ' + d.scenes + ' Szenen aus ' + d.matches + ' Spielen (heute ' + d.today + ' Spiele) · mit Vor-Spiel-Erwartung ' + d.withPre +
-      ' · mit echter Quote ' + d.withQuote + ' · davon 1. Halbzeit ' + d.scenesHalf1 + '<br>' + (d.firstHalf ? '1. Halbzeit, ' : '') + 'Minute ' + d.cp + ', alle: ' + (d.all.settled < 300 ? '<b>unter 300 mit Endstand – noch kein Urteil</b>' : '') +
+      ' · mit echter Quote ' + d.withQuote + ' · mit Live-Statistik ' + (d.withStats || 0) + ' · davon 1. Halbzeit ' + d.scenesHalf1 + '<br>' + (d.firstHalf ? '1. Halbzeit, ' : '') + 'Minute ' + d.cp + ', alle: ' + (d.all.settled < 300 ? '<b>unter 300 mit Endstand – noch kein Urteil</b>' : '') +
       '<table>' + head + '<tr><td colspan="2">alle</td>' + cell(d.all) + '</tr>' +
       d.groups.map((g) => '<tr><td>' + g.state + '</td><td>' + g.pre + '</td>' + cell(g) + '</tr>').join('') + '</table>' +
       'ROI = jede Szene mit 1 Einheit auf „noch ein Tor“ zur echten Quote. Nur Testdaten, es wird nichts gepostet.';
