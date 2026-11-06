@@ -567,11 +567,17 @@ function afEvents(events, homeId) {
 // in string form, suspended prices left out). Bet names differ, so every full-match goal total counts.
 const AF_OU_BET = /over\/?under|total goals|goals over|asian total|match goals|goal line/i;
 const AF_OU_SKIP = /1st|2nd|first|second|half|home|away|team|corner|card|booking|exact/i;
-function afOddsLines(entry) {
+// First-half goal totals (since 06.11., own scenes "Tor 1. Halbzeit"): "… (1st Half)", "1st Half Goals" etc.
+const AF_HT_BET = /(1st|first)\s*half/i;
+const AF_HT_SKIP = /2nd|second|home|away|team|corner|card|booking|exact|result|winner|both/i;
+function afOddsHalfLines(entry) {
+  return afOddsLines(entry, (name) => AF_HT_BET.test(name) && /over|under|goal|total/i.test(name) && !AF_HT_SKIP.test(name));
+}
+function afOddsLines(entry, pick = null) {
   const lines = {};
   for (const bet of (entry && entry.odds) || []) {
     const name = String(bet.name || "");
-    if (!AF_OU_BET.test(name) || AF_OU_SKIP.test(name)) continue;
+    if (pick ? !pick(name) : !AF_OU_BET.test(name) || AF_OU_SKIP.test(name)) continue;
     for (const v of bet.values || []) {
       if (v.suspended) continue;
       const val = String(v.value || "");
@@ -1852,6 +1858,7 @@ function afSource(env) {
   const days = new Map();
   let idLeft = AF_ID_LOOKUPS_PER_RUN;
   let oddsMap;
+  let halfMap;
   return {
     async live() {
       if (live === undefined) live = await fetchApiFootballLive(env);
@@ -1871,8 +1878,14 @@ function afSource(env) {
       if (oddsMap === undefined) {
         const raw = await fetchApiFootball(env, "odds/live", null);
         oddsMap = raw ? new Map(raw.map((e) => [e.fixture && e.fixture.id, afOddsLines(e)])) : null;
+        halfMap = raw ? new Map(raw.map((e) => [e.fixture && e.fixture.id, afOddsHalfLines(e)])) : null;
       }
       return oddsMap;
+    },
+    // First-half over/under lines from the same odds/live call.
+    async oddsHalf() {
+      await this.odds();
+      return halfMap;
     },
     async ids(list) {
       return fetchApiFootball(env, "fixtures?ids=" + list.join("-"));
@@ -1958,6 +1971,9 @@ async function listMatches(env, days) {
 // kickoff, `odds?fixture=`, once per match, cached in sc:state). One KV key per scene sc:<day>:<id>:<cp>, record as
 // metadata (120 days). `sceneRows` joins them with the own match archive afm:* (final score) for the evaluation.
 const SC_CHECKPOINTS = [55, 60, 65, 70];
+// First half (since 06.11., owner: "Tor 1. Halbzeit"): outcome = another goal before half-time (archive HT score),
+// odds = the first-half over/under lines from odds/live when offered.
+const SC_CHECKPOINTS_1H = [15, 20, 25, 30];
 const SC_WINDOW = 5; // a checkpoint counts for minutes cp .. cp+4 (a missed run is caught up)
 const SC_STATE_KEY = "sc:state";
 const SC_PRE_PER_RUN = 12;
@@ -2014,10 +2030,12 @@ async function collectScenes(env, src, now = Date.now()) {
   let odds;
   for (const f of live) {
     const m = num(f.minute);
-    if (f.afId == null || f.status !== "2H" || m == null) continue;
+    const firstHalf = f.status === "1H";
+    if (f.afId == null || (f.status !== "2H" && !firstHalf) || m == null) continue;
     const s = st.m[f.afId] || (st.m[f.afId] = { c: [], t: now });
     s.t = now;
-    const cp = SC_CHECKPOINTS.filter((c) => m >= c && m < c + SC_WINDOW && !s.c.includes(c)).pop();
+    const tag = (c) => (firstHalf ? "h" + c : c); // first-half checkpoints are kept as "h20" in the state
+    const cp = (firstHalf ? SC_CHECKPOINTS_1H : SC_CHECKPOINTS).filter((c) => m >= c && m < c + SC_WINDOW && !s.c.includes(tag(c))).pop();
     if (cp == null) continue;
     if (s.p === undefined) {
       if (preLeft <= 0) continue; // over this run's budget: try again next minute (still in the window)
@@ -2026,8 +2044,8 @@ async function collectScenes(env, src, now = Date.now()) {
       const resp = await fetchApiFootball(env, "odds?fixture=" + encodeURIComponent(f.afId) + "&bet=5", null);
       if (resp) s.p = scPreFromOdds(resp) || 0; // 0 = no pre-match odds there; API error → scene without, retried later
     }
-    if (odds === undefined) odds = await src.odds();
-    const lines = (odds && odds.get(f.afId)) || {};
+    if (odds === undefined) odds = firstHalf ? null : await src.odds();
+    const lines = (firstHalf ? (await src.oddsHalf()) || new Map() : odds || new Map()).get(f.afId) || {};
     const g = f.goals;
     const main = scMainLine(lines, g);
     const next = lines[String(g + 0.5)];
@@ -2037,9 +2055,10 @@ async function collectScenes(env, src, now = Date.now()) {
       pl: s.p ? s.p[0] : null, pλ: s.p ? s.p[1] : null,
       ml: main ? main.line : null, mo: main ? main.o : null, mu: main ? main.u : null, mλ: main ? main.lam : null,
       qo: next && next.o != null ? next.o : null, qu: next && next.u != null ? next.u : null,
+      ...(firstHalf ? { hz: 1 } : {}),
     };
-    await env.ACCESS_KV.put(`sc:${day}:${f.afId}:${cp}`, "1", { metadata: meta, expirationTtl: SC_TTL_S });
-    s.c.push(cp);
+    await env.ACCESS_KV.put(`sc:${day}:${f.afId}:${tag(cp)}`, "1", { metadata: meta, expirationTtl: SC_TTL_S });
+    s.c.push(tag(cp));
     changed = true;
   }
   for (const [id, s] of Object.entries(st.m)) {
@@ -2062,13 +2081,17 @@ async function sceneRows(env, days) {
     cursor = list.list_complete ? null : list.cursor;
   } while (cursor);
   const fin = new Map();
+  const ht = new Map();
   for (const x of await listMatches(env, days + 1)) {
     const mm = String(x.ft || "").match(/^(\d+)-(\d+)$/);
     if (/^(FT|AET|PEN)$/.test(x.st || "") && mm) fin.set(x.id, +mm[1] + +mm[2]);
+    const hm = String(x.ht || "").match(/^(\d+)-(\d+)$/);
+    if (hm) ht.set(x.id, +hm[1] + +hm[2]);
   }
   recs.sort((x, y) => x.t - y.t);
   return recs.map((r) => {
-    const final = fin.has(r.id) ? fin.get(r.id) : null;
+    const src = r.hz ? ht : fin; // first-half scenes are decided by the half-time score
+    const final = src.has(r.id) ? src.get(r.id) : null;
     let pm = null;
     if (r.qo && r.qu) pm = 1 / r.qo / (1 / r.qo + 1 / r.qu);
     else if (r.mλ != null) pm = 1 - Math.exp(-r.mλ);
@@ -2097,8 +2120,8 @@ function sceneGroup(rows) {
   }
   return out;
 }
-function sceneSummary(rows, cp = 60) {
-  const at = rows.filter((r) => r.cp === cp);
+function sceneSummary(rows, cp = 60, firstHalf = false) {
+  const at = rows.filter((r) => r.cp === cp && !!r.hz === firstHalf);
   const groups = [];
   for (const [sn, sf] of SC_STATES) {
     for (const [pn, pf] of SC_PRE) {
@@ -2108,16 +2131,16 @@ function sceneSummary(rows, cp = 60) {
   }
   const today = new Date().toISOString().slice(0, 10);
   return {
-    cp, scenes: rows.length, matches: new Set(rows.map((r) => r.id)).size,
+    cp, firstHalf, scenes: rows.length, scenesHalf1: rows.filter((r) => r.hz).length, matches: new Set(rows.map((r) => r.id)).size,
     today: new Set(rows.filter((r) => new Date(r.t).toISOString().slice(0, 10) === today).map((r) => r.id)).size,
     withPre: rows.filter((r) => r.pλ != null).length, withQuote: rows.filter((r) => r.qo).length,
     all: sceneGroup(at), groups,
   };
 }
-const SC_CSV = ["t", "id", "c", "lg", "lid", "h", "a", "cp", "m", "s", "g", "r", "pl", "pλ", "ml", "mo", "mu", "mλ", "qo", "qu", "pm", "final", "more"];
+const SC_CSV = ["t", "id", "c", "lg", "lid", "h", "a", "hz", "cp", "m", "s", "g", "r", "pl", "pλ", "ml", "mo", "mu", "mλ", "qo", "qu", "pm", "final", "more"];
 function scenesCsv(rows) {
   const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
-  const head = ["time", "fixtureId", "country", "league", "leagueId", "home", "away", "checkpoint", "minute", "score", "goals", "redCards",
+  const head = ["time", "fixtureId", "country", "league", "leagueId", "home", "away", "firstHalf", "checkpoint", "minute", "score", "goals", "redCards",
     "preLine", "preLambda", "liveLine", "liveOver", "liveUnder", "liveLambdaRest", "nextGoalOver", "nextGoalUnder", "marketP", "finalGoals", "moreGoal"];
   return [head.join(",")].concat(rows.map((r) => SC_CSV.map((k) => cell(k === "t" ? new Date(r.t).toISOString() : r[k])).join(","))).join("\n") + "\n";
 }
@@ -3989,7 +4012,7 @@ async function handleAdminPage() {
   <div class="card">
     <h3>Eigene Szenen (API-Football)</h3>
     <p class="hint">Stilles Mitschreiben seit 04.11.: jedes Live-Spiel in Minute 55/60/65/70 mit echter Quote. Es wird nichts gepostet.</p>
-    <div class="row"><button id="sc-btn">Eigene Szenen auswerten (Minute 60)</button><button id="sc-csv-btn" class="sec">Eigene Szenen CSV</button></div>
+    <div class="row"><button id="sc-btn">Eigene Szenen auswerten (Minute 60)</button><button id="sc-ht-btn">Tor 1. Halbzeit auswerten (Minute 20)</button><button id="sc-csv-btn" class="sec">Eigene Szenen CSV</button></div>
     <div class="out" id="sc-out"></div>
   </div>
   <div class="card">
@@ -4632,24 +4655,27 @@ async function contra(fix) {
 document.getElementById('contra-btn').addEventListener('click', () => contra(false));
 document.getElementById('contra-fix-btn').addEventListener('click', () => contra(true));
 
-document.getElementById('sc-btn').addEventListener('click', async () => {
+async function scenesReport(cpParam) {
   const out = document.getElementById('sc-out');
   out.textContent = 'Werte aus …';
   try {
-    const r = await fetch('/admin/api/scenes?days=30&cp=60', { headers: { 'Authorization': 'Bearer ' + pw() } });
+    const r = await fetch('/admin/api/scenes?days=30&cp=' + cpParam, { headers: { 'Authorization': 'Bearer ' + pw() } });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || ('Fehler ' + r.status));
     const cell = (g) => '<td>' + g.n + '</td><td>' + g.settled + '</td><td>' + (g.hit != null ? g.hit + ' %' : '–') +
       (g.halves ? ' (' + g.halves[0] + ' / ' + g.halves[1] + ')' : '') + '</td><td>' + (g.market != null ? g.market + ' %' : '–') +
       '</td><td>' + (g.avgQuote != null ? g.avgQuote + ' (' + g.priced + ')' : '–') + '</td><td>' + (g.roi != null ? (g.roi > 0 ? '+' : '') + g.roi + ' %' : '–') + '</td>';
-    const head = '<tr><th>Stand</th><th>Tor-Erwartung vor dem Spiel</th><th>Szenen</th><th>mit Endstand</th><th>noch ein Tor (1./2. Hälfte)</th><th>Markt</th><th>Ø Quote</th><th>ROI</th></tr>';
+    const head = '<tr><th>Stand</th><th>Tor-Erwartung vor dem Spiel</th><th>Szenen</th><th>' + (d.firstHalf ? 'mit Halbzeitstand' : 'mit Endstand') + '</th><th>' +
+      (d.firstHalf ? 'noch ein Tor bis zur Pause' : 'noch ein Tor') + ' (1./2. Hälfte)</th><th>Markt</th><th>Ø Quote</th><th>ROI</th></tr>';
     out.innerHTML = 'Gesammelt: ' + d.scenes + ' Szenen aus ' + d.matches + ' Spielen (heute ' + d.today + ' Spiele) · mit Vor-Spiel-Erwartung ' + d.withPre +
-      ' · mit echter Quote ' + d.withQuote + '<br>Minute ' + d.cp + ', alle: ' + (d.all.settled < 300 ? '<b>unter 300 mit Endstand – noch kein Urteil</b>' : '') +
+      ' · mit echter Quote ' + d.withQuote + ' · davon 1. Halbzeit ' + d.scenesHalf1 + '<br>' + (d.firstHalf ? '1. Halbzeit, ' : '') + 'Minute ' + d.cp + ', alle: ' + (d.all.settled < 300 ? '<b>unter 300 mit Endstand – noch kein Urteil</b>' : '') +
       '<table>' + head + '<tr><td colspan="2">alle</td>' + cell(d.all) + '</tr>' +
       d.groups.map((g) => '<tr><td>' + g.state + '</td><td>' + g.pre + '</td>' + cell(g) + '</tr>').join('') + '</table>' +
       'ROI = jede Szene mit 1 Einheit auf „noch ein Tor“ zur echten Quote. Nur Testdaten, es wird nichts gepostet.';
   } catch (e) { out.textContent = e.message; }
-});
+}
+document.getElementById('sc-btn').addEventListener('click', () => scenesReport('60'));
+document.getElementById('sc-ht-btn').addEventListener('click', () => scenesReport('h20'));
 
 document.getElementById('sc-csv-btn').addEventListener('click', async () => {
   const out = document.getElementById('sc-out');
@@ -5276,8 +5302,11 @@ export default {
       const days = Math.min(Number(url.searchParams.get("days")) || 14, 120);
       const rows = await sceneRows(env, days);
       if (url.searchParams.get("csv")) return new Response(scenesCsv(rows), { headers: { "Content-Type": "text/csv; charset=utf-8" } });
-      const cp = SC_CHECKPOINTS.includes(Number(url.searchParams.get("cp"))) ? Number(url.searchParams.get("cp")) : 60;
-      return jsonResponse({ days, ...sceneSummary(rows, cp) });
+      const raw = String(url.searchParams.get("cp") || "60");
+      const firstHalf = raw.startsWith("h");
+      const n = Number(raw.replace(/^h/, ""));
+      const cp = (firstHalf ? SC_CHECKPOINTS_1H : SC_CHECKPOINTS).includes(n) ? n : firstHalf ? 20 : 60;
+      return jsonResponse({ days, ...sceneSummary(rows, cp, firstHalf) });
     }
 
     // Own match archive from API-Football as CSV (owner downloads, uploads here for analyses).

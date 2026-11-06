@@ -258,6 +258,16 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-06: **own scenes, first half** (owner: "Aufzeichnung in Szenen – Tor 1. Halbzeit"). `collectScenes` now also logs
+  matches in `1H` at `SC_CHECKPOINTS_1H` 15/20/25/30' (key `sc:<day>:<id>:h<cp>`, state tag "h20", metadata `hz: 1`); live
+  odds from the **first-half** over/under bets (`afOddsHalfLines`: name with "1st/first half" + over/under/goal/total, no
+  team/corner/card/2nd; `afSource().oddsHalf()` from the same odds/live call), main line + next-goal price as for 2H; pre-match
+  λ shared with the match. `sceneRows` decides first-half scenes by the archive's **half-time score** (`afm` `ht`), 2H scenes by
+  the final score. Admin "🔬 Auswertungen" → **"Tor 1. Halbzeit auswerten (Minute 20)"** (`/admin/api/scenes?cp=h20`, column
+  "noch ein Tor bis zur Pause"); CSV gets a `firstHalf` column. Extra calls: pre-match lookups now start in the 1st half (same
+  count per match, cap 2,000/day). Background: HT-goal InPlayFlux cards were 66 % (466) with low HT odds – not a tier; this
+  measures it on our own data with real prices. Test "own scenes, first half"; the 2H scene test now expects the 1H scene too.
+
 - 2026-11-05: **quote in the WIN/LOST banner** (owner: "die Quote bei Tor eintragen"). `recordOdds` keeps the last own-line
   over price + minute (`t.ol.lq/lqm`); prices are only recorded while the needed goal has not fallen (live goals ≤ line), so
   the post-goal 1.01 never overwrites it. `resultBanner` → `bannerQuote`: won "✅ WIN – Tor in Minute 72' · Quote kurz vor dem

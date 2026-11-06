@@ -926,8 +926,11 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   net.apiLive = [afFix({ id: 7, minute: 61, goals: [20, 50] }), afFix({ id: 8, status: "1H", minute: 30, gh: 0 })];
   await cron(worker, env);
   const keys = () => [...env.ACCESS_KV.meta.keys()].filter((k) => k.startsWith("sc:2"));
-  assert.equal(keys().length, 1, "one scene: match 7 at checkpoint 60, the first-half match not");
-  const sc = env.ACCESS_KV.meta.get(keys()[0]);
+  assert.equal(keys().length, 2, "match 7 at checkpoint 60 and the first-half match 8 at checkpoint 30");
+  const ht = env.ACCESS_KV.meta.get(keys().find((k) => k.endsWith(":8:h30")));
+  assert.equal(ht.hz, 1);
+  assert.equal(ht.cp, 30);
+  const sc = env.ACCESS_KV.meta.get(keys().find((k) => k.endsWith(":7:60")));
   assert.equal(sc.cp, 60);
   assert.equal(sc.g, 2);
   assert.equal(sc.pl, 2.5);
@@ -937,26 +940,26 @@ test("own scenes: API-Football live matches are logged once per checkpoint (shad
   assert.equal(sc.lg, "Eliteserien");
   net.apiLive = [afFix({ id: 7, minute: 63, goals: [20, 50] })];
   await cron(worker, env);
-  assert.equal(keys().length, 1, "same checkpoint not logged twice");
+  assert.equal(keys().length, 2, "same checkpoint not logged twice");
   net.apiLive = [afFix({ id: 7, minute: 66, goals: [20, 50] })];
   await cron(worker, env);
-  assert.equal(keys().length, 2, "checkpoint 65");
-  assert.equal(net.preCalls, 1, "pre-match odds fetched once per match");
+  assert.equal(keys().length, 3, "checkpoint 65");
+  assert.equal(net.preCalls, 2, "pre-match odds fetched once per match");
   assert.equal(net.sent.length, 0, "nothing posted");
   // match ends 3-0 → archive gives the final score
   net.apiLive = [];
   net.apiById = { 7: afFix({ id: 7, status: "FT", minute: 90, gh: 3, ga: 0, goals: [20, 50, 80] }) };
   await cron(worker, env);
   const d = await (await admin(worker, env, "/admin/api/scenes?days=120&cp=60")).json();
-  assert.equal(d.scenes, 2);
-  assert.equal(d.matches, 1);
+  assert.equal(d.scenes, 3);
+  assert.equal(d.matches, 2);
   assert.equal(d.all.settled, 1);
   assert.equal(d.all.hit, 100);
   assert.equal(d.all.roi, 40);
   assert.equal(d.groups[0].state, "2 Tore");
   const csv = await (await admin(worker, env, "/admin/api/scenes?days=120&csv=1")).text();
   assert.ok(csv.startsWith("time,fixtureId,country,league"));
-  assert.equal(csv.trim().split("\n").length, 3);
+  assert.equal(csv.trim().split("\n").length, 4);
   assert.equal((await admin(worker, env, "/admin/api/scenes", { headers: { Authorization: "Bearer wrong" } })).status, 401);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Eigene Szenen auswerten") && html.includes("Eigene Szenen CSV"));
@@ -1133,4 +1136,32 @@ test("WIN/LOST banner shows the real quote just before the goal (or the highest 
   await at(40 * 60e3, () => cron(worker, env2));
   const e2 = net2.sent.find((m) => m.method === "editMessageText" && m.chat_id === "-100");
   assert.ok(e2 && e2.text.startsWith("❌ LOST – kein weiteres Tor · höchste Quote: 3,10 (beim Signal: 1,30)"), e2 && e2.text);
+});
+
+test("own scenes, first half: logged at 15/20/25/30' with first-half odds, decided by the half-time score", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k" });
+  net.apiPre = { 9: afPre({ "2.5": [1.8, 2.0] }) };
+  const odds = { fixture: { id: 9 }, odds: [
+    { id: 36, name: "Over/Under Line", values: [{ value: "Over", odd: "1.9", handicap: "2.5" }, { value: "Under", odd: "1.9", handicap: "2.5" }] },
+    { id: 50, name: "1st Half Over/Under", values: [{ value: "Over", odd: "1.6", handicap: "0.5" }, { value: "Under", odd: "2.2", handicap: "0.5" }] },
+  ] };
+  net.apiOdds = [odds];
+  net.apiLive = [afFix({ id: 9, status: "1H", minute: 21, gh: 0, ga: 0 })];
+  await cron(worker, env);
+  const k = [...env.ACCESS_KV.meta.keys()].find((x) => x.startsWith("sc:2") && x.endsWith(":9:h20"));
+  const sc = env.ACCESS_KV.meta.get(k);
+  assert.equal(sc.hz, 1);
+  assert.equal(sc.qo, 1.6, "first-half over 0.5, not the full-match line");
+  // match finishes, half-time 1-0 → another goal before the break
+  net.apiLive = [];
+  net.apiById = { 9: afFix({ id: 9, status: "FT", minute: 90, gh: 1, ga: 1, goals: [40, 70] }) };
+  await cron(worker, env);
+  const d = await (await admin(worker, env, "/admin/api/scenes?days=120&cp=h20")).json();
+  assert.equal(d.firstHalf, true);
+  assert.equal(d.all.settled, 1);
+  assert.equal(d.all.hit, 100);
+  assert.equal(d.all.roi, 60);
+  const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(html.includes("Tor 1. Halbzeit auswerten"));
 });
