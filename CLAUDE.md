@@ -260,6 +260,22 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-07: **higher quotes – measured waiting levels + own API signal in the beta channel** (owner: "Wir brauchen höhere
+  Quoten … kann man da ein Signal testen im Beta", yes to both). Results CSV 05.11. (36 tips with real live odds): at once Ø 1.26
+  +9 %, wait 1.40 24 bets +11 %, 1.50 18 +8 %, 1.60 16 +10 %, 1.80 16 +24 % – far too small. (1) `recordOdds` stores the first
+  minute the own line reached each of `WAIT_LEVELS` 1.50/1.60/1.80 (`t.ol.r150/r160/r180`, only before the goal), results get
+  `odds150Minute/odds160Minute/odds180Minute` (CSV too), `summarize().waitLevels` = per level tips with live odds, bets
+  (reached), won, profit at that quote; admin "Ergebnisse" shows "Warten bis echte Quote 1,5/1,6/1,8 (gemessen)". Nothing posted.
+  (2) **Own API signal** `maybePostApiSignal` (from `collectScenes` at checkpoint 60, minute 60–64, independent of InPlayFlux):
+  no red card, real price of one more goal `qo` ≥ `API_SIG_MIN_QUOTE` 1.40 and either 0:0 with pre-match main line ≥ 3.5
+  (InPlayFlux 0:0 cards at line ≥ 3.5: 81.5 %, 325) or 1 goal with line ≥ 3.75, men only (85 %, 89) → post **only to
+  BETA_CHANNEL_ID** ("🧪 BETA · Eigenes API-Signal (Test)", match, league, minute + score, Over line, live quote, pre-match goal
+  expectation, 1 unit, backtest line) and track as **tier "api"** (`t.beta` set, so `markBetaPost` edits WIN/LOST, no premium
+  edit). Tier "api" is excluded from the public pages (`publicRow` on `/` and `/ergebnisse`), the free channel, the early warning
+  and all normal numbers in `summarize` (own `summarize().api` = n, won, profit at the beta quote, Ø quote; admin line
+  "🧪 Eigenes API-Signal (nur Beta)" and morning report). Only leagues with API-Football live odds. Verdict at ≥ 50 tips.
+  Tests "own API signal …", "waiting for a higher real quote …"; beta test checks result metadata < 1024 bytes (~650 now).
+
 - 2026-11-07: weekly routine with export 11-07 (Saturday upload; `data/inplayflux_sinyaller_2026-11-07.csv`, shift 0, 16,828
   signals), models refitted, thresholds unchanged, goal score points **not** changed (script proposed min_63_65 −5,
   recent_goal 0; AUC 0.584), badge "Kalibriert: 07.11.2026 · 16.828 Signale", report `reports/2026-11-07-recalibration.md`.
@@ -1043,6 +1059,8 @@ then decide per tier on the new days and apply.
 - Annulled-goal correction: owner should tap admin "Tor zurückgenommen? Wertung prüfen" → "Anzeigen" after the beta tip's
   match (05.11., 2:0 annulled) has its final score, then "Nach Endstand korrigieren" (re-settles by final score; Telegram posts
   by hand). Owner had asked to remove it from the stats; advised to settle by final score instead – confirm with the owner.
+- Own API signal + waiting levels (since 07.11.): check admin "Ergebnisse" lines "Eigenes API-Signal" and "Warten bis echte
+  Quote 1,5/1,6/1,8"; verdict at ≥ 50 bets each; if the API signal beats its quote, offer it to premium (owner's yes).
 - Beta channel (**live since 04.11. ~19:30 Berlin**: owner created the private channel, bot is admin, `BETA_CHANNEL_ID` set, admin test "✅ Senden und Bearbeiten klappen"): check the "🧪 Beta-Kanal" line in admin / morning report;
   at ≥ 50 beta bets decide whether premium customers get it (or whether premium posts should only go out at ≥ 1.40).
 - Own scenes (since 04.11. evening, step 1 of the own filter): first upload of "Eigene Szenen CSV" ~12.11.; owner taps "Eigene Szenen auswerten" now and then

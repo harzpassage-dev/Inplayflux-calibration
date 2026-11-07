@@ -1027,6 +1027,7 @@ test("beta channel: a premium tip is posted again when the real live quote reach
   const r = results(env)[0];
   assert.equal(r.betaQuote, 1.45);
   assert.equal(r.betaMinute, 68);
+  for (const [k, m] of env.ACCESS_KV.meta) if (k.startsWith("result:")) assert.ok(JSON.stringify(m).length < 1024, "KV metadata limit " + JSON.stringify(m).length);
   // without BETA_CHANNEL_ID nothing goes to a beta channel
   const net2 = mockNet({ feed: [] });
   const env2 = makeEnv({ APIFOOTBALL_KEY: "k" });
@@ -1175,4 +1176,70 @@ test("own scenes, first half: logged at 15/20/25/30' with first-half odds, decid
   assert.equal(d.all.roi, 60);
   const html = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
   assert.ok(html.includes("Tor 1. Halbzeit auswerten"));
+});
+
+test("own API signal: 0:0 at minute 60 with high pre-match goal line and real quote ≥ 1.40 goes to the beta channel only; higher waiting quotes are measured", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k", BETA_CHANNEL_ID: "-200", FREE_CHANNEL_ID: "-300" });
+  net.apiPre = { 9: afPre({ "3.5": [1.9, 1.9] }), 10: afPre({ "2.5": [1.9, 1.9] }), 11: afPre({ "3.5": [1.9, 1.9] }) };
+  net.apiOdds = [afOdds(9, { "0.5": [1.45, 2.6], "1.5": [2.6, 1.45] }), afOdds(10, { "0.5": [1.6, 2.2] }), afOdds(11, { "0.5": [1.25, 3.5] })];
+  net.apiLive = [afFix({ id: 9, minute: 61, gh: 0, ga: 0 }), afFix({ id: 10, home: "Gamma", away: "Delta", minute: 61, gh: 0, ga: 0 }),
+    afFix({ id: 11, home: "Epsilon", away: "Zeta", minute: 61, gh: 0, ga: 0 })];
+  await cron(worker, env);
+  const beta = () => net.sent.filter((m) => m.chat_id === "-200");
+  assert.equal(beta().length, 1, "only match 9: match 10 has a low pre-match line, match 11 a quote below 1.40");
+  assert.match(beta()[0].text, /Eigenes API-Signal \(Test\)/);
+  assert.match(beta()[0].text, /Over 0,5 \(noch 1 Tor\)/);
+  assert.match(beta()[0].text, /Live-Quote jetzt: 1,45/);
+  assert.match(beta()[0].text, /Tor-Erwartung vor dem Spiel: 3,5 Tore/);
+  assert.equal(premiumPosts(net).length, 0, "nothing in the premium channel");
+  const t = tracked(env).find((x) => x.tier === "api");
+  assert.ok(t && t.afId === 9 && t.line === 0.5);
+  await at(60e3, () => cron(worker, env));
+  assert.equal(beta().length, 1, "posted once");
+  // quote rises to 1.85 at minute 70 (measured: 1.50 / 1.60 / 1.80 reached), goal at 75'
+  net.apiLive = [afFix({ id: 9, minute: 70, gh: 0, ga: 0 })];
+  net.apiOdds = [afOdds(9, { "0.5": [1.85, 1.9] })];
+  await at(120e3, () => cron(worker, env));
+  net.apiLive = [afFix({ id: 9, minute: 76, gh: 1, ga: 0, goals: [75] })];
+  await at(180e3, () => cron(worker, env));
+  await at(420e3, () => cron(worker, env));
+  const edit = beta().find((m) => m.method === "editMessageText");
+  assert.ok(edit && /^✅ WIN – Tor in Minute 75' · \+0,45 Einheiten/.test(edit.text), edit && edit.text);
+  const r = results(env).find((x) => x.tier === "api");
+  assert.equal(r.result, "won");
+  assert.equal(r.betaQuote, 1.45);
+  assert.equal(r.odds150Minute, 70);
+  assert.equal(r.odds180Minute, 70);
+  assert.equal(net.sent.filter((m) => m.chat_id === "-300").length, 0, "not in the free channel");
+  const d = await (await admin(worker, env, "/admin/api/results?days=7")).json();
+  assert.equal(d.summary.api.n, 1);
+  assert.equal(d.summary.api.profit, 0.45);
+  assert.equal(d.summary.all.n, 0, "not in the normal numbers");
+  assert.ok(d.summary.waitLevels.find((w) => w.q === 1.8), "wait levels in the summary");
+  const page = await (await worker.fetch(new Request("https://moneybag-signals.com/ergebnisse"), env, {})).text();
+  assert.doesNotMatch(page, /Alpha/, "never on the public results page");
+  const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();
+  assert.ok(csv.split("\n")[0].includes("odds150Minute,odds160Minute,odds180Minute"));
+});
+
+test("waiting for a higher real quote: summarize counts bets that reached 1.50/1.60/1.80 before the goal", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv();
+  const now = Date.now();
+  const put = (i, r) => {
+    const rec = { tier: "premium", line: 2.5, minute: 60, units: 1, home: "H" + i, away: "A" + i, postedAt: new Date(now - 5 * 3600e3).toISOString(),
+      settledAt: new Date(now - 4 * 3600e3).toISOString(), oddsOver: 1.3, oddsMinute: 60, odds150Minute: null, odds160Minute: null, odds180Minute: null, ...r };
+    env.ACCESS_KV.store.set(`result:${now - i}:${i}`, JSON.stringify(rec));
+    env.ACCESS_KV.meta.set(`result:${now - i}:${i}`, rec);
+  };
+  put(1, { result: "won", odds150Minute: 70, odds160Minute: 72 });
+  put(2, { result: "won" });
+  put(3, { result: "lost", odds150Minute: 65, odds160Minute: 68, odds180Minute: 75 });
+  put(4, { result: "won", odds150Minute: 66, odds160Minute: 70, odds180Minute: 74 });
+  const d = await (await admin(worker, env, "/admin/api/results?days=7")).json();
+  const [w15, w16, w18] = d.summary.waitLevels;
+  assert.deepEqual([w15.tips, w15.bets, w15.won, w15.profit], [4, 3, 2, 0]);
+  assert.deepEqual([w16.bets, w16.won, w16.profit], [3, 2, 0.2]);
+  assert.deepEqual([w18.bets, w18.won, w18.profit], [2, 1, -0.2]);
 });
