@@ -1,0 +1,322 @@
+Wochen-Check inplayflux_sinyaller_2026-11-07.csv · neue Tage ab 2026-11-02 17:54:02
+
+===== Modelle (CV + Zeit-Test) =====
+16828 entschiedene Signale, 2026-09-05 bis 2026-11-07
+
+=== O2.5: n=7285, Grundquote 75.8%  (5-fach CV, out-of-fold)
+  p>=0.70:  77.7%  n= 6199  (85.1% Volumen)
+  p>=0.72:  78.8%  n= 5623  (77.2% Volumen)
+  p>=0.75:  79.8%  n= 4384  (60.2% Volumen)
+  p>=0.78:  81.5%  n= 2921  (40.1% Volumen)
+  p>=0.80:  81.4%  n= 1807  (24.8% Volumen)  <- Schwelle
+  p>=0.82:  82.1%  n=  971  (13.3% Volumen)
+  p>=0.85:  85.4%  n=  328  ( 4.5% Volumen)
+  Zeit-Test (gelernt bis 2026-11-02, getestet danach): p>=0.80 ->  83.8% n=74  (alle danach: 83.9% n=137)
+
+=== O3.5: n=5113, Grundquote 71.1%  (5-fach CV, out-of-fold)
+  p>=0.70:  74.6%  n= 3248  (63.5% Volumen)
+  p>=0.72:  75.9%  n= 2538  (49.6% Volumen)
+  p>=0.75:  78.7%  n= 1411  (27.6% Volumen)  <- Schwelle
+  p>=0.78:  79.1%  n=  584  (11.4% Volumen)
+  p>=0.80:  80.8%  n=  291  ( 5.7% Volumen)
+  p>=0.82:  78.8%  n=  137  ( 2.7% Volumen)
+  p>=0.85:  76.3%  n=   38  ( 0.7% Volumen)
+  Zeit-Test (gelernt bis 2026-11-02, getestet danach): p>=0.75 ->  81.8% n=55  (alle danach: 75.0% n=128)
+
+=== O1.5: n=2261, Grundquote 72.4%  (5-fach CV, out-of-fold)
+  p>=0.70:  75.4%  n= 1644  (72.7% Volumen)
+  p>=0.72:  75.9%  n= 1363  (60.3% Volumen)
+  p>=0.75:  78.7%  n=  910  (40.2% Volumen)
+  p>=0.78:  78.9%  n=  465  (20.6% Volumen)
+  p>=0.80:  81.5%  n=  260  (11.5% Volumen)  <- Schwelle
+  p>=0.82:  83.5%  n=  133  ( 5.9% Volumen)
+  p>=0.85:  94.1%  n=   51  ( 2.3% Volumen)
+  Zeit-Test (gelernt bis 2026-11-02, getestet danach): p>=0.80 -> 100.0% n=27  (alle danach: 80.2% n=182)
+
+=== O0.5: n=2169, Grundquote 70.6%  (5-fach CV, out-of-fold)
+  p>=0.70:  71.9%  n= 1154  (53.2% Volumen)
+  p>=0.72:  74.8%  n=  806  (37.2% Volumen)
+  p>=0.75:  79.3%  n=  405  (18.7% Volumen)  <- Schwelle
+  p>=0.78:  84.4%  n=  192  ( 8.9% Volumen)
+  p>=0.80:  90.1%  n=  111  ( 5.1% Volumen)
+  p>=0.82:  92.5%  n=   53  ( 2.4% Volumen)
+  p>=0.85:  94.1%  n=   17  ( 0.8% Volumen)
+  Zeit-Test (gelernt bis 2026-11-02, getestet danach): p>=0.75 ->  87.5% n=24  (alle danach: 73.4% n=169)
+
+=== Tool-Buckets
+o25Buckets <=55' 78.0% (n=3983), 56-60' 76.4% (n=1997), 61-65' 72.4% (n=710), 66-70' 61.4% (n=430), 71-73' 65.5% (n=165)
+o35Matrix =60'/<=8 72.6% (n=2086), =60'/9+ 77.1% (n=733), 61-63'/<=8 70.9% (n=968), 61-63'/9+ 75.6% (n=344), 64-66'/<=8 63.6% (n=321), 64-66'/9+ 67.3% (n=110), 67-69'/<=8 59.0% (n=244), 67-69'/9+ 67.0% (n=94), 70-71'/<=8 55.8% (n=147), 70-71'/9+ 62.1% (n=66)
+o15Buckets <=61' 75.0% (n=1756), 62-64' 68.7% (n=246), 65-67' 69.9% (n=113), 68-71' 46.1% (n=76), >=72' 54.3% (n=70)
+o05Buckets <=61' 70.5% (n=1686), >=62' 71.0% (n=483)
+
+const CONFIDENCE_MODELS = {
+  2.5: {
+    mean: [57.4176, 5.8362, 322.6608, 3.107],
+    std: [4.2457, 2.4678, 79.7803, 0.6323],
+    coef: [-0.2363, 0.0726, 0.0184, 0.2487],
+    intercept: 1.1692,
+    threshold: 0.80,
+  },
+  3.5: {
+    mean: [61.7569, 7.0933, 333.7451, 3.0758],
+    std: [2.9249, 2.5917, 82.5352, 0.6529],
+    coef: [-0.2071, 0.0935, 0.0142, 0.2028],
+    intercept: 0.9185,
+    threshold: 0.75,
+  },
+  1.5: {
+    mean: [61.4551, 5.5241, 347.2329, 3.2255],
+    std: [3.0416, 2.4946, 76.4982, 0.4896],
+    coef: [-0.3005, -0.1052, 0.1346, 0.2147],
+    intercept: 0.9969,
+    threshold: 0.80,
+  },
+  0.5: {
+    mean: [61.2462, 4.1462, 332.5509, 3.0723],
+    std: [0.5305, 2.5842, 79.3084, 0.496],
+    coef: [-0.018, 0.0049, 0.0146, 0.2618],
+    intercept: 0.8898,
+    threshold: 0.75,
+  },
+};
+
+===== Tor-Score =====
+
+=== 1. Radar X rekonstruiert (lineare Regression) ===
+R² = 0.958, Intercept 57.3
+  over_fav      +124.86
+  da              +0.92
+  atk             +0.54
+  corners         +6.30
+  shots           +1.92
+  sot             -1.03
+  avg_goals       +8.64
+  avg_conc        -4.16
+  minute          -0.21
+  goals           +0.54
+           mean  count
+over_fav              
+0         276.9   9597
+1         401.8   7231
+
+=== 2. Wann fällt das Tor? ===
+Torquote gesamt 73.2% (n=16828)
+Wartezeit Median 15 min, Quartile 8-24 min
+  Tor innerhalb  5 min:  9.8% aller Signale
+  Tor innerhalb 10 min: 26.2% aller Signale
+  Tor innerhalb 15 min: 37.8% aller Signale
+  Tor innerhalb 20 min: 49.1% aller Signale
+  Tor innerhalb 30 min: 66.3% aller Signale
+  Tor in der Nachspielzeit (>90'): 7.9% der Treffer
+              n  torquote  tor_pro_restminute_%
+Sinyal Dk                                      
+(0, 57]    5456     0.778                  2.06
+(57, 60]   4832     0.743                  2.24
+(60, 63]   4364     0.715                  2.26
+(63, 66]    973     0.670                  2.38
+(66, 69]    653     0.603                  2.41
+(69, 72]    453     0.572                  2.57
+(72, 90]     97     0.608                  3.12
+
+=== 3. Bedingungen: Torquote-Abweichung (pp) alt vs. neu ===
+Bedingung                     n alt  Δ alt  n neu  Δ neu
+HT-Linie >= 1.5                1867   +5.7   3345   +4.6
+Minute <= 57                   2888   +4.3   2568   +5.0
+Vorab-Linie >= 3.25            2799   +4.2   5160   +3.9
+Score < Vorab-Linie - 1        2324   +4.2   6058   +1.2
+SoT >= 9                       1219   +2.0   1538   +2.3
+Gegentor-Schnitt >= 3          3961   +1.4   5469   +1.8
+Over favorisiert               3101   +1.0   4130   -0.2
+Radar >= 400                   1603   +0.5   2234   +0.3
+Radar < 260                    1542   -1.0   1867   -1.2
+SoT <= 4                       1997   -0.6   3159   -1.6
+Letztes Tor <= 5 min her       2636   -2.7   2786   -1.6
+Gegentor-Schnitt <= 2.2        1812   -4.0   2098   -2.1
+Favorit führt mit 1 Tor        1366   -3.5   2359   -2.6
+Over-Quote > 2.03               988   -4.6   1216   -2.9
+HT-Linie <= 1.0                2415   -3.3   1865   -7.3
+Score >= Vorab-Linie           1850   -5.3   1311   -6.9
+Vorab-Linie <= 2.5             1918   -4.7   1457   -8.0
+Minute >= 66                    877  -10.4    595  -16.2
+
+=== 4. Tor-Score ===
+AUC auf neuem Zeitraum (gelernt nur auf altem): 0.584
+alt {'<=-9': (378, 0.55), '-8..-6': (1126, 0.672), '-5..-3': (2303, 0.699), '-2..0': (2412, 0.774), '>=+1': (1018, 0.828)}
+neu {'<=-9': (279, 0.538), '-8..-6': (1077, 0.642), '-5..-3': (3334, 0.717), '-2..0': (3149, 0.757), '>=+1': (1752, 0.813)}
+final (alle Daten): {'min_58_62': -2, 'min_63_65': -5, 'min_66p': -8, 'line_lo': -2, 'line_hi': 2, 'ht_hi': 1, 'def_strong': -1, 'sot9': 2, 'recent_goal': 0, 'over_odds_hi': -1, 'fav_up1': -1}
+  <=-9    n=  558 Torquote 51.3%  Mindestquote 1.95
+  -8..-6  n= 1226 Torquote 64.7%  Mindestquote 1.55
+  -5..-3  n= 4290 Torquote 69.4%  Mindestquote 1.44
+  -2..0   n= 6099 Torquote 73.9%  Mindestquote 1.35
+  >=+1    n= 4655 Torquote 80.7%  Mindestquote 1.24
+
+-> calibration/goal_score.json geschrieben
+
+===== Over 0.5 =====
+Over 0.5: 2169 Karten, 2026-09-05–2026-11-07, 1777 verschiedene Spiele
+  ALLE                           n= 2169  70.6%  | vor 1.10.  73.3% (n539) | ab 1.10.  69.7% (n1630) | neu ab 17.10.  70.5% (n769)
+
+-- Strategie
+  Over 0.5 Value                 n=  881  73.6%  | vor 1.10.  72.4% (n348) | ab 1.10.  74.3% (n533) | neu ab 17.10.  75.3% (n324)
+  💰 MoneyBag 0-0 → Goal          n=  843  69.4%  | vor 1.10.  74.9% (n191) | ab 1.10.  67.8% (n652) | neu ab 17.10.    –      
+  MoneyBag 0-0 → Goal            n=  445  67.0%  | vor 1.10.    –       | ab 1.10.  67.0% (n445) | neu ab 17.10.  67.0% (n445)
+
+-- Minute
+  0-59                           n=0
+  60-60                          n=0
+  61-61                          n= 1686  70.5%  | vor 1.10.  74.4% (n406) | ab 1.10.  69.2% (n1280) | neu ab 17.10.  70.6% (n728)
+  62-63                          n=  471  71.8%  | vor 1.10.  70.1% (n127) | ab 1.10.  72.4% (n344) | neu ab 17.10.  71.8% (n39)
+  64-70                          n=   12  41.7%  | vor 1.10.  66.7% (n6) | ab 1.10.  16.7% (n6) | neu ab 17.10.   0.0% (n2)
+  71-99                          n=0
+
+-- Vor-Spiel-Linie
+  <= 2.5                         n=  300  64.7%  | vor 1.10.  59.7% (n72) | ab 1.10.  66.2% (n228) | neu ab 17.10.  68.0% (n122)
+  2.75-3.0                       n=  998  69.1%  | vor 1.10.  71.9% (n160) | ab 1.10.  68.6% (n838) | neu ab 17.10.  68.8% (n362)
+  3.25-3.5                       n=  612  71.1%  | vor 1.10.  75.2% (n206) | ab 1.10.  69.0% (n406) | neu ab 17.10.  71.5% (n207)
+  >= 3.75                        n=  259  81.9%  | vor 1.10.  81.2% (n101) | ab 1.10.  82.3% (n158) | neu ab 17.10.  79.5% (n78)
+
+-- Schüsse aufs Tor
+  0-2                            n=  606  70.0%  | vor 1.10.  72.5% (n149) | ab 1.10.  69.1% (n457) | neu ab 17.10.  70.0% (n210)
+  3-4                            n=  677  69.3%  | vor 1.10.  67.6% (n170) | ab 1.10.  69.8% (n507) | neu ab 17.10.  66.7% (n237)
+  5-6                            n=  517  72.7%  | vor 1.10.  78.4% (n125) | ab 1.10.  70.9% (n392) | neu ab 17.10.  76.5% (n187)
+  7+                             n=  369  71.0%  | vor 1.10.  77.9% (n95) | ab 1.10.  68.6% (n274) | neu ab 17.10.  69.6% (n135)
+
+-- Radar X
+  < 250                          n=  305  69.8%  | vor 1.10.  73.0% (n74) | ab 1.10.  68.8% (n231) | neu ab 17.10.  75.0% (n88)
+  250-349                        n=  928  70.3%  | vor 1.10.  70.3% (n232) | ab 1.10.  70.3% (n696) | neu ab 17.10.  71.6% (n328)
+  350-449                        n=  807  70.9%  | vor 1.10.  77.8% (n198) | ab 1.10.  68.6% (n609) | neu ab 17.10.  67.3% (n303)
+  >= 450                         n=  126  72.2%  | vor 1.10.  67.6% (n34) | ab 1.10.  73.9% (n92) | neu ab 17.10.  73.5% (n49)
+
+-- Kombinationen
+  Linie >= 3.25                  n=  871  74.3%  | vor 1.10.  77.2% (n307) | ab 1.10.  72.7% (n564) | neu ab 17.10.  73.7% (n285)
+  Linie >= 3.25 & Radar >= 350   n=  372  74.2%  | vor 1.10.  77.4% (n133) | ab 1.10.  72.4% (n239) | neu ab 17.10.  70.2% (n131)
+  Linie >= 3 & Min <= 61         n= 1023  71.9%  | vor 1.10.  76.9% (n290) | ab 1.10.  70.0% (n733) | neu ab 17.10.  72.3% (n433)
+
+-- Wann fällt das 1. Tor (gewonnene Karten)
+  0-70: 29.8%
+  71-80: 30.9%
+  81-90: 30.3%
+  91-130:  8.9%
+  Median Wartezeit 16.0 min
+
+===== Over 2.5 =====
+Over 2.5: 7285 Karten, 2026-09-05–2026-11-07
+  ALLE                               n= 7285  75.8% | vor 1.10.  75.1% (n4497) | ab 1.10.  76.8% (n2788) | neu ab 17.10.  79.5% (n947)
+  Modell >= 0,80 (heute im Einsatz)  n= 1929  82.2% | vor 1.10.  84.5% (n831) | ab 1.10.  80.4% (n1098) | neu ab 17.10.  79.6% (n543)
+
+-- Vor-Spiel-Linie
+  <= 2.5                             n= 1650  69.8% | vor 1.10.  71.6% (n1291) | ab 1.10.  63.5% (n359) | neu ab 17.10.    –      
+  2.75-3.0                           n= 1982  73.5% | vor 1.10.  73.3% (n1611) | ab 1.10.  74.1% (n371) | neu ab 17.10.    –      
+  3.25-3.5                           n= 2457  79.0% | vor 1.10.  78.0% (n1030) | ab 1.10.  79.8% (n1427) | neu ab 17.10.  78.1% (n638)
+  >= 3.75                            n= 1196  81.0% | vor 1.10.  83.2% (n565) | ab 1.10.  79.1% (n631) | neu ab 17.10.  82.5% (n309)
+
+-- Minute
+  0-57                               n= 5456  77.8% | vor 1.10.  77.1% (n3429) | ab 1.10.  78.9% (n2027) | neu ab 17.10.  80.3% (n740)
+  58-60                              n=  524  74.0% | vor 1.10.  70.1% (n274) | ab 1.10.  78.4% (n250) | neu ab 17.10.  79.7% (n79)
+  61-63                              n=  452  72.3% | vor 1.10.  72.0% (n243) | ab 1.10.  72.7% (n209) | neu ab 17.10.  74.7% (n79)
+  64-66                              n=  375  71.5% | vor 1.10.  74.3% (n206) | ab 1.10.  68.0% (n169) | neu ab 17.10.  76.6% (n47)
+  67-99                              n=  478  60.9% | vor 1.10.  61.7% (n345) | ab 1.10.  58.6% (n133) | neu ab 17.10.  50.0% (n2)
+
+-- Spielstand
+  1:1                                n= 3195  74.9% | vor 1.10.  74.8% (n2039) | ab 1.10.  75.2% (n1156) | neu ab 17.10.  79.6% (n377)
+  2:0 / 0:2                          n= 4090  76.4% | vor 1.10.  75.4% (n2458) | ab 1.10.  77.9% (n1632) | neu ab 17.10.  79.5% (n570)
+  Favorit führt 2:0                  n= 3072  76.0% | vor 1.10.  74.9% (n1807) | ab 1.10.  77.5% (n1265) | neu ab 17.10.  78.5% (n461)
+  Außenseiter führt 2:0              n= 1018  77.6% | vor 1.10.  76.7% (n651) | ab 1.10.  79.3% (n367) | neu ab 17.10.  83.5% (n109)
+
+-- Schüsse aufs Tor
+  0-4                                n= 2286  74.2% | vor 1.10.  74.0% (n1445) | ab 1.10.  74.6% (n841) | neu ab 17.10.  79.4% (n282)
+  5-7                                n= 3343  75.9% | vor 1.10.  75.5% (n2075) | ab 1.10.  76.7% (n1268) | neu ab 17.10.  78.0% (n428)
+  8-10                               n= 1333  77.1% | vor 1.10.  75.4% (n786) | ab 1.10.  79.5% (n547) | neu ab 17.10.  83.8% (n191)
+  11+                                n=  323  78.9% | vor 1.10.  78.0% (n191) | ab 1.10.  80.3% (n132) | neu ab 17.10.  76.1% (n46)
+
+-- Radar X
+  < 300                              n= 3283  75.5% | vor 1.10.  74.8% (n2067) | ab 1.10.  76.7% (n1216) | neu ab 17.10.  80.7% (n410)
+  300-399                            n= 2551  75.8% | vor 1.10.  75.1% (n1592) | ab 1.10.  77.0% (n959) | neu ab 17.10.  78.7% (n328)
+  400+                               n= 1432  76.5% | vor 1.10.  76.1% (n825) | ab 1.10.  76.9% (n607) | neu ab 17.10.  78.3% (n207)
+
+-- Strategien (>= 100 Karten)
+  💰 MoneyBag 2-0/0-2 → Over 2.5      n= 4795  74.6% | vor 1.10.  75.3% (n3738) | ab 1.10.  72.1% (n1057) | neu ab 17.10.    –      
+  💰 MoneyBag 2-0/0-2 → Over 2.5 New  n= 1743  79.7% | vor 1.10.  91.7% (n12) | ab 1.10.  79.7% (n1731) | neu ab 17.10.  79.5% (n947)
+  Over 2.5 Odd Filter                n=  747  74.0% | vor 1.10.  74.0% (n747) | ab 1.10.    –       | neu ab 17.10.    –      
+
+-- Einfache Regeln
+  Linie >= 3.25                      n= 3653  79.7% | vor 1.10.  79.8% (n1595) | ab 1.10.  79.6% (n2058) | neu ab 17.10.  79.5% (n947)
+  Linie >= 3 & Min <= 60             n= 3696  80.5% | vor 1.10.  80.2% (n1848) | ab 1.10.  80.7% (n1848) | neu ab 17.10.  80.2% (n819)
+  Linie >= 3.25 & Min <= 63          n= 3228  81.1% | vor 1.10.  82.3% (n1336) | ab 1.10.  80.3% (n1892) | neu ab 17.10.  79.7% (n898)
+  Linie >= 3 & Min <= 63 & 1:1       n= 1644  79.5% | vor 1.10.  79.5% (n829) | ab 1.10.  79.5% (n815) | neu ab 17.10.  79.8% (n361)
+  Linie >= 3 & Min <= 63 & 2:0       n= 2382  80.5% | vor 1.10.  80.5% (n1174) | ab 1.10.  80.5% (n1208) | neu ab 17.10.  79.7% (n537)
+  Min <= 60                          n= 5980  77.5% | vor 1.10.  76.6% (n3703) | ab 1.10.  78.9% (n2277) | neu ab 17.10.  80.2% (n819)
+  Linie >= 3.5                       n= 2108  80.3% | vor 1.10.  82.0% (n954) | ab 1.10.  78.9% (n1154) | neu ab 17.10.  80.6% (n536)
+
+===== Over 3.5 / Halbzeit / Over 1.5 =====
+Zeitraum 05.09.–07.11.2026, Hälften getrennt bei 06.10. 22:24
+
+=== Over 3.5 (3 Tore beim Signal), alle 5113 Karten: 71.1% ===
+  Stand 3:0                    n= 1108   74.6%   1. Hälfte  73.3% (n774)   2. Hälfte  77.8% (n334)
+      4. Tor: bis 70' 31% · 71-80' 32% · 81-90' 32% · 90+' 5% · Wartezeit Median 14 min · Signal-Minute Median 60'
+  Stand 0:3                    n=  656   73.9%   1. Hälfte  73.2% (n481)   2. Hälfte  76.0% (n175)
+      4. Tor: bis 70' 31% · 71-80' 31% · 81-90' 34% · 90+' 5% · Wartezeit Median 14 min · Signal-Minute Median 60'
+  Stand 2:1                    n= 1784   68.2%   1. Hälfte  68.3% (n1383)   2. Hälfte  68.1% (n401)
+      4. Tor: bis 70' 29% · 71-80' 32% · 81-90' 28% · 90+' 11% · Wartezeit Median 14 min · Signal-Minute Median 60'
+  Stand 1:2                    n= 1565   70.5%   1. Hälfte  69.1% (n1135)   2. Hälfte  74.4% (n430)
+      4. Tor: bis 70' 29% · 71-80' 33% · 81-90' 27% · 90+' 10% · Wartezeit Median 14 min · Signal-Minute Median 60'
+
+  Klare Führung (3:0/0:3) vs. knapp (2:1/1:2):
+  3:0 / 0:3                    n= 1764   74.4%   1. Hälfte  73.2% (n1255)   2. Hälfte  77.2% (n509)
+  2:1 / 1:2                    n= 3349   69.3%   1. Hälfte  68.6% (n2518)   2. Hälfte  71.4% (n831)
+
+  Wer führt? (Favorit = niedrigere Anstoß-Quote)
+  Favorit führt                n= 3563   71.2%   1. Hälfte  70.3% (n2598)   2. Hälfte  73.6% (n965)
+  Außenseiter führt            n= 1550   70.7%   1. Hälfte  69.8% (n1175)   2. Hälfte  73.6% (n375)
+  2:1/1:2, Favorit führt       n= 2094   69.1%   1. Hälfte  68.8% (n1568)   2. Hälfte  70.3% (n526)
+  2:1/1:2, Außenseiter führt   n= 1255   69.6%   1. Hälfte  68.4% (n950)   2. Hälfte  73.1% (n305)
+  3:0/0:3, Favorit führt       n= 1469   74.1%   1. Hälfte  72.7% (n1030)   2. Hälfte  77.4% (n439)
+  3:0/0:3, Außenseiter führt   n=  295   75.6%   1. Hälfte  75.6% (n225)   2. Hälfte  75.7% (n70)
+
+  Signal-Minute:
+  Minute 0-60                  n= 2819   73.7%   1. Hälfte  73.0% (n1920)   2. Hälfte  75.4% (n899)
+  Minute 61-63                 n= 1312   72.1%   1. Hälfte  72.2% (n983)   2. Hälfte  71.7% (n329)
+  Minute 64-66                 n=  431   64.5%   1. Hälfte  63.3% (n354)   2. Hälfte  70.1% (n77)
+  Minute 67-90                 n=  551   59.9%   1. Hälfte  60.5% (n516)   2. Hälfte  51.4% (n35)
+
+  Vorab-Torlinie:
+  <= 2.75                      n= 1949   66.3%   1. Hälfte  66.3% (n1730)   2. Hälfte  66.2% (n219)
+  3.0-3.25                     n= 1802   72.1%   1. Hälfte  72.3% (n1146)   2. Hälfte  72.0% (n656)
+  >= 3.5                       n= 1362   76.4%   1. Hälfte  74.9% (n897)   2. Hälfte  79.4% (n465)
+
+=== Halbzeit-Tor-Karten (Ziel: Tor vor der Pause), alle 879: 66.9% ===
+  HT Value12                   n=  368   67.7%   1. Hälfte   nan% (n0)   2. Hälfte  67.7% (n368)
+  HT over 0.5                  n=  241   67.2%   1. Hälfte  57.5% (n40)   2. Hälfte  69.2% (n201)
+  Iy gol (Imported)            n=  270   65.6%   1. Hälfte   nan% (n0)   2. Hälfte  65.6% (n270)
+  Minute 0-15                  n=  689   68.9%   1. Hälfte  66.7% (n12)   2. Hälfte  69.0% (n677)
+  Minute 16-20                 n=  190   59.5%   1. Hälfte  53.6% (n28)   2. Hälfte  60.5% (n162)
+  Minute 21-25                 n=0
+  Minute 26-45                 n=0
+  HT-Linie <= 1.0              n=  158   58.2%   1. Hälfte  28.6% (n7)   2. Hälfte  59.6% (n151)
+  HT-Linie 1.25                n=  401   64.8%   1. Hälfte  60.9% (n23)   2. Hälfte  65.1% (n378)
+  HT-Linie >= 1.5              n=  320   73.8%   1. Hälfte  70.0% (n10)   2. Hälfte  73.9% (n310)
+  0:0 beim Signal              n=  460   67.6%   1. Hälfte  53.3% (n15)   2. Hälfte  68.1% (n445)
+  schon Tor(e)                 n=  419   66.1%   1. Hälfte  60.0% (n25)   2. Hälfte  66.5% (n394)
+  HT-Linie>=1.5 & Min<=20      n=  320   73.8%   1. Hälfte  70.0% (n10)   2. Hälfte  73.9% (n310)
+  HT-Linie>=1.5 & Radar>=350   n=    1    0.0%   1. Hälfte   nan% (n0)   2. Hälfte   0.0% (n1)
+
+=== Over 1.5 (1 Tor beim Signal), alle 2261: 72.4% ===
+  Minute 0-61                  n= 1756   75.0%   1. Hälfte  76.3% (n304)   2. Hälfte  74.7% (n1452)
+  Minute 62-64                 n=  246   68.7%   1. Hälfte  69.5% (n95)   2. Hälfte  68.2% (n151)
+  Minute 65-67                 n=  113   69.9%   1. Hälfte  76.5% (n85)   2. Hälfte  50.0% (n28)
+  Minute 68-90                 n=  146   50.0%   1. Hälfte  59.2% (n76)   2. Hälfte  40.0% (n70)
+  Vorab-Linie <= 2.5           n=  186   64.5%   1. Hälfte  58.6% (n58)   2. Hälfte  67.2% (n128)
+  2.75-3.0                     n=  877   71.0%   1. Hälfte  72.6% (n201)   2. Hälfte  70.6% (n676)
+  >= 3.25                      n= 1198   74.7%   1. Hälfte  75.7% (n301)   2. Hälfte  74.4% (n897)
+  Min<=61 & Linie>=2.75        n= 1632   74.9%   1. Hälfte  76.0% (n275)   2. Hälfte  74.7% (n1357)
+  Min<=61 & Linie>=3.25        n=  915   76.7%   1. Hälfte  76.7% (n146)   2. Hälfte  76.7% (n769)
+  neu seit 17.10. abends       n= 1386   73.4%   1. Hälfte   nan% (n0)   2. Hälfte  73.4% (n1386)
+  neu: Min<=61 & Linie>=2.75   n= 1201   74.5%   1. Hälfte   nan% (n0)   2. Hälfte  74.5% (n1201)
+
+=== Over 3.5 Kombinationen ===
+  3:0/0:3 & Min<=63            n= 1423   76.2%   1. Hälfte  75.1% (n953)   2. Hälfte  78.3% (n470)
+  2:1/1:2 & Min<=63            n= 2708   71.7%   1. Hälfte  71.5% (n1950)   2. Hälfte  72.0% (n758)
+  3:0/0:3 & Min<=63 & Linie>=3 n= 1010   78.8%   1. Hälfte  78.0% (n592)   2. Hälfte  79.9% (n418)
+  2:1/1:2 & Min<=63 & Linie>=3 n= 1624   73.9%   1. Hälfte  74.5% (n990)   2. Hälfte  72.9% (n634)
+  neu seit 17.10.: 3:0/0:3     n=  433   77.8%   1. Hälfte   nan% (n0)   2. Hälfte  77.8% (n433)
+  neu seit 17.10.: 2:1/1:2     n=  711   71.0%   1. Hälfte   nan% (n0)   2. Hälfte  71.0% (n711)

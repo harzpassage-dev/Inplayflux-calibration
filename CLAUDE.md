@@ -260,6 +260,15 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-07: weekly routine with export 11-07 (Saturday upload; `data/inplayflux_sinyaller_2026-11-07.csv`, shift 0, 16,828
+  signals), models refitted, thresholds unchanged, goal score points **not** changed (script proposed min_63_65 −5,
+  recent_goal 0; AUC 0.584), badge "Kalibriert: 07.11.2026 · 16.828 Signale", report `reports/2026-11-07-recalibration.md`.
+  Unseen 02.11. 18:00 – 07.11.: O2.5 83.8 % (74) vs raw 83.9 % (137), O3.5 81.8 % (55) vs 75.0 %, O0.5 87.5 % (24) vs 73.4 %,
+  O0.5 line ≥ 4 7/7 matches, O1.5 model 100 % (27, stays off); Over 1.5 Test (≥ 3.75, men) 10/12 matches – too small, old rule
+  ≥ 2.75 78 % (78). "Daten der Woche": possession gap at ~60' (`scripts/possession_stats.py`, 8,234 matches): < 10 points 74 %,
+  10–19 75 %, 20–29 73 %, ≥ 30 79 % (halves 79/78). Note: the container needed `python3 -m pip install numpy pandas
+  scikit-learn` (plain `pip` installs for another Python); weekly.py must be re-run after deleting a half-written data file.
+
 - 2026-11-06: **live statistics per own scene** (owner: "wir erreichen die 7500 nie, müssen das ausnutzen" – 1,671 of 7,500
   calls by 18:00). `collectScenes` makes one `fixtures/statistics?fixture=<id>` call per scene (`scStats`) and stores
   "home-away" strings in the metadata: `sot` shots on target, `sh` shots, `sib` shots in the box, `co` corners, `xg` live xG
@@ -929,7 +938,7 @@ then decide per tier on the new days and apply.
 - Half-time-goal tier: not recommended (466 cards 66 %, best subset ~72 %, low HT odds); parser keeps
   ignoring HT cards.
 
-- Next (from 02.11.): weekly check done 02.11. (export 11-02, no refit; O2.5 weak weekend 72.5 % (109) – watch, raise the
+- Next (from 07.11.): weekly check done 07.11. (export 11-07, refit); Monday 09.11. = profit check with the results CSV (see below). Earlier: weekly check done 02.11. (export 11-02, no refit; O2.5 weak weekend 72.5 % (109) – watch, raise the
   threshold only if the next export confirms); next ~Mon 09.11. with refit; bot "Wochen-Check" → new CSV → skill `wochen-routine`;
   market comparison and profit check once ≥ 50 tips; auto video every Sunday 17:37; Google indexing check
   (`site:moneybag-signals.com`) ~1–2 weeks; legal texts to be checked by a lawyer / e-recht24 (drafted by Claude, not
