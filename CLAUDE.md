@@ -260,6 +260,15 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-07: **expected goals: market only** (owner's "Ja" after the check of "Tor-Erwartung CSV" 03.–07.11., 505 cards, 323
+  with a final score): market expected 1.37 further goals, came 1.45 (mean error 0.93, bands 1–1.5 → 1.3, 1.5–2 → 1.7); tempo
+  expected 0.78, came 1.49 (error 1.12, corr 0.09 vs 0.20; 0 at every 0:0 card – 159 cards with 1.3 goals after). Premium
+  posts now show "🔮 Erwartete weitere Tore: 1,6 (Markt)" only (`expectedGoalsLine`; tempo still logged); the tool's
+  Poisson section (`worker/public/index.html` = `tools/moneybag-analyst.html`) got a note that tempo is 0 at 0:0 and too low.
+  Same day, own scenes CSV (5,649 scenes, 937 matches, 04.–07.11.): the market's expected goals fit well (pre-match 2.97 vs
+  2.97 over 637 matches; live 1.23 vs 1.17 at 60'); hit rate ≈ market everywhere, flat ROI at real prices −2 … −11 %
+  (1st half −6 … −11 %); no edge yet.
+
 - 2026-11-07: **higher quotes – measured waiting levels + own API signal in the beta channel** (owner: "Wir brauchen höhere
   Quoten … kann man da ein Signal testen im Beta", yes to both). Results CSV 05.11. (36 tips with real live odds): at once Ø 1.26
   +9 %, wait 1.40 24 bets +11 %, 1.50 18 +8 %, 1.60 16 +10 %, 1.80 16 +24 % – far too small. (1) `recordOdds` stores the first

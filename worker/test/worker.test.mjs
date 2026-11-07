@@ -892,28 +892,29 @@ test("goal expectation: every card logs tempo + market expectation, report compa
   assert.ok(![...env.ACCESS_KV.store.keys()].some((k) => k.startsWith("xg:") && k.includes("eps")));
 });
 
-test("premium post shows the expected further goals (market + tempo), test posts too", async () => {
+test("premium post shows the expected further goals (market only since 07.11.), test posts too", async () => {
   const net = mockNet({ feed: [] });
   const env = makeEnv();
   await webhook(worker, env, card()); // 2-0 at 56', ~30 min left, live line 3.5 Over 1.95 / Under 1.85
   await cron(worker, env);
   const post = premiumPosts(net)[0];
-  assert.match(post.text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\) · 1,1 \(Tempo\)/, post.text);
+  assert.match(post.text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\)\n/, post.text);
+  assert.doesNotMatch(post.text, /Tempo/);
   // bold via Telegram entities: exactly that line
   assert.equal(post.entities.length, 1);
-  assert.equal(post.text.substr(post.entities[0].offset, post.entities[0].length), "🔮 Erwartete weitere Tore: 1,6 (Markt) · 1,1 (Tempo)");
+  assert.equal(post.text.substr(post.entities[0].offset, post.entities[0].length), "🔮 Erwartete weitere Tore: 1,6 (Markt)");
   assert.equal(post.entities[0].type, "bold");
   // Over 1.5 Test post
   const net2 = mockNet({ feed: [] });
   const env2 = makeEnv();
   await webhook(worker, env2, card({ header: "💰  Over 1.5 Value", score: "1-0", target: "Goal", minute: 58, pre: "4.0", live: "2.5" }));
   await cron(worker, env2);
-  assert.match(premiumPosts(net2)[0].text, /🔮 Erwartete weitere Tore: [\d,]+ \(Markt\) · 0,5 \(Tempo\)/);
+  assert.match(premiumPosts(net2)[0].text, /🔮 Erwartete weitere Tore: [\d,]+ \(Markt\)\n/);
   // admin test posts (no live match → example values)
   const net3 = mockNet({ feed: [] });
   const env3 = makeEnv();
   await admin(worker, env3, "/admin/api/test-post?tier=o15", { method: "POST" });
-  assert.match(premiumPosts(net3)[0].text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\) · 0,5 \(Tempo\)/);
+  assert.match(premiumPosts(net3)[0].text, /🔮 Erwartete weitere Tore: 1,6 \(Markt\)\n/);
   // card without odds and time line → no line
   assert.equal(net.sent.filter((m) => /undefined|NaN/.test(m.text || "")).length, 0);
 });

@@ -421,8 +421,9 @@ function buildPremiumMessage(text, label) {
 function expectedGoalsLine(xg) {
   if (!xg) return null;
   const f = (x) => String(Math.round(x * 10) / 10).replace(".", ",");
-  const parts = [xg.market != null ? `${f(xg.market)} (Markt)` : null, xg.tempo != null ? `${f(xg.tempo)} (Tempo)` : null].filter(Boolean);
-  return parts.length ? `🔮 Erwartete weitere Tore: ${parts.join(" · ")}` : null;
+  // Market only since 07.11. (owner's yes): own check of 323 settled cards 03.–07.11. – market expected 1.37, came 1.45
+  // (mean error 0.93); tempo expected 0.78, came 1.49 (error 1.12, always 0 at 0:0). Tempo is still logged.
+  return xg.market != null ? `🔮 Erwartete weitere Tore: ${f(xg.market)} (Markt)` : null;
 }
 // Same for an admin test post built from a live feed match (no card): tempo up to minute 90, market from the feed's line.
 function feedExpectation(match, snap) {

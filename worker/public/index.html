@@ -833,6 +833,7 @@
       <div class="k">P(≥1 weiteres Tor)</div><div class="v">${fmtPct(a.pAtLeast1)}</div>
       <div class="k">P(≥2 weitere Tore)</div><div class="v">${fmtPct(a.pAtLeast2)}</div>
     </div>`;
+    html += `<div style="font-size:0.75rem;color:var(--text-dim);margin:-4px 0 10px;">Hinweis: Das Tempo rechnet nur mit den bisherigen Toren – bei 0:0 zeigt es immer 0, und meist liegt es zu niedrig (eigene Prüfung 07.11.: 323 Signale, Tempo erwartete 0,8 weitere Tore, gekommen sind 1,5). Verlässlicher ist der Markt-Wert unten (Schritt 3b).</div>`;
 
     html += `<h2 style="border:none;padding:0;margin-bottom:6px;">2. Bucket-/Matrix-Modell</h2>`;
     if (a.modelBand) {
