@@ -260,6 +260,17 @@ then decide per tier on the new days and apply.
 
 ## Change log (latest first)
 
+- 2026-11-07: **beta test "Linie +0,25"** (owner: "Kann man die 0,25-Linie im Beta-Kanal testen"). Results CSV 05.11., 21 tips with
+  a live price one quarter above the own line: Ø 1.44 vs 1.32, 11 full / 7 half / 3 lost, +3.45 u (+16 %) vs +2.76 u (+13 %) at
+  the normal line (one 6- and one 7-goal match carry much of it). `maybePostBetaQuarter` (in `settleTracked` after `recordOdds`):
+  premium/O1.5 tips (not Under/api) with a live price for line + 0.25 → one post at the **first** price (no minimum, not
+  cherry-picked) to BETA_CHANNEL_ID ("🧪 BETA · Linie +0,25", Over 2,75 statt Over 2,5, quote, settling rule, 1 unit),
+  `t.bq = {q, m, at, msgId, msgText}`. Settled by the final score (`quarterOutcome`: no more goal → lost, exactly one → half,
+  2+ → won) in `markBetaQuarter`, called when the tip is lost and when the final score arrives (API finished, watchFinal),
+  so a WIN/HALB edit comes only at full time. Results get `q25Quote/q25Minute` (CSV); `summarize().q25` (full/half/lost,
+  profit) in admin "Ergebnisse" ("🧪 Beta Linie +0,25 (seit 07.11.)") and the morning report. Tips without a final score
+  are not counted. Verdict at ≥ 100 bets. Test "beta line +0.25 …".
+
 - 2026-11-07: **expected goals: market only** (owner's "Ja" after the check of "Tor-Erwartung CSV" 03.–07.11., 505 cards, 323
   with a final score): market expected 1.37 further goals, came 1.45 (mean error 0.93, bands 1–1.5 → 1.3, 1.5–2 → 1.7); tempo
   expected 0.78, came 1.49 (error 1.12, corr 0.09 vs 0.20; 0 at every 0:0 card – 159 cards with 1.3 goals after). Premium
@@ -1070,6 +1081,8 @@ then decide per tier on the new days and apply.
 - Annulled-goal correction: owner should tap admin "Tor zurückgenommen? Wertung prüfen" → "Anzeigen" after the beta tip's
   match (05.11., 2:0 annulled) has its final score, then "Nach Endstand korrigieren" (re-settles by final score; Telegram posts
   by hand). Owner had asked to remove it from the stats; advised to settle by final score instead – confirm with the owner.
+- Beta line +0,25 (since 07.11.): admin line "🧪 Beta Linie +0,25"; verdict at ≥ 100 bets (compare with the normal line on
+  the same tips).
 - Own API signal + waiting levels (since 07.11.): check admin "Ergebnisse" lines "Eigenes API-Signal" and "Warten bis echte
   Quote 1,5/1,6/1,8"; verdict at ≥ 50 bets each; if the API signal beats its quote, offer it to premium (owner's yes).
 - Beta channel (**live since 04.11. ~19:30 Berlin**: owner created the private channel, bot is admin, `BETA_CHANNEL_ID` set, admin test "✅ Senden und Bearbeiten klappen"): check the "🧪 Beta-Kanal" line in admin / morning report;

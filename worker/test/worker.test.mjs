@@ -1246,3 +1246,39 @@ test("waiting for a higher real quote: summarize counts bets that reached 1.50/1
   assert.deepEqual([w16.bets, w16.won, w16.profit], [3, 2, 0.2]);
   assert.deepEqual([w18.bets, w18.won, w18.profit], [2, 1, -0.2]);
 });
+
+test("beta line +0.25: posted at the first live price of Over 2.75, settled by the final score (one goal = half)", async () => {
+  const net = mockNet({ feed: [] });
+  const env = makeEnv({ APIFOOTBALL_KEY: "k", BETA_CHANNEL_ID: "-200" });
+  await webhook(worker, env, card());
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 57, goals: [10, 30] })];
+  net.apiOdds = [afOdds(41, { "2.5": [1.3, 3.2], "2.75": [1.5, 2.4] })];
+  await at(130e3, () => cron(worker, env));
+  assert.equal(premiumPosts(net).length, 1);
+  const beta = () => net.sent.filter((m) => m.chat_id === "-200");
+  await at(170e3, () => cron(worker, env)); // the next minute run settles/prices the new tip
+  const qp = beta().filter((m) => /Linie \+0,25/.test(m.text || ""));
+  assert.equal(qp.length, 1, "quarter post at the first price");
+  assert.match(qp[0].text, /Over 2,75 \(statt Over 2,5\)/);
+  assert.match(qp[0].text, /Live-Quote jetzt: 1,50/);
+  await at(200e3, () => cron(worker, env));
+  assert.equal(beta().filter((m) => /Linie \+0,25/.test(m.text || "") && m.method !== "editMessageText").length, 1, "posted once");
+  // goal at 76' → tip won, the quarter bet waits for the final score
+  net.apiLive = [afFix({ id: 41, home: "Alpha FC", away: "Beta FC", minute: 77, gh: 3, goals: [10, 30, 76] })];
+  await at(260e3, () => cron(worker, env));
+  await at(500e3, () => cron(worker, env));
+  assert.equal(beta().filter((m) => m.method === "editMessageText" && /HALB|WIN – 3 Tore/.test(m.text)).length, 0, "no quarter edit before full time");
+  // full time 3-0 → exactly one more goal → half won
+  net.apiLive = [];
+  net.apiById = { 41: afFix({ id: 41, home: "Alpha FC", away: "Beta FC", status: "FT", minute: 90, gh: 3, goals: [10, 30, 76] }) };
+  await at(900e3, () => cron(worker, env));
+  const edit = beta().find((m) => m.method === "editMessageText" && /^🟡 HALB/.test(m.text));
+  assert.ok(edit, beta().map((m) => m.text).join("\n---\n"));
+  assert.match(edit.text, /\+0,25 Einheiten/);
+  const r = results(env)[0];
+  assert.equal(r.q25Quote, 1.5);
+  const d = await (await admin(worker, env, "/admin/api/results?days=7")).json();
+  assert.deepEqual([d.summary.q25.n, d.summary.q25.half, d.summary.q25.profit], [1, 1, 0.25]);
+  const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();
+  assert.ok(csv.split("\n")[0].endsWith("q25Quote,q25Minute"));
+});
