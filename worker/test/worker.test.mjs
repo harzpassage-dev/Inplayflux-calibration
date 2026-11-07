@@ -1217,6 +1217,8 @@ test("own API signal: 0:0 at minute 60 with high pre-match goal line and real qu
   assert.equal(d.summary.api.profit, 0.45);
   assert.equal(d.summary.all.n, 0, "not in the normal numbers");
   assert.ok(d.summary.waitLevels.find((w) => w.q === 1.8), "wait levels in the summary");
+  const adminHtml = await (await worker.fetch(new Request("https://x/admin"), env, {})).text();
+  assert.ok(adminHtml.includes("Eigenes API-Signal (nur Beta, seit 07.11.)") && adminHtml.includes("noch kein Tipp entschieden"), "always shown in admin");
   const page = await (await worker.fetch(new Request("https://moneybag-signals.com/ergebnisse"), env, {})).text();
   assert.doesNotMatch(page, /Alpha/, "never on the public results page");
   const csv = await (await admin(worker, env, "/admin/api/results-csv?days=7")).text();

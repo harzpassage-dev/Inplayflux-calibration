@@ -275,6 +275,8 @@ then decide per tier on the new days and apply.
   and all normal numbers in `summarize` (own `summarize().api` = n, won, profit at the beta quote, Ø quote; admin line
   "🧪 Eigenes API-Signal (nur Beta)" and morning report). Only leagues with API-Football live odds. Verdict at ≥ 50 tips.
   Tests "own API signal …", "waiting for a higher real quote …"; beta test checks result metadata < 1024 bytes (~650 now).
+  Same day (owner could not find the line): admin "Ergebnisse" now always shows "🧪 Eigenes API-Signal (nur Beta, seit 07.11.)"
+  ("noch kein Tipp entschieden" + open api tips) and a placeholder for the waiting levels until the first data.
 
 - 2026-11-07: weekly routine with export 11-07 (Saturday upload; `data/inplayflux_sinyaller_2026-11-07.csv`, shift 0, 16,828
   signals), models refitted, thresholds unchanged, goal score points **not** changed (script proposed min_63_65 −5,

@@ -4457,7 +4457,9 @@ async function loadResults(days) {
       });
     }
     if (s.betaBets) html += '<br>🧪 Beta-Kanal (echte Quote ≥ 1,40): ' + s.betaWon + ' von ' + s.betaBets + ' getroffen · <b>' + (s.betaProfit >= 0 ? '+' : '') + s.betaProfit + ' Einheiten</b>';
-    if (s.api && s.api.n) html += '<br>🧪 Eigenes API-Signal (nur Beta): ' + s.api.won + ' von ' + s.api.n + ' getroffen · Ø Quote ' + s.api.avgQuote + ' · <b>' + (s.api.profit >= 0 ? '+' : '') + s.api.profit + ' Einheiten</b>';
+    const apiOpen = (d.open || []).filter((t) => t.tier === 'api').length;
+    html += '<br>🧪 Eigenes API-Signal (nur Beta, seit 07.11.): ' + (s.api && s.api.n ? s.api.won + ' von ' + s.api.n + ' getroffen · Ø Quote ' + s.api.avgQuote + ' · <b>' + (s.api.profit >= 0 ? '+' : '') + s.api.profit + ' Einheiten</b>' : 'noch kein Tipp entschieden') + ' · offen: ' + apiOpen;
+    if (!(s.waitLevels || []).some((w) => w.tips)) html += '<br>Warten bis echte Quote 1,5 / 1,6 / 1,8 (gemessen seit 07.11.): noch keine entschiedenen Tipps mit Live-Quote';
     (s.waitLevels || []).filter((w) => w.tips).forEach((w) => {
       html += '<br>Warten bis echte Quote ' + String(w.q).replace('.', ',') + ' (gemessen): ' + w.won + ' von ' + w.bets + ' Einsätzen getroffen, ' + (w.tips - w.bets) + ' nie erreicht · <b>' + (w.profit >= 0 ? '+' : '') + w.profit + ' Einheiten</b>' + (w.bets < 50 ? ' <small>(noch wenig Daten)</small>' : '');
     });
